@@ -1,3 +1,5 @@
+'use client'
+
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { LoaderCircle } from 'lucide-react'
 

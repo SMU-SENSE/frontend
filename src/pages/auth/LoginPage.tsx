@@ -1,7 +1,10 @@
+'use client'
+
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { authApi } from '../../api/auth'
 import { AuthLayout } from '../../components/layout/AuthLayout'
 import { Button } from '../../components/ui/Button'
@@ -11,8 +14,7 @@ import { loginSchema, type LoginForm } from '../../lib/validators'
 import { useAuthStore } from '../../stores/authStore'
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const router = useRouter()
   const { showToast } = useToast()
   const setSession = useAuthStore((state) => state.setSession)
   const {
@@ -31,8 +33,9 @@ export default function LoginPage() {
       // 인증 성공 시 전역 세션을 먼저 저장한 뒤 보호된 원래 경로로 복귀한다.
       setSession(session)
       showToast('로그인되었습니다.')
-      const from = (location.state as { from?: string } | null)?.from
-      navigate(from ?? '/', { replace: true })
+      const from = sessionStorage.getItem('malmoa-login-return-to')
+      sessionStorage.removeItem('malmoa-login-return-to')
+      router.replace(from ?? '/')
     },
     onError: (error) => {
       // 서버 인증 오류는 특정 필드보다 폼 전체 오류로 보여주는 것이 자연스럽다.
@@ -73,7 +76,7 @@ export default function LoginPage() {
         </Button>
       </form>
       <div className="auth-links">
-        <Link to="/signup">회원가입</Link>
+        <Link href="/signup">회원가입</Link>
       </div>
     </AuthLayout>
   )

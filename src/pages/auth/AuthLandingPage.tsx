@@ -1,5 +1,8 @@
+'use client'
+
 import { Mail, MessageCircle, MoveRight } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { authApi } from '../../api/auth'
 import { apiConfig } from '../../api/client'
 import { AuthLayout } from '../../components/layout/AuthLayout'
@@ -7,7 +10,7 @@ import { Button } from '../../components/ui/Button'
 import { useToast } from '../../components/ui/ToastProvider'
 
 export default function AuthLandingPage() {
-  const navigate = useNavigate()
+  const router = useRouter()
   const { showToast } = useToast()
 
   const handleOAuth = async (provider: 'kakao' | 'google') => {
@@ -37,7 +40,7 @@ export default function AuthLandingPage() {
           fullWidth
           size="lg"
           leftIcon={<Mail size={19} />}
-          onClick={() => navigate('/login')}
+          onClick={() => router.push('/login')}
         >
           이메일로 계속
         </Button>
@@ -63,7 +66,7 @@ export default function AuthLandingPage() {
 
       <div className="auth-helper">
         <span>아직 계정이 없나요?</span>
-        <Link to="/signup">
+        <Link href="/signup">
           회원가입 <MoveRight size={15} />
         </Link>
       </div>

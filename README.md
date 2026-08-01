@@ -1,6 +1,14 @@
 # 말모아 프론트엔드
 
-동석 담당 기능만 확인할 수 있도록 정리한 간소화 버전입니다.
+AAC(보완대체의사소통) 서비스의 프론트엔드 간소화 버전입니다. 기존 Vite 프로젝트를 **Next.js App Router + TypeScript** 구조로 전환했습니다.
+
+## 기술 스택
+
+- Next.js App Router
+- React + TypeScript
+- TanStack Query
+- Zustand
+- React Hook Form + Zod
 
 ## 포함 기능
 
@@ -15,9 +23,11 @@
 
 ```bash
 npm install
-cp .env.example .env
+cp .env.example .env.local
 npm run dev
 ```
+
+기본 개발 주소는 `http://localhost:3000`입니다.
 
 기본값은 별도 서버 없이 실행되는 Mock API입니다.
 
@@ -26,9 +36,22 @@ npm run dev
 
 ## Spring Boot 연결
 
-`.env`의 값만 변경하면 됩니다.
+`.env.local`을 아래처럼 변경합니다.
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
-VITE_USE_MOCK_API=false
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_USE_MOCK_API=false
+```
+
+환경변수를 바꾼 뒤 개발 서버를 다시 실행해야 합니다.
+
+## 주요 폴더
+
+```text
+src/app/          Next.js 라우트와 공통 레이아웃
+src/pages/        실제 화면 컴포넌트
+src/components/   공통 UI와 레이아웃
+src/api/          Mock/Spring Boot API 연결
+src/stores/       Zustand 전역 상태
+src/styles/       전역 스타일
 ```

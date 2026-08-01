@@ -1,3 +1,5 @@
+'use client'
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BookmarkPlus,
@@ -10,7 +12,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   categoriesApi,
   sentencesApi,
@@ -29,7 +31,9 @@ const tabs: Array<{ value: SentenceListType; label: string }> = [
 ]
 
 export default function SentencesPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const tab = (searchParams.get('tab') as SentenceListType | null) ?? 'all'
   const [keyword, setKeyword] = useState('')
   const [sentenceInput, setSentenceInput] = useState('')
@@ -240,7 +244,7 @@ export default function SentencesPage() {
                 aria-selected={tab === item.value}
                 className={tab === item.value ? 'is-active' : ''}
                 onClick={() =>
-                  setSearchParams(item.value === 'all' ? {} : { tab: item.value })
+                  router.replace(item.value === 'all' ? pathname : `${pathname}?tab=${item.value}`)
                 }
               >
                 {item.label}

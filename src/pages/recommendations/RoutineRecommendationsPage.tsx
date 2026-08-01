@@ -1,3 +1,5 @@
+'use client'
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookmarkPlus, Clock3, Sparkles } from 'lucide-react'
 import { recommendationsApi } from '../../api/recommendations'

@@ -1,3 +1,5 @@
+'use client'
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Grid3X3, Play, RotateCcw, ScanLine, Volume2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'

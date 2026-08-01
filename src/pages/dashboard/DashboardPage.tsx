@@ -1,3 +1,5 @@
+'use client'
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
@@ -8,7 +10,7 @@ import {
   Play,
   Sparkles,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { recommendationsApi } from '../../api/recommendations'
 import { categoriesApi, sentencesApi } from '../../api/sentences'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
@@ -114,7 +116,7 @@ export default function DashboardPage() {
               <h2>자주 쓰는 문장</h2>
               <p>즐겨찾기한 문장을 빠르게 기록할 수 있어요.</p>
             </div>
-            <Link to="/sentences?tab=favorite">
+            <Link href="/sentences?tab=favorite">
               전체 보기 <ArrowRight size={16} />
             </Link>
           </div>
@@ -148,7 +150,7 @@ export default function DashboardPage() {
               <span key={sentence.id}>{sentence.content}</span>
             ))}
           </div>
-          <Link className="card-link" to="/recommendations/routine">
+          <Link className="card-link" href="/recommendations/routine">
             루틴 추천 열기 <ArrowRight size={16} />
           </Link>
         </Card>
@@ -163,7 +165,7 @@ export default function DashboardPage() {
           <h2>상황에 맞는 문장이 떠오르지 않나요?</h2>
           <p>상황과 말투를 선택하면 자연스러운 표현을 추천해 드려요.</p>
         </div>
-        <Link to="/recommendations/ai">
+        <Link href="/recommendations/ai">
           AI 문장 추천 <ArrowRight size={17} />
         </Link>
       </section>

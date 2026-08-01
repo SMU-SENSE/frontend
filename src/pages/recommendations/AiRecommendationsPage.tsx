@@ -1,3 +1,5 @@
+'use client'
+
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Bot, BookmarkPlus, RefreshCw, Sparkles, WandSparkles } from 'lucide-react'
 import { useState, type FormEvent } from 'react'

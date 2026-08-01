@@ -1,3 +1,5 @@
+'use client'
+
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from './ui/Button'
@@ -19,7 +21,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     // 개발 환경에서는 원인을 남기되 사용자 화면에는 내부 오류 정보를 노출하지 않는다.
-    if (import.meta.env.DEV) {
+    if (process.env.NODE_ENV === 'development') {
       console.error('말모아 화면 오류', error, info)
     }
   }

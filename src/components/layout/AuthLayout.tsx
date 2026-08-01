@@ -1,6 +1,8 @@
+'use client'
+
 import { ArrowLeft, MessageCircleMore } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
 
 export function AuthLayout({
   children,
@@ -11,7 +13,7 @@ export function AuthLayout({
   showBack?: boolean
   wide?: boolean
 }) {
-  const navigate = useNavigate()
+  const router = useRouter()
 
   return (
     <main className="auth-layout">
@@ -24,7 +26,7 @@ export function AuthLayout({
           <button
             className="back-button"
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => router.back()}
             aria-label="이전 화면으로 돌아가기"
           >
             <ArrowLeft size={20} />

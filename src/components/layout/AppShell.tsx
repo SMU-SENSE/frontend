@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Bot,
   Home,
@@ -9,8 +11,10 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '../../stores/authStore'
 import { Button } from '../ui/Button'
 
@@ -25,16 +29,17 @@ const navigation = [
   { to: '/profile', label: '내 프로필', icon: UserRound },
 ]
 
-export function AppShell() {
+export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const user = useAuthStore((state) => state.session?.user)
   const logout = useAuthStore((state) => state.logout)
-  const navigate = useNavigate()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const handleLogout = () => {
     // 로컬 세션만 정리한다. 실서버 로그아웃 API가 생기면 호출 성공 후 이 로직을 실행한다.
     logout()
-    navigate('/welcome', { replace: true })
+    router.replace('/welcome')
   }
 
   return (
@@ -68,18 +73,20 @@ export function AppShell() {
           </div>
         </div>
         <nav className="sidebar__nav" aria-label="주요 메뉴">
-          {navigation.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={() => setMenuOpen(false)}
-              className={({ isActive }) => (isActive ? 'is-active' : undefined)}
-            >
-              <Icon size={19} aria-hidden />
-              <span>{label}</span>
-            </NavLink>
-          ))}
+          {navigation.map(({ to, label, icon: Icon, end }) => {
+            const isActive = end ? pathname === to : pathname.startsWith(to)
+            return (
+              <Link
+                key={to}
+                href={to}
+                onClick={() => setMenuOpen(false)}
+                className={isActive ? 'is-active' : undefined}
+              >
+                <Icon size={19} aria-hidden />
+                <span>{label}</span>
+              </Link>
+            )
+          })}
         </nav>
         <Button
           className="sidebar__logout"
@@ -99,7 +106,7 @@ export function AppShell() {
         />
       ) : null}
       <main className="app-main" id="main-content">
-        <Outlet />
+        {children}
       </main>
     </div>
   )

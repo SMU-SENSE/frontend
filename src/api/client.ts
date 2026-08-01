@@ -2,11 +2,11 @@ import type { ApiErrorBody } from '../types/models'
 import { mockRequest } from './mock'
 
 // 실서버 주소와 Mock 사용 여부는 화면 코드가 아니라 환경변수 한 곳에서 전환한다.
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080').replace(
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080').replace(
   /\/$/,
   '',
 )
-const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API !== 'false'
+const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API !== 'false'
 
 /**
  * 네트워크 오류와 Spring Boot 오류 응답을 화면에서 동일하게 처리하기 위한 표준 오류.

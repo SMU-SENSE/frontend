@@ -1,8 +1,11 @@
+'use client'
+
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { Info } from 'lucide-react'
 import { useForm } from 'react-hook-form'
-import { Link, useNavigate } from 'react-router-dom'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { authApi } from '../../api/auth'
 import { AuthLayout } from '../../components/layout/AuthLayout'
 import { Button } from '../../components/ui/Button'
@@ -11,7 +14,7 @@ import { useToast } from '../../components/ui/ToastProvider'
 import { signupSchema, type SignupForm } from '../../lib/validators'
 
 export default function SignupPage() {
-  const navigate = useNavigate()
+  const router = useRouter()
   const { showToast } = useToast()
   const {
     register,
@@ -27,7 +30,7 @@ export default function SignupPage() {
     mutationFn: authApi.signup,
     onSuccess: () => {
       showToast('회원가입이 완료되었습니다. 로그인해 주세요.')
-      navigate('/login', { replace: true })
+      router.replace('/login')
     },
     onError: (error) => setError('root', { message: error.message }),
   })
@@ -83,7 +86,7 @@ export default function SignupPage() {
       </form>
       <div className="auth-helper">
         <span>이미 계정이 있나요?</span>
-        <Link to="/login">로그인</Link>
+        <Link href="/login">로그인</Link>
       </div>
     </AuthLayout>
   )
