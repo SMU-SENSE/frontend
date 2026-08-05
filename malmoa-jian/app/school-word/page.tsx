@@ -1,10 +1,16 @@
 'use client'
 
-export default function SettingPage() {
+import SoundButton from '../components/SoundButton'
+
+export default function SchoolWordPage() {
   return (
     <div>
-      <h1>집 추천</h1>
-      <p>여기에 집 추천 화면이 들어올 예정입니다!</p>
+      <div className="grid">
+        {/* 집에 관련된 단어 버튼들 */}
+        <SoundButton text="방" variant="main" />
+        <SoundButton text="침대" variant="main" />
+        <SoundButton text="냉장고" variant="main" />
+      </div>
     </div>
-  )
+  );
 }
