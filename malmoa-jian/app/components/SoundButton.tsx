@@ -7,13 +7,14 @@ interface SoundButtonProps {
   imageUrl?: string;
   variant?: 'bottom' | 'main'; 
   style?: React.CSSProperties;
+  onClick?: () => void;
 }
 
-export default function SoundButton({ text, imageUrl, variant = 'main' }: SoundButtonProps) {
+export default function SoundButton({ text, imageUrl, variant = 'main', onClick }: SoundButtonProps) {
   const [isActive, setIsActive] = useState(false);
 
   const handleClick = () => {
-    if ('speechSynthesis' in window) {
+    if (variant !== 'main' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ko-KR';
@@ -22,6 +23,10 @@ export default function SoundButton({ text, imageUrl, variant = 'main' }: SoundB
     
     setIsActive(true);
     setTimeout(() => { setIsActive(false); }, 500);
+
+    if (onClick) {
+      onClick();
+    }
   };
 
   const getDesignStyle = () => {

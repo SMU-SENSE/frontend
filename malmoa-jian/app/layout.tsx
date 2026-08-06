@@ -1,29 +1,34 @@
-'use client'
+'use client';
 
 import "./globals.css";
 import Link from "next/link";
-import { Home, Settings, Sparkles, Hospital, School, Plus, Star } from 'lucide-react'
+import { Home, Settings, Sparkles, 
+  Utensils ,User , Smile, Building, Hand, Clock, PersonStanding,
+  Star} from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { Noto_Sans_KR } from 'next/font/google'
 import { useState } from 'react'
 import SoundButton from './components/SoundButton'
 import AddButton from './components/AddButton'
 import MoveButton from './components/MoveButton'
+import AISentence from './components/AISentence'
 
 const notoSans = Noto_Sans_KR({
   subsets: ['latin'], weight: ['400', '700'], 
 })
 
-export default function RootLayout({children,}: Readonly<{children: React.ReactNode;}>) {
+export default function RootLayout({children}: Readonly<{children: React.ReactNode;}>) {
 
-  {/* 데이터 베이스 연결 후 수정 */}
   const [leftbar, setLeftbar] = useState([
-    {name: '집', href: '/home-word', icon: Home},
-    {name: '학교', href: '/school-word', icon: School},
-    {name: '병원', href: '/hospital-word', icon: Hospital},
+    {name: '음식', href: '/food-word', icon: Utensils},
+    {name: '감정', href: '/emotion-word', icon: Smile},
+    {name: '사람', href: '/person-word', icon: User},
+    {name: '장소', href: '/place-word', icon: Building},
+    {name: '인사/사회어', href: '/hello-word', icon: Hand},
+    {name: '시간', href: '/time-word', icon: Clock},
+    {name: '신체', href: '/body-word', icon: PersonStanding},
   ])
 
-  {/* 데이터 베이스 연결 후 수정 */}
   const [Bottom, setBottom] = useState([
     { text: "네", label: "네" },
     { text: "아니요", label: "아니요" },
@@ -34,30 +39,23 @@ export default function RootLayout({children,}: Readonly<{children: React.ReactN
   
   const AddLeftbar = () => {
     const userInput = prompt('추가할 이름을 입력하세요:');
-
     if (!userInput) return;
-
     const uniqueId = `item-${Date.now()}`;
-
     const newLeftbar = {
       name: userInput,          
       href: `/${uniqueId}-word`, 
       icon: Star
     };
-
     setLeftbar([...leftbar, newLeftbar]);
   };
 
   const AddBottom = () => {
     const userInput = prompt('추가할 이름을 입력하세요:');
-    
     if (!userInput) return;
-
     const newBottom = {
       text: userInput,
       label : userInput
     };
-
     setBottom([...Bottom, newBottom]);
   };
 
@@ -65,7 +63,7 @@ export default function RootLayout({children,}: Readonly<{children: React.ReactN
     <html lang="ko">
       <body className={`${notoSans.className} container`}>
 
-        {/*헤더*/}
+        {/* 헤더 */}
         <header className="home-header">
           <img src='../logo.svg' alt="말모아로고" className="logo" />
           <Link href="/" className="header-design" 
@@ -82,49 +80,56 @@ export default function RootLayout({children,}: Readonly<{children: React.ReactN
           </Link>
         </header>
 
-        {/*사이드바-왼쪽*/}
-        <div className="sidebar">
-          {pathname !== '/setting' && (
-            <aside className="leftbar">
-             
-              {/*추천*/}
-              <Link href="/" className="leftbar-design"
-               style={{
-                  backgroundColor: pathname === '/' ? '#E6F8F1' : '#F0F0F4',
-                  color: pathname === '/' ? '#149E69' : '#9C9BA8'
-                }}>
-               <Sparkles size={32} /> 추천
-              </Link>
-              
-              {/*추가, 그외*/}
-              <div className= "leftbar">
-              {leftbar.map((item) => (
-              <MoveButton key={item.name} text={item.name} icon={item.icon} href={item.href}/>
-              ))}
-              <AddButton variant="leftbar" onClick={() => { AddLeftbar();}}
-            />
-          </div>
-            </aside>
-          )}
+        {/* 컨텐츠 영역 전체를 가로로 */}
+        <div className="content-cover">
+          
+          {/* 왼쪽 사이드바 + 메인 */}
+          <div className="main">
+            {pathname !== '/setting' && (
+              <aside className="leftbar">
+                {/* 추천 */}
+                <Link href="/" className="leftbar-design"
+                 style={{
+                    backgroundColor: pathname === '/' ? '#E6F8F1' : '#F0F0F4',
+                    color: pathname === '/' ? '#149E69' : '#9C9BA8'
+                  }}>
+                 <Sparkles size={32} /> 추천
+                </Link>
+                
+                {/* 메뉴 목록들 */}
+                {leftbar.map((item) => (
+                  <MoveButton key={item.name} text={item.name} icon={item.icon} href={item.href}/>
+                ))}
+                <AddButton variant="leftbar" onClick={AddLeftbar} />
+              </aside>
+            )}
 
-        {/*메인*/}
-        <main className="main-content">
-          {children}
-        </main>
-        </div> 
-        
-        {/*하단바*/}
+            {/* 메인 */}
+            <main className="main-content">
+              {children}
+            </main>
+          </div> 
+
+          {/* 사이드바 - 오른쪽 */}
+          <aside className="rightbar">
+            <AISentence />
+          </aside>
+
+        </div>
+
+        {/* 하단바 */}
         {pathname !== '/setting' && (
           <div className="bottom">
             {Bottom.map((item) => (
               <SoundButton key={item.text} text={item.text} variant="bottom" />
             ))}
             <AddButton 
-            variant="bottom" 
-            onClick={() => { AddBottom(); }} 
+              variant="bottom" 
+              onClick={AddBottom} 
             />
           </div>
         )}
       </body>
     </html>
-  )}
+  );
+}

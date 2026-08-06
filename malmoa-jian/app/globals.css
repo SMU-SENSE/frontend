@@ -15,6 +15,13 @@ html, body {
   flex-direction: column;
   overflow: hidden;
 }
+.content-cover {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
 .home-header{
   flex-shrink: 0;
   background-color : #FFFFFF;
@@ -40,10 +47,11 @@ html, body {
   margin: 0px;
   border-radius: 9999px;
 }
-.sidebar{
-  overflow: hidden;
+.main{
   display: flex;
-  width: 100%;
+  flex-direction: row;
+  overflow: hidden;
+  flex: 1;
 }
 .leftbar{
   text-decoration: none;
@@ -75,12 +83,14 @@ html, body {
   background: none;           
   box-sizing: border-box;
   cursor: pointer;
+  white-space: nowrap;
+  font-size: clamp(0.8rem, 2.5vw, 1.2rem);
 }
 .main-content{
   flex: 1;
   overflow-y: auto;
-  width: 579px;
-  height: 627px;
+  height: 100%;
+  background-color: #F5F6F9;
 }
 .bottom {
   flex-shrink: 0;
@@ -90,7 +100,7 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  width: 100%;
+  width: 100%; 
   flex-direction: row;
 }
 .bottom-design {
@@ -118,7 +128,7 @@ html, body {
   padding: 6px;
   font-weight: bold;
   cursor: pointer;
-  width: 169px;
+  max-width: 169px;
   height: 168px;
   transition: background-color 0.1s ease, color 0.1s ease;
 }
@@ -131,9 +141,33 @@ html, body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
-  width: 579px;
-  height: 627px;
+  width: 100%; 
+  max-width: 579px;
+  height: 100%;
   background-color: #F5F6F9;
   padding: 24px;
   text-decoration: none;
+  box-sizing: border-box;
+}
+.rightbar{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  background-color: #ffffff;
+  width: 557px;
+  height: 100%;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.make{
+  background-color: #F0F0F4;
+  width: 522px;
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+}
+.make-font{
+  
 }

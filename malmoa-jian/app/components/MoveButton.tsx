@@ -12,7 +12,6 @@ interface MoveButtonProps {
 
 export default function MoveButton({ text, href, icon:Icon }: MoveButtonProps) {
   const pathname = usePathname();
-  const KoreanPathname = decodeURIComponent(pathname);
   const isCurrentPage = pathname === href;
 
   return (
