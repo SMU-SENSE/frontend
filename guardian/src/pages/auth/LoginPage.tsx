@@ -30,7 +30,6 @@ export default function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (session) => {
-      // 인증 성공 시 전역 세션을 먼저 저장한 뒤 보호된 원래 경로로 복귀한다.
       setSession(session)
       showToast('로그인되었습니다.')
       const from = sessionStorage.getItem('malmoa-login-return-to')
@@ -38,16 +37,14 @@ export default function LoginPage() {
       router.replace(from ?? '/')
     },
     onError: (error) => {
-      // 서버 인증 오류는 특정 필드보다 폼 전체 오류로 보여주는 것이 자연스럽다.
       setError('root', { message: error.message })
     },
   })
 
   return (
     <AuthLayout>
-      <div className="auth-heading">
+      <div className="auth-heading auth-heading--center">
         <h1>이메일 로그인</h1>
-        <p>등록한 이메일과 비밀번호를 입력해 주세요.</p>
       </div>
       <form className="auth-form" onSubmit={handleSubmit((values) => loginMutation.mutate(values))}>
         {errors.root?.message ? (
@@ -75,7 +72,9 @@ export default function LoginPage() {
           로그인
         </Button>
       </form>
-      <div className="auth-links">
+      <div className="auth-links auth-links--split">
+        <Link href="/password/find">비밀번호 찾기</Link>
+        <span aria-hidden="true">|</span>
         <Link href="/signup">회원가입</Link>
       </div>
     </AuthLayout>

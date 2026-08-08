@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import '../styles/global.css'
+import '../styles/figma-flow.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
