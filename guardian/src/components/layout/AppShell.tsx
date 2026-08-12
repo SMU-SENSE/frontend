@@ -15,11 +15,11 @@ import type { ReactNode } from 'react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { authApi } from '../../api/auth'
+import { apiConfig } from '../../api/client'
 import { useAuthStore } from '../../stores/authStore'
 import { Button } from '../ui/Button'
 
-// 동석 담당 사용자 데이터 화면만 등록한다.
-// 양지안 담당 AAC 화면은 이후 같은 배열에 경로를 추가하면 사이드바에 연결된다.
 const navigation = [
   { to: '/', label: '홈', icon: Home, end: true },
   { to: '/sentences', label: '문장 관리', icon: MessageSquareText },
@@ -31,15 +31,22 @@ const navigation = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   const user = useAuthStore((state) => state.session?.user)
   const logout = useAuthStore((state) => state.logout)
   const router = useRouter()
   const pathname = usePathname()
 
-  const handleLogout = () => {
-    // 로컬 세션만 정리한다. 실서버 로그아웃 API가 생기면 호출 성공 후 이 로직을 실행한다.
-    logout()
-    router.replace('/welcome')
+  const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
+    try {
+      if (!apiConfig.useMockApi) await authApi.logout()
+    } finally {
+      logout()
+      router.replace('/welcome')
+      setLoggingOut(false)
+    }
   }
 
   return (
@@ -93,6 +100,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           variant="ghost"
           leftIcon={<LogOut size={18} />}
           onClick={handleLogout}
+          loading={loggingOut}
         >
           로그아웃
         </Button>

@@ -3,36 +3,93 @@
 import { Camera } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { aacUserApi } from '../../../api/aacUsers'
+import { apiConfig } from '../../../api/client'
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout'
 import { Button } from '../../../components/ui/Button'
+import { useToast } from '../../../components/ui/ToastProvider'
 import { loadOnboardingDraft, saveOnboardingDraft } from '../../../lib/onboardingDraft'
+import type { RelationshipType } from '../../../types/models'
 
-const relations = ['부모', '조부모', '교사', '기타']
+const relations = ['부모', '조부모', '교사', '기타'] as const
+const relationshipTypeByLabel: Record<(typeof relations)[number], RelationshipType> = {
+  부모: 'PARENT',
+  조부모: 'GRANDPARENT',
+  교사: 'TEACHER',
+  기타: 'OTHER',
+}
 
 export default function UserProfileOnboardingPage() {
   const router = useRouter()
+  const { showToast } = useToast()
   const [name, setName] = useState('')
   const [birthDate, setBirthDate] = useState('')
-  const [relation, setRelation] = useState('부모')
+  const [relation, setRelation] = useState<(typeof relations)[number]>('부모')
   const [customRelation, setCustomRelation] = useState('')
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const draft = loadOnboardingDraft()
     setName(draft.userName ?? '')
     setBirthDate(draft.birthDate ?? '')
-    if (draft.relation && !relations.includes(draft.relation)) {
-      setRelation('기타')
-      setCustomRelation(draft.relation)
-    } else {
-      setRelation(draft.relation ?? '부모')
+    if (draft.relation && relations.includes(draft.relation as (typeof relations)[number])) {
+      setRelation(draft.relation as (typeof relations)[number])
     }
+    setCustomRelation(draft.relationshipDetail ?? '')
     setPhone(draft.emergencyPhone ?? '')
     setNotes(draft.notes ?? '')
   }, [])
 
-  const valid = Boolean(name.trim() && birthDate && (relation !== '기타' || customRelation.trim()))
+  const valid = Boolean(
+    name.trim() &&
+      birthDate &&
+      phone.trim() &&
+      (relation !== '기타' || customRelation.trim()),
+  )
+
+  const submit = async () => {
+    if (!valid || submitting) return
+
+    const relationshipType = relationshipTypeByLabel[relation]
+    const relationshipDetail = relation === '기타' ? customRelation.trim() : null
+    const localDraft = loadOnboardingDraft()
+
+    saveOnboardingDraft({
+      userName: name.trim(),
+      birthDate,
+      relation,
+      relationshipType,
+      relationshipDetail: relationshipDetail ?? undefined,
+      emergencyPhone: phone.trim(),
+      notes,
+    })
+
+    if (apiConfig.useMockApi || localDraft.userId) {
+      router.push('/onboarding/grid')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const user = await aacUserApi.create({
+        name: name.trim(),
+        birthDate,
+        relationshipType,
+        relationshipDetail,
+        emergencyContact: phone.trim(),
+        notes: notes.trim() || null,
+        profileImageUrl: null,
+      })
+      saveOnboardingDraft({ userId: user.id })
+      router.push('/onboarding/grid')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '사용자 프로필을 저장하지 못했어요.', 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <OnboardingLayout step={1} title="사용자 프로필" subtitle="AAC를 사용할 분의 정보를 입력해 주세요">
@@ -63,7 +120,7 @@ export default function UserProfileOnboardingPage() {
           ) : null}
         </div>
         <label className="plain-field">
-          <span>긴급 연락처</span>
+          <span>긴급 연락처 <em>필수</em></span>
           <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="010-0000-0000" />
         </label>
         <label className="plain-field">
@@ -71,21 +128,7 @@ export default function UserProfileOnboardingPage() {
           <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="알아두면 좋은 내용을 적어 주세요" rows={3} />
         </label>
       </div>
-      <Button
-        fullWidth
-        size="lg"
-        disabled={!valid}
-        onClick={() => {
-          saveOnboardingDraft({
-            userName: name.trim(),
-            birthDate,
-            relation: relation === '기타' ? customRelation.trim() : relation,
-            emergencyPhone: phone,
-            notes,
-          })
-          router.push('/onboarding/grid')
-        }}
-      >
+      <Button fullWidth size="lg" disabled={!valid} loading={submitting} onClick={submit}>
         다음
       </Button>
     </OnboardingLayout>

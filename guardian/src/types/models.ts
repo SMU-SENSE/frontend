@@ -1,6 +1,6 @@
 export type Id = string
 
-/** 로그인 이후 모든 사용자 화면에서 공통으로 사용하는 최소 프로필 정보 */
+/** 로그인 이후 기존 보호자 화면에서 공통으로 사용하는 최소 계정 요약 */
 export interface User {
   id: Id
   email: string
@@ -11,9 +11,73 @@ export interface User {
 }
 
 export interface AuthSession {
-  accessToken: string
+  /** Mock 모드 호환용. 실제 Spring 연결은 JSESSIONID 세션 쿠키를 사용한다. */
+  accessToken?: string
   refreshToken?: string
   user: User
+}
+
+export type AccountType = 'GUARDIAN' | 'SUPPORTER' | 'AAC_USER'
+
+export interface AccountResponse {
+  accountId: number
+  email: string
+  name: string | null
+  profileImageUrl: string | null
+  accountType: AccountType | null
+  onboardingCompleted: boolean
+  status: string
+}
+
+export type RelationshipType = 'PARENT' | 'GRANDPARENT' | 'TEACHER' | 'OTHER'
+export type BackendGridSize = 'GRID_2X2' | 'GRID_3X3' | 'GRID_4X4'
+export type BackendVoiceType = 'CHILD_MALE' | 'CHILD_FEMALE'
+export type AacUserSetupStep =
+  | 'PROFILE_COMPLETED'
+  | 'GRID_COMPLETED'
+  | 'VOICE_COMPLETED'
+  | 'CONFIRMED'
+
+export interface CreateAacUserInput {
+  name: string
+  birthDate: string
+  relationshipType: RelationshipType
+  relationshipDetail?: string | null
+  emergencyContact: string
+  notes?: string | null
+  profileImageUrl?: string | null
+}
+
+export interface AacUserResponse {
+  id: number
+  name: string
+  mode: string
+  gridSize: BackendGridSize
+  active: boolean
+  birthDate: string
+  emergencyContact: string
+  notes: string | null
+  profileImageUrl: string | null
+  voiceType: BackendVoiceType | null
+  speechRate: number | null
+  setupStep: AacUserSetupStep
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OnboardingSummaryResponse {
+  userId: number
+  name: string
+  profileImageUrl: string | null
+  birthDate: string
+  relationshipType: RelationshipType
+  relationshipDetail: string | null
+  emergencyContact: string
+  notes: string | null
+  gridSize: BackendGridSize
+  voiceType: BackendVoiceType
+  speechRate: number
+  setupStep: AacUserSetupStep
 }
 
 /** 사용자마다 직접 만들 수 있는 문장 분류. order는 드래그 정렬 확장을 고려한 값이다. */
@@ -84,6 +148,7 @@ export interface PageResponse<T> {
 }
 
 export interface ApiErrorBody {
+  success?: boolean
   code?: string
   message?: string
   fieldErrors?: Record<string, string>

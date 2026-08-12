@@ -3,14 +3,25 @@
 import { Play, Volume2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { aacUserApi } from '../../../api/aacUsers'
+import { apiConfig } from '../../../api/client'
 import { OnboardingLayout } from '../../../components/onboarding/OnboardingLayout'
 import { Button } from '../../../components/ui/Button'
+import { useToast } from '../../../components/ui/ToastProvider'
 import { loadOnboardingDraft, saveOnboardingDraft, type VoiceType } from '../../../lib/onboardingDraft'
+import type { BackendVoiceType } from '../../../types/models'
+
+const toBackendVoice: Record<VoiceType, BackendVoiceType> = {
+  'male-child': 'CHILD_MALE',
+  'female-child': 'CHILD_FEMALE',
+}
 
 export default function VoiceOnboardingPage() {
   const router = useRouter()
+  const { showToast } = useToast()
   const [voiceType, setVoiceType] = useState<VoiceType>('male-child')
   const [rate, setRate] = useState(1)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const draft = loadOnboardingDraft()
@@ -26,6 +37,33 @@ export default function VoiceOnboardingPage() {
     utterance.rate = rate
     utterance.pitch = voiceType === 'female-child' ? 1.2 : 1
     window.speechSynthesis.speak(utterance)
+  }
+
+  const submit = async () => {
+    if (submitting) return
+    saveOnboardingDraft({ voiceType, speechRate: rate })
+
+    if (apiConfig.useMockApi) {
+      router.push('/onboarding/confirm')
+      return
+    }
+
+    const { userId } = loadOnboardingDraft()
+    if (!userId) {
+      showToast('사용자 정보가 없어요. 프로필부터 다시 입력해 주세요.', 'error')
+      router.replace('/onboarding/profile')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await aacUserApi.updateVoice(userId, toBackendVoice[voiceType], rate)
+      router.push('/onboarding/confirm')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '음성 설정을 저장하지 못했어요.', 'error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -49,14 +87,7 @@ export default function VoiceOnboardingPage() {
           <div><strong>미리듣기</strong><span>안녕하세요. 말모아입니다.</span></div>
         </button>
       </div>
-      <Button
-        fullWidth
-        size="lg"
-        onClick={() => {
-          saveOnboardingDraft({ voiceType, speechRate: rate })
-          router.push('/onboarding/confirm')
-        }}
-      >
+      <Button fullWidth size="lg" loading={submitting} onClick={submit}>
         다음
       </Button>
     </OnboardingLayout>

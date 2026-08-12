@@ -12,17 +12,20 @@ export default function AuthLandingPage() {
   const router = useRouter()
   const { showToast } = useToast()
 
-  const handleOAuth = async (provider: 'kakao' | 'google') => {
-    try {
-      const { redirectUrl } = await authApi.getOAuthUrl(provider)
-      if (apiConfig.useMockApi) {
-        showToast('Mock 모드에서는 이메일 로그인 흐름으로 확인해 주세요.')
-        return
-      }
-      window.location.assign(redirectUrl)
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : '소셜 로그인을 시작하지 못했어요.', 'error')
+  const openPrototypeOnly = (feature: string, mockPath?: string) => {
+    if (apiConfig.useMockApi && mockPath) {
+      router.push(mockPath)
+      return
     }
+    showToast(`${feature}은 아직 백엔드 API가 없어서 Google 로그인부터 실제 연결했어요.`)
+  }
+
+  const handleGoogle = () => {
+    if (apiConfig.useMockApi) {
+      showToast('Mock 모드에서는 이메일 로그인으로 화면 흐름을 확인해 주세요.')
+      return
+    }
+    window.location.assign(authApi.googleLoginUrl())
   }
 
   return (
@@ -33,7 +36,12 @@ export default function AuthLandingPage() {
       </div>
 
       <div className="auth-actions auth-actions--figma">
-        <Button fullWidth size="lg" leftIcon={<Mail size={18} />} onClick={() => router.push('/login')}>
+        <Button
+          fullWidth
+          size="lg"
+          leftIcon={<Mail size={18} />}
+          onClick={() => openPrototypeOnly('이메일 로그인', '/login')}
+        >
           이메일로 계속
         </Button>
         <Button
@@ -41,7 +49,7 @@ export default function AuthLandingPage() {
           size="lg"
           variant="kakao"
           leftIcon={<MessageCircle size={18} />}
-          onClick={() => handleOAuth('kakao')}
+          onClick={() => openPrototypeOnly('카카오 로그인')}
         >
           카카오로 계속
         </Button>
@@ -50,11 +58,15 @@ export default function AuthLandingPage() {
           size="lg"
           variant="outline"
           leftIcon={<span className="google-mark">G</span>}
-          onClick={() => handleOAuth('google')}
+          onClick={handleGoogle}
         >
           구글로 계속
         </Button>
       </div>
+
+      {!apiConfig.useMockApi ? (
+        <p className="auth-backend-note">현재 실제 백엔드 연결은 Google 로그인 기준으로 동작합니다.</p>
+      ) : null}
     </AuthLayout>
   )
 }

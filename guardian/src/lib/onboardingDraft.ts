@@ -1,12 +1,17 @@
+import type { RelationshipType } from '../types/models'
+
 export type GridSize = '2x2' | '3x3' | '4x4'
 export type VoiceType = 'male-child' | 'female-child'
 
 export interface GuardianOnboardingDraft {
   guardianName?: string
   guardianEmail?: string
+  userId?: number
   userName?: string
   birthDate?: string
   relation?: string
+  relationshipType?: RelationshipType
+  relationshipDetail?: string
   emergencyPhone?: string
   notes?: string
   gridSize?: GridSize

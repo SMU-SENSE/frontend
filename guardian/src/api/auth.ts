@@ -1,27 +1,69 @@
-import type { AuthSession } from '../types/models'
+import type { AccountResponse, AuthSession } from '../types/models'
 import type { LoginForm, SignupForm } from '../lib/validators'
-import { apiRequest } from './client'
+import { apiConfig, apiRequest, resetCsrfToken } from './client'
 
-/**
- * 인증 화면과 Spring Boot 엔드포인트 사이의 유일한 연결 지점.
- * 백엔드 경로/응답이 바뀌면 페이지 대신 이 파일만 수정한다.
- */
+export function accountToSession(account: AccountResponse): AuthSession {
+  const fallbackName = account.email.split('@')[0] || '보호자'
+  const displayName = account.name?.trim() || fallbackName
+
+  return {
+    user: {
+      id: String(account.accountId),
+      email: account.email,
+      nickname: displayName,
+      name: account.name ?? undefined,
+      profileImageUrl: account.profileImageUrl ?? undefined,
+      joinedAt: '',
+    },
+  }
+}
+
+function mockOnly<T>(action: () => Promise<T>, feature: string) {
+  if (apiConfig.useMockApi) return action()
+  return Promise.reject(new Error(`현재 백엔드는 ${feature}을 지원하지 않아요. Google 로그인을 이용해 주세요.`))
+}
+
 export const authApi = {
+  /** Figma 이메일 인증 흐름을 확인하기 위한 Mock 전용 API */
   login: (input: LoginForm) =>
-    apiRequest<AuthSession>('/api/v1/auth/login', {
+    mockOnly(
+      () =>
+        apiRequest<AuthSession>('/api/v1/auth/login', {
+          method: 'POST',
+          body: input,
+        }),
+      '이메일 로그인',
+    ),
+
+  /** Figma 이메일 회원가입 흐름을 확인하기 위한 Mock 전용 API */
+  signup: ({ email, password }: SignupForm) =>
+    mockOnly(
+      () =>
+        apiRequest<{ email: string }>('/api/v1/auth/signup', {
+          method: 'POST',
+          body: { email, password },
+        }),
+      '이메일 회원가입',
+    ),
+
+  googleLoginUrl: () => `${apiConfig.baseUrl}/oauth2/authorization/google`,
+
+  me: () => apiRequest<AccountResponse>('/api/v1/auth/me'),
+
+  completeOnboarding: (input: {
+    accountType: 'GUARDIAN'
+    termsOfServiceAgreed: boolean
+    privacyPolicyAgreed: boolean
+    marketingAgreed: boolean
+    phoneNumber: string | null
+  }) =>
+    apiRequest<AccountResponse>('/api/v1/auth/onboarding', {
       method: 'POST',
       body: input,
-      skipAuth: true,
     }),
-  signup: ({ email, password }: SignupForm) =>
-    apiRequest<{ email: string }>('/api/v1/auth/signup', {
-      method: 'POST',
-      body: { email, password },
-      skipAuth: true,
-    }),
-  getOAuthUrl: (provider: 'kakao' | 'google') =>
-    // 프론트에 OAuth 비밀키를 두지 않고 백엔드가 만든 인가 URL만 전달받는다.
-    apiRequest<{ redirectUrl: string }>(`/api/v1/auth/oauth/${provider}`, {
-      skipAuth: true,
-    }),
+
+  logout: async () => {
+    await apiRequest<void>('/api/v1/auth/logout', { method: 'POST' })
+    resetCsrfToken()
+  },
 }
