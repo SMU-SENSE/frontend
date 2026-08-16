@@ -168,6 +168,56 @@ html, body {
   flex-direction: column;
   border-radius: 24px;
 }
-.make-font{
-  
+.error{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: #ffffff;
+  text-align: center;
+  box-sizing: border-box;
+}
+.error-icon-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  color: #FFFFFF;
+}
+.error-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #1F2937;
+  margin-bottom: 8px;
+}
+.error-desc {
+  font-size: 15px;
+  color: #6B7280;
+  margin-bottom: 32px;
+}
+.error-button {
+  background-color: #149E69;
+  color: #ffffff;
+  padding: 14px 48px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 6px rgba(20, 158, 105, 0.2);
+}
+.error2-button {
+  background-color: #FFFFFF;
+  border-color: #6B7280;
+  color: #ffffff;
+  padding: 14px 48px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 6px rgba(20, 158, 105, 0.2);
 }

@@ -1,6 +1,6 @@
 'use client'
 
-export default function SettingPage() {
+export default function Setting() {
   return (
     <div>
       <h1>⚙️ 설정 페이지</h1>
