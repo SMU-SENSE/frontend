@@ -11,7 +11,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -20,9 +20,18 @@ import { apiConfig } from '../../api/client'
 import { useAuthStore } from '../../stores/authStore'
 import { Button } from '../ui/Button'
 
-const backendNavigation = [{ to: '/', label: '홈', icon: Home, end: true }]
+type NavigationItem = {
+  to: string
+  label: string
+  icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }>
+  end?: boolean
+}
 
-const prototypeNavigation = [
+const backendNavigation: NavigationItem[] = [
+  { to: '/', label: '홈', icon: Home, end: true },
+]
+
+const prototypeNavigation: NavigationItem[] = [
   ...backendNavigation,
   { to: '/sentences', label: '문장 관리', icon: MessageSquareText },
   { to: '/recommendations/routine', label: '루틴 추천', icon: Sparkles },
