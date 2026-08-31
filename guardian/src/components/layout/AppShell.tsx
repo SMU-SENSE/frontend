@@ -10,8 +10,9 @@ import {
   Sparkles,
   UserRound,
   X,
+  type LucideIcon,
 } from 'lucide-react'
-import type { ComponentType, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -23,7 +24,7 @@ import { Button } from '../ui/Button'
 type NavigationItem = {
   to: string
   label: string
-  icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }>
+  icon: LucideIcon
   end?: boolean
 }
 
