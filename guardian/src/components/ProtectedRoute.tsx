@@ -9,20 +9,29 @@ import { PageLoader } from './ui/AsyncState'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const setSession = useAuthStore((state) => state.setSession)
   const logout = useAuthStore((state) => state.logout)
   const [checking, setChecking] = useState(true)
+  const [authorized, setAuthorized] = useState(false)
 
   useEffect(() => {
     let cancelled = false
 
+    const saveReturnPathAndGoToWelcome = () => {
+      const current = `${window.location.pathname}${window.location.search}`
+      sessionStorage.setItem('malmoa-login-return-to', current)
+      router.replace('/welcome')
+    }
+
     const verify = async () => {
+      setChecking(true)
+      setAuthorized(false)
+
       if (apiConfig.useMockApi) {
-        if (!isAuthenticated) {
-          const current = `${window.location.pathname}${window.location.search}`
-          sessionStorage.setItem('malmoa-login-return-to', current)
-          router.replace('/welcome')
+        if (useAuthStore.getState().isAuthenticated) {
+          if (!cancelled) setAuthorized(true)
+        } else {
+          saveReturnPathAndGoToWelcome()
         }
         if (!cancelled) setChecking(false)
         return
@@ -31,13 +40,21 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
       try {
         const account = await authApi.me()
         if (cancelled) return
+
         setSession(accountToSession(account))
+
+        // Google 로그인 세션은 유효하지만 보호자 최초 약관/역할 설정이 끝나지 않은 경우
+        // 보호자 화면을 먼저 노출하지 않고 온보딩으로 돌려보낸다.
+        if (!account.onboardingCompleted) {
+          router.replace('/signup/terms')
+          return
+        }
+
+        setAuthorized(true)
       } catch {
         if (cancelled) return
         logout()
-        const current = `${window.location.pathname}${window.location.search}`
-        sessionStorage.setItem('malmoa-login-return-to', current)
-        router.replace('/welcome')
+        saveReturnPathAndGoToWelcome()
       } finally {
         if (!cancelled) setChecking(false)
       }
@@ -47,10 +64,11 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [isAuthenticated, logout, router, setSession])
+  }, [logout, router, setSession])
 
-  if (checking) return <PageLoader label="로그인 상태를 확인하는 중입니다." />
-  if (!apiConfig.useMockApi && !useAuthStore.getState().isAuthenticated) return <PageLoader />
-  if (apiConfig.useMockApi && !isAuthenticated) return <PageLoader />
+  if (checking || !authorized) {
+    return <PageLoader label="로그인 상태를 확인하는 중입니다." />
+  }
+
   return children
 }
