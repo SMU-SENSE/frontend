@@ -20,8 +20,10 @@ import { apiConfig } from '../../api/client'
 import { useAuthStore } from '../../stores/authStore'
 import { Button } from '../ui/Button'
 
-const navigation = [
-  { to: '/', label: '홈', icon: Home, end: true },
+const backendNavigation = [{ to: '/', label: '홈', icon: Home, end: true }]
+
+const prototypeNavigation = [
+  ...backendNavigation,
   { to: '/sentences', label: '문장 관리', icon: MessageSquareText },
   { to: '/recommendations/routine', label: '루틴 추천', icon: Sparkles },
   { to: '/recommendations/ai', label: 'AI 추천', icon: Bot },
@@ -36,6 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const logout = useAuthStore((state) => state.logout)
   const router = useRouter()
   const pathname = usePathname()
+  const navigation = apiConfig.useMockApi ? prototypeNavigation : backendNavigation
 
   const handleLogout = async () => {
     if (loggingOut) return
