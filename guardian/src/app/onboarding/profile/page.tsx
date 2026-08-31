@@ -19,6 +19,14 @@ const relationshipTypeByLabel: Record<(typeof relations)[number], RelationshipTy
   기타: 'OTHER',
 }
 
+function getTodayInputValue() {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = String(today.getMonth() + 1).padStart(2, '0')
+  const day = String(today.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export default function UserProfileOnboardingPage() {
   const router = useRouter()
   const { showToast } = useToast()
@@ -29,6 +37,7 @@ export default function UserProfileOnboardingPage() {
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const maxBirthDate = getTodayInputValue()
 
   useEffect(() => {
     const draft = loadOnboardingDraft()
@@ -42,27 +51,34 @@ export default function UserProfileOnboardingPage() {
     setNotes(draft.notes ?? '')
   }, [])
 
+  const trimmedName = name.trim()
+  const trimmedPhone = phone.trim()
+  const trimmedRelation = customRelation.trim()
   const valid = Boolean(
-    name.trim() &&
+    trimmedName &&
+      trimmedName.length <= 50 &&
       birthDate &&
-      phone.trim() &&
-      (relation !== '기타' || customRelation.trim()),
+      birthDate <= maxBirthDate &&
+      trimmedPhone &&
+      trimmedPhone.length <= 30 &&
+      notes.length <= 1000 &&
+      (relation !== '기타' || (trimmedRelation && trimmedRelation.length <= 100)),
   )
 
   const submit = async () => {
     if (!valid || submitting) return
 
     const relationshipType = relationshipTypeByLabel[relation]
-    const relationshipDetail = relation === '기타' ? customRelation.trim() : null
+    const relationshipDetail = relation === '기타' ? trimmedRelation : null
     const localDraft = loadOnboardingDraft()
 
     saveOnboardingDraft({
-      userName: name.trim(),
+      userName: trimmedName,
       birthDate,
       relation,
       relationshipType,
       relationshipDetail: relationshipDetail ?? undefined,
-      emergencyPhone: phone.trim(),
+      emergencyPhone: trimmedPhone,
       notes,
     })
 
@@ -74,11 +90,11 @@ export default function UserProfileOnboardingPage() {
     setSubmitting(true)
     try {
       const user = await aacUserApi.create({
-        name: name.trim(),
+        name: trimmedName,
         birthDate,
         relationshipType,
         relationshipDetail,
-        emergencyContact: phone.trim(),
+        emergencyContact: trimmedPhone,
         notes: notes.trim() || null,
         profileImageUrl: null,
       })
@@ -100,11 +116,21 @@ export default function UserProfileOnboardingPage() {
         </div>
         <label className="plain-field">
           <span>이름 <em>필수</em></span>
-          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="이름" />
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="이름"
+            maxLength={50}
+          />
         </label>
         <label className="plain-field">
           <span>생년월일 <em>필수</em></span>
-          <input type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} />
+          <input
+            type="date"
+            value={birthDate}
+            max={maxBirthDate}
+            onChange={(event) => setBirthDate(event.target.value)}
+          />
         </label>
         <div className="plain-field">
           <span>나와의 관계 <em>필수</em></span>
@@ -116,16 +142,32 @@ export default function UserProfileOnboardingPage() {
             ))}
           </div>
           {relation === '기타' ? (
-            <input value={customRelation} onChange={(event) => setCustomRelation(event.target.value)} placeholder="관계를 입력해 주세요" />
+            <input
+              value={customRelation}
+              onChange={(event) => setCustomRelation(event.target.value)}
+              placeholder="관계를 입력해 주세요"
+              maxLength={100}
+            />
           ) : null}
         </div>
         <label className="plain-field">
           <span>긴급 연락처 <em>필수</em></span>
-          <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="010-0000-0000" />
+          <input
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            placeholder="010-0000-0000"
+            maxLength={30}
+          />
         </label>
         <label className="plain-field">
           <span>특이사항 (선택)</span>
-          <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="알아두면 좋은 내용을 적어 주세요" rows={3} />
+          <textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            placeholder="알아두면 좋은 내용을 적어 주세요"
+            rows={3}
+            maxLength={1000}
+          />
         </label>
       </div>
       <Button fullWidth size="lg" disabled={!valid} loading={submitting} onClick={submit}>
