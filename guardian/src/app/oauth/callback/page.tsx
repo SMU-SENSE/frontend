@@ -6,8 +6,23 @@ import { aacUserApi } from '../../../api/aacUsers'
 import { accountToSession, authApi } from '../../../api/auth'
 import { PageLoader } from '../../../components/ui/AsyncState'
 import { useToast } from '../../../components/ui/ToastProvider'
-import { saveOnboardingDraft } from '../../../lib/onboardingDraft'
+import {
+  clearOnboardingDraft,
+  saveOnboardingDraft,
+  type GridSize,
+  type VoiceType,
+} from '../../../lib/onboardingDraft'
 import { useAuthStore } from '../../../stores/authStore'
+import type { BackendGridSize } from '../../../types/models'
+
+const gridFromBackend: Record<BackendGridSize, GridSize> = {
+  GRID_2X2: '2x2',
+  GRID_3X3: '3x3',
+  GRID_4X4: '4x4',
+}
+
+const voiceFromBackend = (voiceType: 'CHILD_MALE' | 'CHILD_FEMALE' | null): VoiceType =>
+  voiceType === 'CHILD_FEMALE' ? 'female-child' : 'male-child'
 
 export default function OAuthCallbackPage() {
   const router = useRouter()
@@ -30,6 +45,10 @@ export default function OAuthCallbackPage() {
         if (cancelled) return
         setSession(accountToSession(account))
 
+        // 다른 사용자 온보딩 값이 남아 있으면 기존 userId가 재사용될 수 있으므로
+        // 서버 상태를 기준으로 매 로그인마다 초안을 다시 구성한다.
+        clearOnboardingDraft()
+
         if (!account.onboardingCompleted) {
           router.replace('/signup/terms')
           return
@@ -51,6 +70,9 @@ export default function OAuthCallbackPage() {
             birthDate: pending.birthDate,
             emergencyPhone: pending.emergencyContact,
             notes: pending.notes ?? '',
+            gridSize: gridFromBackend[pending.gridSize],
+            voiceType: voiceFromBackend(pending.voiceType),
+            speechRate: pending.speechRate ?? 1,
           })
 
           if (pending.setupStep === 'PROFILE_COMPLETED') router.replace('/onboarding/grid')
