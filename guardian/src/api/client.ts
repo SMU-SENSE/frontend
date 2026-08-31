@@ -97,6 +97,11 @@ async function requestReal<T>(path: string, options: RequestOptions, retryCsrf =
   }
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // 서버 세션이 만료되면 이전 세션에서 받아 둔 CSRF 토큰도 함께 폐기한다.
+      csrfToken = null
+    }
+
     if (response.status === 403 && isMutation(method) && !skipCsrf && retryCsrf) {
       csrfToken = null
       await ensureCsrfToken(true)
