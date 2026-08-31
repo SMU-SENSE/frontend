@@ -26,7 +26,7 @@ export default function NotFound() {
         다시시도
       </button>
 
-      <Link href="/" className="error2-button">
+      <Link href="/main" className="error2-button">
         홈으로
       </Link>
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import SoundButton from './SoundButton'
-import { useWordStore } from '../store/useword';
+import { useWordStore } from '../wordstore/useword';
 import { MockWord } from '../mock/mockdata';
 
 interface GridBoxProps {
@@ -14,7 +14,6 @@ export default function GridBox({ categoryName }: GridBoxProps) {
 
   return (
     <div>
-
       <div className="grid"> 
         {symbolList.map((item) => (
           <SoundButton

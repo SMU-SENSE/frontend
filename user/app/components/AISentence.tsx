@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useWordStore } from '../store/useword';
+import { useWordStore } from '../wordstore/useword';
 
 export default function AISentence() {
   const { selectWords, removeLastWord, clearWords } = useWordStore();

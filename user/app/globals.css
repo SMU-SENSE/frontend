@@ -221,3 +221,163 @@ html, body {
   text-decoration: none;
   box-shadow: 0 4px 6px rgba(20, 158, 105, 0.2);
 }
+.login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #ffffff;
+  padding: 20px;
+  text-align: center;
+}
+.login-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 24px;
+}
+.login-welcome {
+  font-size: 26px;
+  font-weight: bold;
+  color: #06054F;
+  margin-bottom: 8px;
+}
+.login-connect {
+  color: #7a7a8c; 
+  font-size: 15px;
+  margin-bottom: 40px;
+}
+.login-button {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+}
+.login-code {
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #149E69;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(20, 158, 105, 0.2);
+}
+.login-QR {
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: #1a1a2e;
+  font-weight: bold;
+  font-size: 16px;
+  border: 1px solid #dcdce6;
+  cursor: pointer;
+}
+.login-bottom {
+  color: #9c9ba8;
+  font-size: 13px;
+  margin-top: 60px;
+}
+.codeQR {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #ffffff;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+}
+.back {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  background: none;
+  border: none;
+  color: #149E69;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex : items-center gap-1
+}
+.back-button {
+  background-color: #E6F7F1;
+  padding: 4px;
+  border-radius: 50%;
+}
+.code-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #06054F;
+  margin-bottom: 8px;
+}
+.code-sub {
+  color: #7a7a8c;
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+.code-button {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+.code-input {
+  width: 50px;
+  height: 60px;
+  border-radius: 12px;
+  border: 1px solid #e2e2ef;
+  background-color: #f4f4f8;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  color: #1a1a2e;
+  outline: none;
+}
+.code-main {
+  width: 100%;
+  max-width: 360px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #149E69;
+  color: white;
+  font-weight: bold;
+  font-size: 24px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(20, 158, 105, 0.2);
+  margin-bottom: 20px;
+}
+.code-QR {
+  background: none;
+  border: none;
+  color: #149E69;
+  font-size: 14px;
+  font-weight: bold;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.QR-bottom {
+  color: #9c9ba8;
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+.QR-scan {
+  width: 280px;
+  height: 280px;
+  background-color: #1b1e28;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
