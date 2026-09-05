@@ -14,6 +14,7 @@ export interface GuardianOnboardingDraft {
   relationshipDetail?: string
   emergencyPhone?: string
   notes?: string
+  profileImageDataUrl?: string
   gridSize?: GridSize
   voiceType?: VoiceType
   speechRate?: number
