@@ -1,0 +1,81 @@
+.step-dot--button {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.step-dot--button:focus-visible {
+  outline: 2px solid var(--mm-green-800);
+  outline-offset: 3px;
+}
+
+.password-hint--figma {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-left: 3px solid var(--mm-green-800);
+}
+
+.password-hint--figma > svg {
+  margin-top: 1px;
+  flex: 0 0 16px;
+}
+
+.password-hint--figma > span {
+  display: grid;
+  gap: 2px;
+}
+
+.password-hint--figma strong {
+  color: var(--mm-navy);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.password-hint--figma small {
+  color: var(--mm-gray-600);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.readonly-field {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  color: var(--mm-gray-600);
+  background: var(--mm-gray-100);
+  border: 1px solid transparent;
+  border-radius: var(--mm-radius-sm);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.code-field-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.code-field {
+  padding-right: 16px;
+}
+
+.verify-timer {
+  display: none;
+}
+
+.confirm-avatar--image {
+  background: var(--mm-gray-100);
+}
+
+@media (max-width: 640px) {
+  .password-hint--figma strong {
+    font-size: 13px;
+  }
+
+  .password-hint--figma small {
+    font-size: 11px;
+  }
+}
