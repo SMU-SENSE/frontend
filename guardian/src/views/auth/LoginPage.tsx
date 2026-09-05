@@ -37,13 +37,13 @@ export default function LoginPage() {
       sessionStorage.removeItem('malmoa-login-return-to')
       router.replace(from ?? '/')
     },
-    onError: (error) => {
-      setError('root', { message: error.message })
+    onError: () => {
+      setError('root', { message: '이메일 또는 비밀번호가 올바르지 않습니다.' })
     },
   })
 
   return (
-    <AuthLayout>
+    <AuthLayout showBack={false}>
       <div className="auth-heading auth-heading--center">
         <h1>이메일 로그인</h1>
       </div>
