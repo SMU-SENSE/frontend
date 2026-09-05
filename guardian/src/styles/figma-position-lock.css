@@ -20,6 +20,13 @@
   z-index: 1;
 }
 
+/* 01-A-2 / 02: the password guidance panel is exactly 64px high. */
+.password-reset-hint,
+.password-hint--figma {
+  min-height: 64px;
+  box-sizing: border-box;
+}
+
 @media (max-width: 640px) {
   .connection-content,
   .system-error-card {
