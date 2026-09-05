@@ -1,0 +1,119 @@
+/* Final screen-by-screen corrections measured from the exported Figma frames. */
+
+/* Auth frames use a 12px heading-to-form gap and 16px spacing between form blocks. */
+.auth-heading,
+.auth-heading--center {
+  margin-bottom: 12px !important;
+}
+
+.auth-form {
+  gap: 16px !important;
+}
+
+/* 01 email login uses Detail2 (16px) labels and field copy. */
+.auth-form--login .field__label {
+  font-size: 16px !important;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.auth-form--login input {
+  font-size: 16px !important;
+  font-weight: 500;
+}
+
+.auth-form--login .field__message--error {
+  font-size: 14px !important;
+  font-weight: 500;
+}
+
+/* Figma error example keeps the primary action active so validation can be retried. */
+.auth-form--login .button,
+.auth-form--signup .button {
+  height: 56px;
+  min-height: 56px;
+}
+
+/* 02 signup intentionally uses Detail1 (20px) labels/field copy in the source frame. */
+.auth-form--signup .field__label {
+  font-size: 20px !important;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.auth-form--signup input {
+  font-size: 20px !important;
+  font-weight: 500;
+}
+
+/* Figma shows the password rule panel and the red validation caption together. */
+.auth-form--signup .field__message--hint + .field__message--error,
+.auth-form .field__message--hint + .field__message--error {
+  margin-top: 0;
+}
+
+.auth-form--signup .password-hint--figma {
+  min-height: 64px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.auth-form--signup .password-hint--figma strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.auth-form--signup .password-hint--figma small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Root/server error banner geometry from the 01 error-state frame. */
+.auth-form > .form-alert {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: #e54c4c;
+  background: #ffeded;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 05 terms: exact 480px content geometry from the Figma frame. */
+.terms-list--figma {
+  width: 480px !important;
+  max-width: 100%;
+  margin-bottom: 24px !important;
+}
+
+.terms-list--figma + .button {
+  width: 480px !important;
+  max-width: 100%;
+}
+
+/* 11 TTS: lock the source frame's 480px control width and light track. */
+.voice-form,
+.voice-choice-row,
+.voice-preview {
+  width: 100%;
+}
+
+.speed-range-row input[type='range'] {
+  background-color: var(--figma-gray-200);
+}
+
+@media (max-width: 640px) {
+  .auth-heading,
+  .auth-heading--center {
+    margin-bottom: 12px !important;
+  }
+
+  .auth-form {
+    gap: 16px !important;
+  }
+}
