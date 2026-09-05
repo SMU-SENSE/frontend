@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, MessageCircleMore } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 
@@ -19,22 +19,19 @@ export function OnboardingLayout({
 
   return (
     <main className="onboarding-layout">
-      <header className="onboarding-header">
-        <button type="button" className="onboarding-back" onClick={() => router.back()}>
-          <ArrowLeft size={18} />
-          뒤로가기
-        </button>
-        <div className="onboarding-brand">
-          <MessageCircleMore size={20} />
-          <span>말모아</span>
-        </div>
-      </header>
+      <button type="button" className="onboarding-back" onClick={() => router.back()}>
+        <span className="onboarding-back__icon" aria-hidden="true">
+          <ArrowLeft size={20} strokeWidth={2.2} />
+        </span>
+        <span>뒤로가기</span>
+      </button>
 
       <section className="onboarding-card">
         <div className="step-dots" aria-label={`${step} / 4 단계`}>
-          {[1, 2, 3, 4].map((item) => (
-            <span key={item} className={item <= step ? 'step-dot step-dot--active' : 'step-dot'} />
-          ))}
+          {[1, 2, 3, 4].map((item) => {
+            const state = item < step ? 'complete' : item === step ? 'current' : 'upcoming'
+            return <span key={item} className={`step-dot step-dot--${state}`} />
+          })}
         </div>
         <div className="onboarding-heading">
           <h1>{title}</h1>
