@@ -21,10 +21,11 @@ export default function LoginPage() {
     register,
     handleSubmit,
     setError,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    mode: 'onChange',
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: { email: '', password: '' },
   })
 
@@ -47,7 +48,7 @@ export default function LoginPage() {
       <div className="auth-heading auth-heading--center">
         <h1>이메일 로그인</h1>
       </div>
-      <form className="auth-form" onSubmit={handleSubmit((values) => loginMutation.mutate(values))}>
+      <form className="auth-form auth-form--login" onSubmit={handleSubmit((values) => loginMutation.mutate(values))}>
         {errors.root?.message ? (
           <div className="form-alert" role="alert">
             {errors.root.message}
@@ -69,7 +70,7 @@ export default function LoginPage() {
           error={errors.password?.message}
           {...register('password')}
         />
-        <Button type="submit" fullWidth size="lg" disabled={!isValid} loading={loginMutation.isPending}>
+        <Button type="submit" fullWidth size="lg" loading={loginMutation.isPending}>
           로그인
         </Button>
       </form>
