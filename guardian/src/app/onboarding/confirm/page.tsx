@@ -1,5 +1,6 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { aacUserApi } from '../../../api/aacUsers'
@@ -47,7 +48,7 @@ export default function ConfirmOnboardingPage() {
     if (apiConfig.useMockApi) return
     if (!saved.userId) {
       setLoading(false)
-      router.replace('/users/setup/profile')
+      router.replace('/users/new')
       return
     }
 
@@ -109,18 +110,21 @@ export default function ConfirmOnboardingPage() {
       : '남성 아동'
   const rate = summary?.speechRate ?? draft.speechRate ?? 1
   const initial = name.trim().slice(0, 1) || '사'
+  const profileImage = summary?.profileImageUrl || draft.profileImageDataUrl || ''
 
   const rows = [
-    { label: '이름', value: name, href: '/users/setup/profile' },
+    { label: '이름', value: name, href: '/users/new' },
     { label: '목소리', value: `${voice} · ${rate.toFixed(1)}×`, href: '/users/setup/voice' },
     { label: '화면 격자', value: grid, href: '/users/setup/grid' },
-    { label: '나와의 관계', value: relation, href: '/users/setup/profile' },
+    { label: '나와의 관계', value: relation, href: '/users/new' },
   ]
 
   return (
     <OnboardingLayout step={4} title="가입정보 확인" subtitle="설정한 내용을 확인한 뒤 시작해요">
       <div className="confirm-profile">
-        <div className="confirm-avatar" aria-hidden="true">{initial}</div>
+        <div className={`confirm-avatar ${profileImage ? 'confirm-avatar--image' : ''}`} aria-hidden="true">
+          {profileImage ? <img src={profileImage} alt="" /> : initial}
+        </div>
         <strong>{name}</strong>
       </div>
 
