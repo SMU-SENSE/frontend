@@ -44,9 +44,9 @@ export default function VoiceOnboardingPage() {
     window.speechSynthesis.speak(utterance)
   }
 
-  const submit = async () => {
+  const saveAndContinue = async (nextVoiceType: VoiceType, nextRate: number) => {
     if (submitting) return
-    saveOnboardingDraft({ voiceType, speechRate: rate })
+    saveOnboardingDraft({ voiceType: nextVoiceType, speechRate: nextRate })
 
     if (apiConfig.useMockApi) {
       router.push('/onboarding/confirm')
@@ -62,7 +62,7 @@ export default function VoiceOnboardingPage() {
 
     setSubmitting(true)
     try {
-      await aacUserApi.updateVoice(userId, toBackendVoice[voiceType], rate)
+      await aacUserApi.updateVoice(userId, toBackendVoice[nextVoiceType], nextRate)
       router.push('/onboarding/confirm')
     } catch (error) {
       showToast(error instanceof Error ? error.message : '음성 설정을 저장하지 못했어요.', 'error')
@@ -71,8 +71,16 @@ export default function VoiceOnboardingPage() {
     }
   }
 
+  const submit = () => saveAndContinue(voiceType, rate)
+
   const changeRate = (delta: number) => {
     setRate((current) => Math.min(1.3, Math.max(0.7, Number((current + delta).toFixed(1)))))
+  }
+
+  const skip = () => {
+    setVoiceType('male-child')
+    setRate(1)
+    void saveAndContinue('male-child', 1)
   }
 
   return (
@@ -134,10 +142,7 @@ export default function VoiceOnboardingPage() {
       <Button fullWidth size="lg" loading={submitting} onClick={submit}>
         다음
       </Button>
-      <button type="button" className="onboarding-later" onClick={() => {
-        setVoiceType('male-child')
-        setRate(1)
-      }}>
+      <button type="button" className="onboarding-later" disabled={submitting} onClick={skip}>
         나중에 설정하기
       </button>
     </OnboardingLayout>
