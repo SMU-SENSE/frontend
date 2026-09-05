@@ -15,10 +15,6 @@ import { useToast } from '../../components/ui/ToastProvider'
 import { signupSchema, type SignupForm } from '../../lib/validators'
 import { saveOnboardingDraft } from '../../lib/onboardingDraft'
 
-function looksLikeValidPassword(value: string) {
-  return value.length >= 8 && /[A-Za-z]/.test(value) && /[0-9]/.test(value) && /[^A-Za-z0-9]/.test(value) && !/(.)\1\1/.test(value)
-}
-
 export default function SignupPage() {
   const router = useRouter()
   const { showToast } = useToast()
@@ -32,18 +28,12 @@ export default function SignupPage() {
     formState: { errors },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: { email: '', password: '', passwordConfirm: '' },
   })
 
   const email = watch('email')
-  const password = watch('password')
-  const passwordConfirm = watch('passwordConfirm')
-  const formReady = Boolean(
-    name.trim() &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
-      looksLikeValidPassword(password) &&
-      passwordConfirm === password,
-  )
 
   const signupMutation = useMutation({
     mutationFn: authApi.signup,
@@ -52,11 +42,17 @@ export default function SignupPage() {
       showToast('인증 메일을 보냈어요.')
       router.push('/signup/verify')
     },
-    onError: (error) => setError('root', { message: error.message }),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : ''
+      if (message.includes('이미 가입') || message.includes('already') || message.includes('duplicate')) {
+        setError('email', { message: '이미 가입된 이메일입니다.' })
+        return
+      }
+      setError('root', { message: message || '회원가입 요청을 처리하지 못했어요.' })
+    },
   })
 
   const submit = (values: SignupForm) => {
-    setNameTouched(true)
     if (!name.trim()) return
     signupMutation.mutate(values)
   }
@@ -66,7 +62,13 @@ export default function SignupPage() {
       <div className="auth-heading auth-heading--center">
         <h1>회원가입</h1>
       </div>
-      <form className="auth-form" onSubmit={handleSubmit(submit)}>
+      <form
+        className="auth-form auth-form--signup"
+        onSubmit={(event) => {
+          setNameTouched(true)
+          void handleSubmit(submit)(event)
+        }}
+      >
         {errors.root?.message ? (
           <div className="form-alert" role="alert">
             {errors.root.message}
@@ -114,7 +116,7 @@ export default function SignupPage() {
           error={errors.passwordConfirm?.message}
           {...register('passwordConfirm')}
         />
-        <Button type="submit" fullWidth size="lg" disabled={!formReady} loading={signupMutation.isPending}>
+        <Button type="submit" fullWidth size="lg" loading={signupMutation.isPending}>
           인증 메일 보내기
         </Button>
       </form>
