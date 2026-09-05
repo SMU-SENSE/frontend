@@ -60,7 +60,7 @@ export default function GridOnboardingPage() {
   }
 
   return (
-    <OnboardingLayout step={2} title="화면 격자" subtitle="사용자에게 편한 카드 크기를 선택해 주세요">
+    <OnboardingLayout step={2} title="화면 격자" subtitle="버튼이 클수록 누르기 쉬워요">
       <div className="grid-choice-list">
         {options.map((option) => (
           <button
