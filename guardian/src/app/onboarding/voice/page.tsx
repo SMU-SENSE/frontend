@@ -1,6 +1,6 @@
 'use client'
 
-import { Play, Volume2 } from 'lucide-react'
+import { Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { aacUserApi } from '../../../api/aacUsers'
@@ -14,6 +14,11 @@ import type { BackendVoiceType } from '../../../types/models'
 const toBackendVoice: Record<VoiceType, BackendVoiceType> = {
   'male-child': 'CHILD_MALE',
   'female-child': 'CHILD_FEMALE',
+}
+
+const voiceLabel: Record<VoiceType, string> = {
+  'male-child': '남성 아동',
+  'female-child': '여성 아동',
 }
 
 export default function VoiceOnboardingPage() {
@@ -66,30 +71,75 @@ export default function VoiceOnboardingPage() {
     }
   }
 
+  const changeRate = (delta: number) => {
+    setRate((current) => Math.min(1.3, Math.max(0.7, Number((current + delta).toFixed(1)))))
+  }
+
   return (
-    <OnboardingLayout step={3} title="음성 설정" subtitle="사용자에게 가장 익숙한 음성을 고르고 속도를 조절해 주세요">
+    <OnboardingLayout step={3} title="음성 설정" subtitle="사용자에게 맞게 목소리를 고르세요">
       <div className="voice-form">
         <div className="voice-choice-row">
-          <button type="button" className={voiceType === 'male-child' ? 'voice-choice voice-choice--active' : 'voice-choice'} onClick={() => setVoiceType('male-child')}>
-            <Volume2 size={18} /> 남성 아동
+          <button
+            type="button"
+            className={voiceType === 'male-child' ? 'voice-choice voice-choice--active' : 'voice-choice'}
+            onClick={() => setVoiceType('male-child')}
+          >
+            남성 아동
           </button>
-          <button type="button" className={voiceType === 'female-child' ? 'voice-choice voice-choice--active' : 'voice-choice'} onClick={() => setVoiceType('female-child')}>
-            <Volume2 size={18} /> 여성 아동
+          <button
+            type="button"
+            className={voiceType === 'female-child' ? 'voice-choice voice-choice--active' : 'voice-choice'}
+            onClick={() => setVoiceType('female-child')}
+          >
+            여성 아동
           </button>
         </div>
+
         <div className="speed-control">
-          <div className="speed-label"><span>음성 속도</span><strong>{rate.toFixed(1)}x</strong></div>
-          <input type="range" min="0.7" max="1.3" step="0.1" value={rate} onChange={(event) => setRate(Number(event.target.value))} />
-          <div className="speed-scale"><span>느리게</span><span>빠르게</span></div>
+          <div className="speed-label">
+            <span>음성 속도</span>
+            <strong>{rate.toFixed(1)}×</strong>
+          </div>
+          <div className="speed-range-row">
+            <button type="button" className="speed-step" onClick={() => changeRate(-0.1)} aria-label="음성 속도 낮추기">
+              −
+            </button>
+            <input
+              type="range"
+              min="0.7"
+              max="1.3"
+              step="0.1"
+              value={rate}
+              onChange={(event) => setRate(Number(event.target.value))}
+            />
+            <button type="button" className="speed-step" onClick={() => changeRate(0.1)} aria-label="음성 속도 높이기">
+              +
+            </button>
+          </div>
+          <div className="speed-scale">
+            <span>0.7×</span>
+            <span>1.3×</span>
+          </div>
         </div>
+
         <button type="button" className="voice-preview" onClick={preview}>
-          <Play size={18} />
-          <div><strong>미리듣기</strong><span>안녕하세요. 말모아입니다.</span></div>
+          <Play size={18} fill="currentColor" />
+          <div>
+            <strong>미리듣기</strong>
+            <span>{voiceLabel[voiceType]} · {rate.toFixed(1)}×</span>
+          </div>
         </button>
       </div>
+
       <Button fullWidth size="lg" loading={submitting} onClick={submit}>
         다음
       </Button>
+      <button type="button" className="onboarding-later" onClick={() => {
+        setVoiceType('male-child')
+        setRate(1)
+      }}>
+        나중에 설정하기
+      </button>
     </OnboardingLayout>
   )
 }
