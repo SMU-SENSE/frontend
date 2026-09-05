@@ -1,0 +1,261 @@
+.connection-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  color: var(--mm-navy);
+  background: #fff;
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.connection-back {
+  position: fixed;
+  z-index: 20;
+  top: 24px;
+  left: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 8px 4px 4px;
+  color: var(--mm-green-800);
+  background: transparent;
+  border: 0;
+  border-radius: var(--mm-radius-sm);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.connection-back:hover {
+  color: var(--mm-green-hover);
+  background: var(--mm-green-light);
+}
+
+.connection-back__icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  border-radius: 999px;
+  background: var(--mm-green-light);
+}
+
+.connection-content {
+  width: min(100%, 480px);
+  display: grid;
+  justify-items: center;
+}
+
+.connection-heading {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.connection-heading h1 {
+  margin: 0;
+  color: var(--mm-navy);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.connection-heading p {
+  margin: 8px 0 0;
+  color: var(--mm-gray-600);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.connection-card {
+  width: 100%;
+  padding: 24px;
+  display: grid;
+  justify-items: center;
+  background: var(--mm-gray-100);
+  border-radius: var(--mm-radius-lg);
+}
+
+.connection-card--qr {
+  padding-top: 20px;
+}
+
+.connection-card__instruction {
+  margin: 0 0 20px;
+  color: var(--mm-gray-600);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.qr-box {
+  position: relative;
+  width: 232px;
+  height: 232px;
+  overflow: hidden;
+  border: 2px solid var(--mm-green-800);
+  border-radius: var(--mm-radius-md);
+  background: #fff;
+}
+
+.qr-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--mm-navy);
+  background:
+    linear-gradient(90deg, transparent 47%, rgb(6 5 79 / 3%) 47% 53%, transparent 53%),
+    linear-gradient(transparent 47%, rgb(6 5 79 / 3%) 47% 53%, transparent 53%),
+    #fff;
+  background-size: 20px 20px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.qr-box--expired .qr-placeholder {
+  filter: blur(4px);
+  opacity: .45;
+}
+
+.connection-expired {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  color: #fff;
+  background: rgb(60 63 72 / 76%);
+}
+
+.connection-expired strong {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.connection-expired button {
+  min-height: 44px;
+  padding: 0 16px;
+  color: #fff;
+  background: var(--mm-green-800);
+  border: 1px solid var(--mm-green-800);
+  border-radius: var(--mm-radius-sm);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.connection-expired button:hover {
+  background: var(--mm-green-hover);
+  border-color: var(--mm-green-hover);
+}
+
+.connection-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--mm-gray-500);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.connection-timer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  color: var(--mm-green-800);
+  background: transparent;
+  border: 0;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.connection-switch {
+  margin-top: 24px;
+  color: var(--mm-green-800);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.connection-card--code {
+  padding: 28px 24px 20px;
+}
+
+.invite-code {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.invite-code > span {
+  min-width: 0;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  color: var(--mm-navy);
+  background: #fff;
+  border-radius: var(--mm-radius-sm);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.invite-code--expired {
+  min-height: 144px;
+  align-items: center;
+}
+
+.invite-code--expired > span {
+  background: transparent;
+}
+
+.connection-expired--code {
+  border-radius: var(--mm-radius-md);
+}
+
+@media (max-width: 640px) {
+  .connection-page {
+    align-items: flex-start;
+    padding: 112px 24px 48px;
+  }
+
+  .connection-back {
+    top: 16px;
+    left: 16px;
+  }
+
+  .connection-heading h1 {
+    font-size: 30px;
+  }
+
+  .connection-card {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .qr-box {
+    width: min(232px, 72vw);
+    height: min(232px, 72vw);
+  }
+
+  .invite-code {
+    gap: 6px;
+  }
+
+  .invite-code > span {
+    height: 48px;
+    font-size: 20px;
+  }
+}
