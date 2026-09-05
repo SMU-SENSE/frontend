@@ -1,0 +1,148 @@
+.speed-range-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 12px;
+  align-items: center;
+}
+
+.speed-range-row input[type='range'] {
+  width: 100%;
+  margin: 0;
+}
+
+.speed-step {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--mm-green-800);
+  background: #fff;
+  border: 1px solid var(--mm-green-800);
+  border-radius: var(--mm-radius-sm);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.speed-step:hover {
+  background: var(--mm-green-light);
+}
+
+.onboarding-later:disabled {
+  color: var(--mm-gray-400);
+  cursor: not-allowed;
+}
+
+.system-error-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: var(--mm-navy);
+  background: #fff;
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.system-error-card {
+  width: min(100%, 480px);
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.system-error-icon {
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 24px;
+  border-radius: 999px;
+  color: var(--mm-red);
+  background: var(--mm-red-light);
+}
+
+.system-error-icon--network {
+  color: var(--mm-green-800);
+  background: var(--mm-green-light);
+}
+
+.system-error-icon--404 {
+  color: var(--mm-navy);
+  background: var(--mm-gray-100);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.system-error-card h1 {
+  margin: 0;
+  color: var(--mm-navy);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.system-error-card p {
+  margin: 8px 0 32px;
+  color: var(--mm-gray-600);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.system-error-actions {
+  width: min(100%, 240px);
+  display: grid;
+  gap: 12px;
+}
+
+.system-error-action {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border-radius: var(--mm-radius-sm);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.system-error-action--primary {
+  color: #fff;
+  background: var(--mm-green-800);
+  border: 1px solid var(--mm-green-800);
+}
+
+.system-error-action--primary:hover {
+  background: var(--mm-green-hover);
+  border-color: var(--mm-green-hover);
+}
+
+.system-error-action--secondary {
+  color: var(--mm-green-800);
+  background: #fff;
+  border: 1px solid var(--mm-green-800);
+}
+
+.system-error-action--secondary:hover {
+  background: var(--mm-green-light);
+}
+
+@media (max-width: 640px) {
+  .system-error-page {
+    padding: 32px 24px;
+  }
+
+  .system-error-icon {
+    width: 72px;
+    height: 72px;
+  }
+
+  .system-error-card h1 {
+    font-size: 26px;
+  }
+}
