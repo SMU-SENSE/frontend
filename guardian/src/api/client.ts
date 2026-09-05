@@ -41,6 +41,18 @@ let csrfToken: CsrfTokenResponse | null = null
 
 const isMutation = (method: string) => !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())
 
+function routeToSystemError(path: '/error' | '/error/network') {
+  if (typeof window === 'undefined') return
+  if (window.location.pathname.startsWith('/error')) return
+
+  try {
+    sessionStorage.setItem('malmoa-error-retry-url', window.location.href)
+  } catch {
+    // 저장소를 사용할 수 없는 환경에서도 오류 화면 이동은 유지한다.
+  }
+  window.location.assign(path)
+}
+
 async function parseError(response: Response) {
   let errorBody: ApiErrorBody = {}
   try {
@@ -59,13 +71,22 @@ async function parseError(response: Response) {
 async function ensureCsrfToken(force = false) {
   if (csrfToken && !force) return csrfToken
 
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/csrf`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: { Accept: 'application/json' },
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}/api/v1/auth/csrf`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    })
+  } catch {
+    routeToSystemError('/error/network')
+    throw new ApiError('네트워크에 연결되지 않았어요.', 0, 'NETWORK_ERROR')
+  }
 
-  if (!response.ok) throw await parseError(response)
+  if (!response.ok) {
+    if (response.status >= 500) routeToSystemError('/error')
+    throw await parseError(response)
+  }
   const payload = (await response.json()) as ApiEnvelope<CsrfTokenResponse>
   csrfToken = payload.data
   return csrfToken
@@ -93,12 +114,12 @@ async function requestReal<T>(path: string, options: RequestOptions, retryCsrf =
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
-    throw new ApiError('서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인해 주세요.', 0, 'NETWORK_ERROR')
+    routeToSystemError('/error/network')
+    throw new ApiError('네트워크에 연결되지 않았어요.', 0, 'NETWORK_ERROR')
   }
 
   if (!response.ok) {
     if (response.status === 401) {
-      // 서버 세션이 만료되면 이전 세션에서 받아 둔 CSRF 토큰도 함께 폐기한다.
       csrfToken = null
     }
 
@@ -107,6 +128,8 @@ async function requestReal<T>(path: string, options: RequestOptions, retryCsrf =
       await ensureCsrfToken(true)
       return requestReal<T>(path, options, false)
     }
+
+    if (response.status >= 500) routeToSystemError('/error')
     throw await parseError(response)
   }
 
