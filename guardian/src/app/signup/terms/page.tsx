@@ -22,7 +22,7 @@ export default function TermsPage() {
     if (!all || submitting) return
 
     if (apiConfig.useMockApi) {
-      router.push('/onboarding/profile')
+      router.push('/users/setup/profile')
       return
     }
 
@@ -35,11 +35,11 @@ export default function TermsPage() {
         marketingAgreed: false,
         phoneNumber: null,
       })
-      router.push('/onboarding/profile')
+      router.push('/users/setup/profile')
     } catch (error) {
       const status = (error as { status?: number }).status
       if (status === 409) {
-        router.push('/onboarding/profile')
+        router.push('/users/setup/profile')
         return
       }
       showToast(error instanceof Error ? error.message : '약관 동의를 저장하지 못했어요.', 'error')
