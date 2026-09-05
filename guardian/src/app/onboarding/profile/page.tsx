@@ -83,7 +83,7 @@ export default function UserProfileOnboardingPage() {
     })
 
     if (apiConfig.useMockApi || localDraft.userId) {
-      router.push('/onboarding/grid')
+      router.push('/users/setup/grid')
       return
     }
 
@@ -99,7 +99,7 @@ export default function UserProfileOnboardingPage() {
         profileImageUrl: null,
       })
       saveOnboardingDraft({ userId: user.id })
-      router.push('/onboarding/grid')
+      router.push('/users/setup/grid')
     } catch (error) {
       showToast(error instanceof Error ? error.message : '사용자 프로필을 저장하지 못했어요.', 'error')
     } finally {
