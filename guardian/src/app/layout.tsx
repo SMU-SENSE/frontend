@@ -13,6 +13,7 @@ import '../styles/figma-pixel-qa.css'
 import '../styles/figma-voice-final.css'
 import '../styles/figma-auth-final.css'
 import '../styles/figma-connect-final.css'
+import '../styles/figma-source-lock.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
