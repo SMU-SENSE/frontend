@@ -37,21 +37,21 @@ export default function GridOnboardingPage() {
     saveOnboardingDraft({ gridSize: grid })
 
     if (apiConfig.useMockApi) {
-      router.push('/onboarding/voice')
+      router.push('/users/setup/voice')
       return
     }
 
     const { userId } = loadOnboardingDraft()
     if (!userId) {
       showToast('사용자 프로필 정보가 없어요. 프로필부터 다시 입력해 주세요.', 'error')
-      router.replace('/onboarding/profile')
+      router.replace('/users/setup/profile')
       return
     }
 
     setSubmitting(true)
     try {
       await aacUserApi.updateGrid(userId, toBackendGrid[grid])
-      router.push('/onboarding/voice')
+      router.push('/users/setup/voice')
     } catch (error) {
       showToast(error instanceof Error ? error.message : '격자 설정을 저장하지 못했어요.', 'error')
     } finally {
