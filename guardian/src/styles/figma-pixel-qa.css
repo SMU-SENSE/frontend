@@ -1,0 +1,60 @@
+/* Final visual QA against the exported Figma frames. Keep imported last. */
+
+/* 00 start uses the same Heading1 (36px) visible in the exported frame. */
+.auth-heading:has(+ .auth-actions--figma) h1,
+.auth-heading--center:has(+ .auth-actions--figma) h1 {
+  font-size: 36px;
+  line-height: 1.2;
+}
+
+/* Root/server form error is a banner; field errors stay caption-only below inputs. */
+.auth-form > .form-alert {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: #e54c4c;
+  background: #ffeded;
+  border: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* 03: resend button aligns with the email field, not with the helper caption. */
+.verify-email-row {
+  align-items: start;
+}
+
+.verify-email-row > .mini-outline-button {
+  margin-top: 32px;
+}
+
+/* 04: exported title-to-button spacing is one 24px spacing token. */
+.verified-block--figma {
+  gap: 24px;
+}
+
+/* Figma common Caption error copy. */
+.field__message--error,
+.auth-form .field__message--error {
+  color: #e54c4c;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Preserve exact 56px button geometry even when legacy styles add shadows. */
+.auth-layout .button,
+.onboarding-layout .button,
+.system-error-action {
+  box-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+  .verify-email-row > .mini-outline-button {
+    margin-top: 0;
+  }
+}
