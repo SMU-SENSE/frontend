@@ -1,0 +1,36 @@
+.password-reset-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  color: var(--mm-gray-600);
+  background: var(--mm-green-light);
+  border-left: 3px solid var(--mm-green-800);
+  border-radius: var(--mm-radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.password-reset-hint > svg {
+  margin-top: 1px;
+  flex: 0 0 18px;
+  color: var(--mm-green-800);
+}
+
+.password-reset-hint > span {
+  display: grid;
+  gap: 2px;
+}
+
+.password-reset-hint strong {
+  color: var(--mm-navy);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.password-reset-hint small {
+  color: var(--mm-gray-600);
+  font-size: 12px;
+  font-weight: 500;
+}
