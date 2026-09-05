@@ -73,9 +73,9 @@ export default function LoginPage() {
         </Button>
       </form>
       <div className="auth-links auth-links--split">
-        <Link href="/password/find">비밀번호 찾기</Link>
-        <span aria-hidden="true">|</span>
         <Link href="/signup">회원가입</Link>
+        <span aria-hidden="true">|</span>
+        <Link href="/password/find">비밀번호 찾기</Link>
       </div>
     </AuthLayout>
   )
