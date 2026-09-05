@@ -47,7 +47,7 @@ export default function ConfirmOnboardingPage() {
     if (apiConfig.useMockApi) return
     if (!saved.userId) {
       setLoading(false)
-      router.replace('/onboarding/profile')
+      router.replace('/users/setup/profile')
       return
     }
 
@@ -111,10 +111,10 @@ export default function ConfirmOnboardingPage() {
   const initial = name.trim().slice(0, 1) || '사'
 
   const rows = [
-    { label: '이름', value: name, href: '/onboarding/profile' },
-    { label: '목소리', value: `${voice} · ${rate.toFixed(1)}×`, href: '/onboarding/voice' },
-    { label: '화면 격자', value: grid, href: '/onboarding/grid' },
-    { label: '나와의 관계', value: relation, href: '/onboarding/profile' },
+    { label: '이름', value: name, href: '/users/setup/profile' },
+    { label: '목소리', value: `${voice} · ${rate.toFixed(1)}×`, href: '/users/setup/voice' },
+    { label: '화면 격자', value: grid, href: '/users/setup/grid' },
+    { label: '나와의 관계', value: relation, href: '/users/setup/profile' },
   ]
 
   return (
