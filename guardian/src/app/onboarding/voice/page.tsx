@@ -1,6 +1,6 @@
 'use client'
 
-import { Play, Rabbit, Turtle } from 'lucide-react'
+import { Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { aacUserApi } from '../../../api/aacUsers'
@@ -10,6 +10,66 @@ import { Button } from '../../../components/ui/Button'
 import { useToast } from '../../../components/ui/ToastProvider'
 import { loadOnboardingDraft, saveOnboardingDraft, type VoiceType } from '../../../lib/onboardingDraft'
 import type { BackendVoiceType } from '../../../types/models'
+
+function FigmaTurtleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5.2 13.3c0-3.6 2.7-6.2 6.4-6.2 3.4 0 5.9 2.2 6.3 5.3"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.2 13.2h11.4c.8 0 1.4.6 1.4 1.4 0 .9-.7 1.6-1.6 1.6H7.1c-1.1 0-1.9-.8-1.9-1.8 0-.5.4-1 .9-1.2Z"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M9 9.1v6.6M13.7 8.4v7.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="20.1" cy="13.3" r="1.8" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4.8 13.6 3 12.7M8.2 16.3l-.8 2M15.3 16.3l.8 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function FigmaRabbitIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M13.4 8.9c1.1-1.7 1.2-4.6.4-6.1-.4-.7-1.2-.6-1.5.1-.6 1.5-.7 4.1-.1 5.7"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16.1 9.5c1.7-1.1 2.9-3.8 2.7-5.5-.1-.8-.9-1.1-1.4-.5-1 1.2-1.9 3.6-1.8 5.4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M17.9 13.2c0 2.2-1.7 4-4 4-2.2 0-4-1.8-4-4s1.8-4 4-4c2.3 0 4 1.8 4 4Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M10.7 15.7c-2.5.5-4.2 2.2-4.2 4.1h9.9c0-1.4-.6-2.5-1.8-3.2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="18.8" cy="16.5" r="1.7" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M12.7 12.4h.1" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M8.6 20h-2M15.4 20h2.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
 
 const toBackendVoice: Record<VoiceType, BackendVoiceType> = {
   'male-child': 'CHILD_MALE',
@@ -111,7 +171,7 @@ export default function VoiceOnboardingPage() {
             <strong>{rate.toFixed(1)}×</strong>
           </div>
           <div className="speed-range-row">
-            <span className="speed-animal speed-animal--slow" aria-hidden="true"><Turtle size={18} strokeWidth={2} /></span>
+            <span className="speed-animal speed-animal--slow" aria-hidden="true"><FigmaTurtleIcon /></span>
             <button type="button" className="speed-step" onClick={() => changeRate(-0.1)} aria-label="음성 속도 낮추기">
               −
             </button>
@@ -129,7 +189,7 @@ export default function VoiceOnboardingPage() {
             <button type="button" className="speed-step" onClick={() => changeRate(0.1)} aria-label="음성 속도 높이기">
               +
             </button>
-            <span className="speed-animal speed-animal--fast" aria-hidden="true"><Rabbit size={18} strokeWidth={2} /></span>
+            <span className="speed-animal speed-animal--fast" aria-hidden="true"><FigmaRabbitIcon /></span>
           </div>
           <div className="speed-scale">
             <span>0.7×</span>
