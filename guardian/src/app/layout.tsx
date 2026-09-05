@@ -12,6 +12,7 @@ import '../styles/figma-pixel-perfect.css'
 import '../styles/figma-pixel-qa.css'
 import '../styles/figma-voice-final.css'
 import '../styles/figma-auth-final.css'
+import '../styles/figma-connect-final.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
