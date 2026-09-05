@@ -1,6 +1,5 @@
 'use client'
 
-import { AlertCircle, WifiOff } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '../../stores/authStore'
 
@@ -46,16 +45,13 @@ export function SystemErrorPage({ variant }: { variant: ErrorVariant }) {
     window.location.reload()
   }
 
+  const glyph = variant === 'not-found' ? '?' : '!'
+
   return (
     <main className="system-error-page" role={variant === 'not-found' ? undefined : 'alert'}>
       <section className="system-error-card">
-        <div
-          className={`system-error-icon ${variant === 'network' ? 'system-error-icon--network' : ''} ${variant === 'not-found' ? 'system-error-icon--404' : ''}`}
-          aria-hidden="true"
-        >
-          {variant === 'temporary' ? <AlertCircle size={42} strokeWidth={2} /> : null}
-          {variant === 'network' ? <WifiOff size={40} strokeWidth={2} /> : null}
-          {variant === 'not-found' ? <span>404</span> : null}
+        <div className={`system-error-icon system-error-icon--${variant}`} aria-hidden="true">
+          <span className="system-error-glyph">{glyph}</span>
         </div>
 
         <h1>{content.title}</h1>
