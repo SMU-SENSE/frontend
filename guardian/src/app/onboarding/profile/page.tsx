@@ -1,5 +1,6 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
 import { Camera, ChevronDown } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -212,7 +213,6 @@ export default function UserProfileOnboardingPage() {
               onClick={() => fileInputRef.current?.click()}
             >
               {profileImageDataUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={profileImageDataUrl} alt="선택한 프로필" />
               ) : (
                 <Camera size={28} strokeWidth={2} />
@@ -232,7 +232,11 @@ export default function UserProfileOnboardingPage() {
             </label>
             <div className="plain-field">
               <span>생년월일</span>
-              <button type="button" className={`profile-date-button ${birthDate ? 'profile-date-button--selected' : ''}`} onClick={openBirthPicker}>
+              <button
+                type="button"
+                className={`profile-date-button ${birthDate ? 'profile-date-button--selected' : ''}`}
+                onClick={openBirthPicker}
+              >
                 <span>{formatBirthDate(birthDate)}</span>
                 <ChevronDown size={18} aria-hidden />
               </button>
@@ -293,9 +297,13 @@ export default function UserProfileOnboardingPage() {
       </Button>
 
       {birthOpen ? (
-        <div className="birth-modal-backdrop" role="presentation" onMouseDown={(event) => {
-          if (event.currentTarget === event.target) setBirthOpen(false)
-        }}>
+        <div
+          className="birth-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setBirthOpen(false)
+          }}
+        >
           <section className="birth-modal" role="dialog" aria-modal="true" aria-labelledby="birth-modal-title">
             <div className="birth-modal__handle" aria-hidden />
             <h2 id="birth-modal-title">생년월일 선택</h2>
@@ -305,21 +313,36 @@ export default function UserProfileOnboardingPage() {
             <div className="birth-wheels">
               <div className="birth-wheel">
                 {birthColumns.years.map((year, index) => (
-                  <button key={`${year}-${index}`} type="button" className={index === 2 ? 'birth-wheel__value birth-wheel__value--selected' : 'birth-wheel__value'} onClick={() => setBirthDraft((current) => ({ ...current, year }))}>
+                  <button
+                    key={`${year}-${index}`}
+                    type="button"
+                    className={index === 2 ? 'birth-wheel__value birth-wheel__value--selected' : 'birth-wheel__value'}
+                    onClick={() => setBirthDraft((current) => ({ ...current, year }))}
+                  >
                     {year}
                   </button>
                 ))}
               </div>
               <div className="birth-wheel">
                 {birthColumns.months.map((month, index) => (
-                  <button key={`${month}-${index}`} type="button" className={index === 2 ? 'birth-wheel__value birth-wheel__value--selected' : 'birth-wheel__value'} onClick={() => setBirthDraft((current) => ({ ...current, month }))}>
+                  <button
+                    key={`${month}-${index}`}
+                    type="button"
+                    className={index === 2 ? 'birth-wheel__value birth-wheel__value--selected' : 'birth-wheel__value'}
+                    onClick={() => setBirthDraft((current) => ({ ...current, month }))}
+                  >
                     {month}월
                   </button>
                 ))}
               </div>
               <div className="birth-wheel">
                 {birthColumns.days.map((day, index) => (
-                  <button key={`${day}-${index}`} type="button" className={index === 2 ? 'birth-wheel__value birth-wheel__value--selected' : 'birth-wheel__value'} onClick={() => setBirthDraft((current) => ({ ...current, day }))}>
+                  <button
+                    key={`${day}-${index}`}
+                    type="button"
+                    className={index === 2 ? 'birth-wheel__value birth-wheel__value--selected' : 'birth-wheel__value'}
+                    onClick={() => setBirthDraft((current) => ({ ...current, day }))}
+                  >
                     {day}일
                   </button>
                 ))}
