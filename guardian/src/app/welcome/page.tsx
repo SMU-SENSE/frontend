@@ -1,2 +1,2 @@
-import AuthLandingPage from '../../pages/auth/AuthLandingPage'
+import AuthLandingPage from '../../views/auth/AuthLandingPage'
 export default AuthLandingPage

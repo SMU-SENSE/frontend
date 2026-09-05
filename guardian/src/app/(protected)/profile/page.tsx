@@ -1,2 +1,2 @@
-import ProfilePage from '../../../pages/profile/ProfilePage'
+import ProfilePage from '../../../views/profile/ProfilePage'
 export default ProfilePage

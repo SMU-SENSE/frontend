@@ -1,2 +1,2 @@
-import AiRecommendationsPage from '../../../../pages/recommendations/AiRecommendationsPage'
+import AiRecommendationsPage from '../../../../views/recommendations/AiRecommendationsPage'
 export default AiRecommendationsPage

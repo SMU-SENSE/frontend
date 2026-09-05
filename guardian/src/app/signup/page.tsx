@@ -1,2 +1,2 @@
-import SignupPage from '../../pages/auth/SignupPage'
+import SignupPage from '../../views/auth/SignupPage'
 export default SignupPage

@@ -1,2 +1,2 @@
-import RoutineRecommendationsPage from '../../../../pages/recommendations/RoutineRecommendationsPage'
+import RoutineRecommendationsPage from '../../../../views/recommendations/RoutineRecommendationsPage'
 export default RoutineRecommendationsPage

@@ -1,2 +1,2 @@
-import SettingsPage from '../../../pages/settings/SettingsPage'
+import SettingsPage from '../../../views/settings/SettingsPage'
 export default SettingsPage

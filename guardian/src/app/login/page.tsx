@@ -1,2 +1,2 @@
-import LoginPage from '../../pages/auth/LoginPage'
+import LoginPage from '../../views/auth/LoginPage'
 export default LoginPage
