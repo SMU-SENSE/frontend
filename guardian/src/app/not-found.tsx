@@ -1,11 +1,5 @@
-import Link from 'next/link'
+import { SystemErrorPage } from '../components/ui/SystemErrorPage'
 
 export default function NotFound() {
-  return (
-    <main className="fatal-error">
-      <h1>페이지를 찾을 수 없어요</h1>
-      <p>주소를 다시 확인해 주세요.</p>
-      <Link href="/">홈으로 이동</Link>
-    </main>
-  )
+  return <SystemErrorPage variant="not-found" />
 }
