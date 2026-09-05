@@ -7,6 +7,7 @@ import '../styles/figma-restore-extra.css'
 import '../styles/figma-connect.css'
 import '../styles/figma-final.css'
 import '../styles/figma-final-2.css'
+import '../styles/figma-final-3.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
