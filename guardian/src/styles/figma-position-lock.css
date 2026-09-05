@@ -38,6 +38,13 @@
   margin-top: 39px;
 }
 
+/* 11: source uses Caption-sized secondary action under the CTA. */
+.onboarding-later {
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 /* 12: target outer list is 480x215, ending exactly 24px above the CTA. */
 .confirm-box {
   width: 480px;
