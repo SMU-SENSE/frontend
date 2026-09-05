@@ -35,6 +35,47 @@
   cursor: not-allowed;
 }
 
+/* Figma input states: Default / Hover / Focus / Error */
+.auth-form .field__control input,
+.auth-form input,
+.code-field {
+  background: #fff;
+  border: 1px solid var(--mm-gray-300);
+}
+
+.auth-form .field__control input:hover,
+.auth-form input:hover,
+.code-field:hover {
+  background: #fff;
+  border-color: var(--mm-gray-500);
+}
+
+.auth-form .field__control input:focus,
+.auth-form input:focus,
+.code-field:focus {
+  background: #fff;
+  border: 2px solid var(--mm-green-800);
+}
+
+.auth-form .field--error .field__control input,
+.auth-form .field--error input {
+  background: var(--mm-red-light);
+  border: 2px solid var(--mm-red);
+}
+
+/* Google is the neutral outline action in the Figma login screen. */
+.auth-layout .social-google-button,
+.auth-layout .social-google-button:hover:not(:disabled),
+.auth-layout .social-google-button:active:not(:disabled) {
+  color: var(--mm-gray-1000);
+  background: #fff;
+  border-color: var(--mm-gray-300);
+}
+
+.auth-layout .social-google-button:hover:not(:disabled) {
+  background: var(--mm-gray-100);
+}
+
 .system-error-page {
   min-height: 100vh;
   display: flex;
