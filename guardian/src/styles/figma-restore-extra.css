@@ -54,38 +54,60 @@
 }
 
 .system-error-icon {
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   display: grid;
   place-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   border-radius: 999px;
-  color: var(--mm-red);
+}
+
+.system-error-glyph {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.system-error-icon--temporary {
   background: var(--mm-red-light);
 }
 
-.system-error-icon--network {
-  color: var(--mm-green-800);
-  background: var(--mm-green-light);
+.system-error-icon--temporary .system-error-glyph {
+  background: var(--mm-red);
 }
 
-.system-error-icon--404 {
-  color: var(--mm-navy);
+.system-error-icon--network {
+  background: #eef2ff;
+}
+
+.system-error-icon--network .system-error-glyph {
+  background: #6f86dd;
+}
+
+.system-error-icon--not-found {
   background: var(--mm-gray-100);
-  font-size: 22px;
-  font-weight: 700;
+}
+
+.system-error-icon--not-found .system-error-glyph {
+  background: var(--mm-gray-600);
 }
 
 .system-error-card h1 {
   margin: 0;
   color: var(--mm-navy);
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.35;
 }
 
 .system-error-card p {
-  margin: 8px 0 32px;
+  margin: 8px 0 28px;
   color: var(--mm-gray-600);
   font-size: 16px;
   font-weight: 500;
@@ -95,7 +117,7 @@
 .system-error-actions {
   width: min(100%, 240px);
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .system-error-action {
@@ -123,23 +145,18 @@
 }
 
 .system-error-action--secondary {
-  color: var(--mm-green-800);
+  color: var(--mm-navy);
   background: #fff;
-  border: 1px solid var(--mm-green-800);
+  border: 1px solid var(--mm-gray-200);
 }
 
 .system-error-action--secondary:hover {
-  background: var(--mm-green-light);
+  background: var(--mm-gray-100);
 }
 
 @media (max-width: 640px) {
   .system-error-page {
     padding: 32px 24px;
-  }
-
-  .system-error-icon {
-    width: 72px;
-    height: 72px;
   }
 
   .system-error-card h1 {
