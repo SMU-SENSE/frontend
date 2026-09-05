@@ -1,6 +1,6 @@
 'use client'
 
-import { Play } from 'lucide-react'
+import { Play, Rabbit, Turtle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { aacUserApi } from '../../../api/aacUsers'
@@ -109,6 +109,7 @@ export default function VoiceOnboardingPage() {
             <strong>{rate.toFixed(1)}×</strong>
           </div>
           <div className="speed-range-row">
+            <span className="speed-animal speed-animal--slow" aria-hidden="true"><Turtle size={18} strokeWidth={2} /></span>
             <button type="button" className="speed-step" onClick={() => changeRate(-0.1)} aria-label="음성 속도 낮추기">
               −
             </button>
@@ -123,6 +124,7 @@ export default function VoiceOnboardingPage() {
             <button type="button" className="speed-step" onClick={() => changeRate(0.1)} aria-label="음성 속도 높이기">
               +
             </button>
+            <span className="speed-animal speed-animal--fast" aria-hidden="true"><Rabbit size={18} strokeWidth={2} /></span>
           </div>
           <div className="speed-scale">
             <span>0.7×</span>
