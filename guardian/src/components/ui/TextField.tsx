@@ -26,6 +26,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   const hintId = `${inputId}-hint`
   const [showPassword, setShowPassword] = useState(false)
   const isPassword = type === 'password'
+  const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ') || undefined
 
   return (
     <div className={`field ${error ? 'field--error' : ''} ${className}`}>
@@ -39,7 +40,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           id={inputId}
           type={isPassword && showPassword ? 'text' : type}
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? errorId : hint ? hintId : undefined}
+          aria-describedby={describedBy}
           {...props}
         />
         {isPassword ? (
@@ -53,14 +54,15 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
           </button>
         ) : null}
       </div>
+      {hint ? (
+        <div className="field__message field__message--hint" id={hintId}>
+          {hint}
+        </div>
+      ) : null}
       {error ? (
         <p className="field__message field__message--error" id={errorId} role="alert">
           {error}
         </p>
-      ) : hint ? (
-        <div className="field__message" id={hintId}>
-          {hint}
-        </div>
       ) : null}
     </div>
   )
