@@ -22,6 +22,15 @@ const relationshipLabel: Record<RelationshipType, string> = {
   OTHER: '기타',
 }
 
+const gridLabel: Record<string, string> = {
+  GRID_2X2: '크게 (2×2)',
+  GRID_3X3: '보통 (3×3)',
+  GRID_4X4: '작게 (4×4)',
+  '2x2': '크게 (2×2)',
+  '3x3': '보통 (3×3)',
+  '4x4': '작게 (4×4)',
+}
+
 export default function ConfirmOnboardingPage() {
   const router = useRouter()
   const { showToast } = useToast()
@@ -84,17 +93,14 @@ export default function ConfirmOnboardingPage() {
   }
 
   const name = summary?.name ?? draft.userName ?? '사용자'
-  const birthDate = summary?.birthDate ?? draft.birthDate ?? '-'
   const relation = summary
     ? summary.relationshipType === 'OTHER'
       ? summary.relationshipDetail || '기타'
       : relationshipLabel[summary.relationshipType]
     : draft.relation ?? '-'
-  const emergencyContact = summary?.emergencyContact ?? draft.emergencyPhone ?? '-'
-  const grid = summary?.gridSize
-    ? summary.gridSize.replace('GRID_', '').replace('X', 'x')
-    : draft.gridSize ?? '3x3'
-  const voiceLabel = summary
+  const gridKey = summary?.gridSize ?? draft.gridSize ?? '3x3'
+  const grid = gridLabel[gridKey] ?? '보통 (3×3)'
+  const voice = summary
     ? summary.voiceType === 'CHILD_FEMALE'
       ? '여성 아동'
       : '남성 아동'
@@ -104,22 +110,30 @@ export default function ConfirmOnboardingPage() {
   const rate = summary?.speechRate ?? draft.speechRate ?? 1
   const initial = name.trim().slice(0, 1) || '사'
 
+  const rows = [
+    { label: '이름', value: name, href: '/onboarding/profile' },
+    { label: '목소리', value: `${voice} · ${rate.toFixed(1)}×`, href: '/onboarding/voice' },
+    { label: '화면 격자', value: grid, href: '/onboarding/grid' },
+    { label: '나와의 관계', value: relation, href: '/onboarding/profile' },
+  ]
+
   return (
-    <OnboardingLayout step={4} title="가입정보 확인" subtitle="입력하신 정보를 확인해 주세요">
+    <OnboardingLayout step={4} title="가입정보 확인" subtitle="설정한 내용을 확인한 뒤 시작해요">
       <div className="confirm-profile">
-        <div className="confirm-avatar">{initial}</div>
+        <div className="confirm-avatar" aria-hidden="true">{initial}</div>
         <strong>{name}</strong>
       </div>
+
       <div className="confirm-box">
-        <div><span>이름</span><strong>{name}</strong></div>
-        <div><span>생년월일</span><strong>{birthDate}</strong></div>
-        <div><span>관계</span><strong>{relation}</strong></div>
-        <div><span>긴급 연락처</span><strong>{emergencyContact}</strong></div>
+        {rows.map((row) => (
+          <button key={row.label} type="button" className="confirm-row" onClick={() => router.push(row.href)}>
+            <span>{row.label}</span>
+            <strong>{row.value}</strong>
+            <span className="confirm-row__chevron" aria-hidden="true">›</span>
+          </button>
+        ))}
       </div>
-      <div className="confirm-box">
-        <div><span>화면 격자</span><strong>{grid}</strong></div>
-        <div><span>TTS 음성</span><strong>{voiceLabel} ({rate.toFixed(1)}x)</strong></div>
-      </div>
+
       <Button fullWidth size="lg" disabled={loading} loading={submitting} onClick={start}>
         {loading ? '정보 확인 중' : '시작하기'}
       </Button>
