@@ -1,0 +1,352 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+/*
+ * Final source-of-truth overrides.
+ * Measurements come from the 1280x800 application frame embedded in the
+ * exported Figma PNGs supplied for the guardian flow.
+ */
+
+.auth-layout,
+.onboarding-layout,
+.connection-page,
+.system-error-page {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ---------- Auth ---------- */
+.auth-panel {
+  width: min(480px, calc(100vw - 48px));
+}
+
+.auth-layout .auth-panel--wide {
+  width: min(800px, calc(100vw - 48px));
+}
+
+.auth-heading h1,
+.auth-heading--center h1,
+.auth-heading:has(+ .auth-actions--figma) h1,
+.auth-heading--center:has(+ .auth-actions--figma) h1 {
+  font-size: 36px;
+  line-height: 1.2;
+}
+
+.auth-heading,
+.auth-heading--center {
+  margin-bottom: 12px;
+}
+
+.auth-heading p,
+.auth-heading--center p {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.auth-form {
+  gap: 16px;
+}
+
+.auth-form .field {
+  gap: 8px;
+}
+
+/* Login is the one auth frame that uses the smaller Detail2 field type. */
+.auth-form--login .field__label,
+.auth-form--login input {
+  font-size: 16px;
+}
+
+/* The remaining form screens use the 20px detail style shown in Figma. */
+.auth-form:not(.auth-form--login) .field__label,
+.auth-form:not(.auth-form--login) > .field input,
+.form-label,
+.verify-email-input,
+.code-field {
+  font-size: 20px;
+}
+
+.auth-form .field__control input,
+.verify-email-input,
+.code-field,
+.readonly-field {
+  height: 52px;
+  min-height: 52px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.auth-layout .button,
+.onboarding-layout .button {
+  height: 56px;
+  min-height: 56px;
+  border-radius: 8px;
+  font-size: 20px;
+  box-shadow: none;
+}
+
+/* ---------- Terms ---------- */
+.terms-list--figma {
+  width: 480px !important;
+  max-width: 100%;
+  padding: 8px !important;
+  gap: 0 !important;
+  border-radius: 12px;
+  margin-bottom: 24px !important;
+}
+
+.terms-list--figma .terms-row,
+.terms-list--figma .terms-row--all {
+  min-height: 60px !important;
+  height: 60px;
+  padding: 0 16px;
+}
+
+.terms-list--figma .terms-row--all {
+  margin-bottom: 0 !important;
+  border-radius: 8px;
+}
+
+.terms-list--figma input[type='checkbox'] {
+  width: 24px !important;
+  height: 24px !important;
+  flex-basis: 24px !important;
+}
+
+.terms-list--figma + .button {
+  width: 480px !important;
+  max-width: 100%;
+}
+
+/* ---------- Birth-date modal (09-B) ---------- */
+.birth-modal-backdrop {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.birth-modal {
+  width: min(560px, calc(100vw - 48px)) !important;
+  height: 480px;
+  min-height: 480px;
+  padding: 14px 32px 28px !important;
+  border-radius: 24px;
+  box-sizing: border-box;
+}
+
+.birth-modal__handle {
+  width: 44px;
+  height: 4px;
+  margin: 0 auto 20px;
+}
+
+.birth-modal h2 {
+  margin: 0 0 18px;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.birth-wheel-labels,
+.birth-wheels {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.birth-wheel-labels {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.birth-wheels {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Figma has one continuous selection band across all three date columns. */
+.birth-wheels::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  top: 96px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--figma-green-light);
+}
+
+.birth-wheel {
+  gap: 0;
+}
+
+.birth-wheel__value {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 8px;
+  border-radius: 0;
+  font-size: 16px;
+}
+
+.birth-wheel__value--selected {
+  color: var(--figma-green);
+  background: transparent !important;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.birth-modal__actions {
+  width: 100%;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.birth-modal__cancel,
+.birth-modal__confirm {
+  height: 52px;
+  min-height: 52px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+/* Focused direct relationship input in 09-D. */
+.plain-field input:focus,
+.plain-field textarea:focus,
+.profile-date-button:focus-visible {
+  outline: 0;
+  border: 2px solid var(--figma-green);
+  box-shadow: none;
+}
+
+/* ---------- Connection / invitation ---------- */
+/* 07 valid: outer card 400x145, six 48x56 cells with 8px gaps. */
+.connection-card--code {
+  width: 400px !important;
+  max-width: 100%;
+  min-height: 145px;
+  padding: 28px 36px 20px !important;
+  box-sizing: border-box;
+}
+
+.invite-code {
+  width: 328px;
+  max-width: 100%;
+  grid-template-columns: repeat(6, 48px) !important;
+  gap: 8px !important;
+  justify-content: center;
+}
+
+.invite-code > span {
+  width: 48px;
+  height: 56px !important;
+  min-height: 56px;
+  border-radius: 8px;
+  font-size: 24px;
+}
+
+/* 07-B expired: 400x216 card with a 344x160 dark inner overlay. */
+.connection-card--code:has(.invite-code--expired) {
+  width: 400px !important;
+  height: 216px;
+  padding: 28px !important;
+}
+
+.invite-code--expired {
+  width: 344px;
+  height: 160px;
+  min-height: 160px !important;
+  padding: 0 8px;
+  box-sizing: border-box;
+  grid-template-columns: repeat(6, 48px) !important;
+}
+
+.invite-code--expired > span {
+  width: 48px;
+  background: transparent;
+}
+
+.connection-expired--code {
+  border-radius: 12px;
+}
+
+/* 06-B expired QR is deliberately shorter than the valid 380px card. */
+.connection-card--qr:has(.qr-box--expired) {
+  height: 319px !important;
+  padding: 12px 24px !important;
+}
+
+.connection-card--qr:has(.qr-box--expired) .connection-card__instruction {
+  margin-bottom: 12px;
+}
+
+.connection-expired button {
+  height: 48px;
+  min-height: 48px;
+  border-radius: 8px;
+}
+
+/* ---------- System errors ---------- */
+.system-error-card {
+  width: min(480px, calc(100vw - 48px));
+}
+
+.system-error-icon {
+  width: 88px !important;
+  height: 88px !important;
+  margin-bottom: 24px !important;
+}
+
+.system-error-glyph {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 10px;
+  font-size: 20px;
+}
+
+.system-error-card h1 {
+  font-size: 28px;
+  line-height: 1.35;
+}
+
+.system-error-card p {
+  margin: 8px 0 28px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.system-error-actions {
+  width: 320px !important;
+  max-width: 100%;
+  gap: 12px;
+}
+
+.system-error-action {
+  height: 56px;
+  min-height: 56px !important;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .birth-modal-backdrop {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .birth-modal {
+    width: min(560px, calc(100vw - 32px)) !important;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    padding: 14px 20px 20px !important;
+    border-radius: 20px;
+  }
+
+  .connection-card--code,
+  .connection-card--code:has(.invite-code--expired) {
+    width: min(400px, calc(100vw - 32px)) !important;
+  }
+
+  .invite-code {
+    transform-origin: center;
+  }
+}
