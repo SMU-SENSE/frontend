@@ -15,10 +15,15 @@ import { useToast } from '../../components/ui/ToastProvider'
 import { signupSchema, type SignupForm } from '../../lib/validators'
 import { saveOnboardingDraft } from '../../lib/onboardingDraft'
 
+function looksLikeValidPassword(value: string) {
+  return value.length >= 8 && /[A-Za-z]/.test(value) && /[0-9]/.test(value) && /[^A-Za-z0-9]/.test(value) && !/(.)\1\1/.test(value)
+}
+
 export default function SignupPage() {
   const router = useRouter()
   const { showToast } = useToast()
   const [name, setName] = useState('')
+  const [nameTouched, setNameTouched] = useState(false)
   const {
     register,
     handleSubmit,
@@ -30,11 +35,20 @@ export default function SignupPage() {
     defaultValues: { email: '', password: '', passwordConfirm: '' },
   })
 
+  const email = watch('email')
+  const password = watch('password')
+  const passwordConfirm = watch('passwordConfirm')
+  const formReady = Boolean(
+    name.trim() &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) &&
+      looksLikeValidPassword(password) &&
+      passwordConfirm === password,
+  )
+
   const signupMutation = useMutation({
     mutationFn: authApi.signup,
     onSuccess: () => {
-      const email = watch('email')
-      saveOnboardingDraft({ guardianName: name.trim(), guardianEmail: email })
+      saveOnboardingDraft({ guardianName: name.trim(), guardianEmail: email.trim() })
       showToast('인증 메일을 보냈어요.')
       router.push('/signup/verify')
     },
@@ -42,10 +56,8 @@ export default function SignupPage() {
   })
 
   const submit = (values: SignupForm) => {
-    if (!name.trim()) {
-      setError('root', { message: '이름을 입력해 주세요.' })
-      return
-    }
+    setNameTouched(true)
+    if (!name.trim()) return
     signupMutation.mutate(values)
   }
 
@@ -65,7 +77,9 @@ export default function SignupPage() {
           type="text"
           placeholder="이름을 입력해 주세요"
           value={name}
+          onBlur={() => setNameTouched(true)}
           onChange={(event) => setName(event.target.value)}
+          error={nameTouched && !name.trim() ? '이름을 입력해 주세요.' : undefined}
         />
         <TextField
           label="이메일"
@@ -83,8 +97,11 @@ export default function SignupPage() {
           error={errors.password?.message}
           hint={
             <span className="password-hint password-hint--figma">
-              <Info size={14} />
-              8자 이상, 영문·숫자·특수문자를 포함해 주세요.
+              <Info size={16} />
+              <span>
+                <strong>8자리 이상의 영문, 숫자, 특수문자 조합을 입력하세요.</strong>
+                <small>(3자 이상의 연속된 동일 문자, 숫자로는 설정 불가합니다.)</small>
+              </span>
             </span>
           }
           {...register('password')}
@@ -97,7 +114,7 @@ export default function SignupPage() {
           error={errors.passwordConfirm?.message}
           {...register('passwordConfirm')}
         />
-        <Button type="submit" fullWidth size="lg" loading={signupMutation.isPending}>
+        <Button type="submit" fullWidth size="lg" disabled={!formReady} loading={signupMutation.isPending}>
           인증 메일 보내기
         </Button>
       </form>
