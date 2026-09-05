@@ -83,6 +83,8 @@ export default function VoiceOnboardingPage() {
     void saveAndContinue('male-child', 1)
   }
 
+  const progress = Math.round(((rate - 0.7) / 0.6) * 100)
+
   return (
     <OnboardingLayout step={3} title="음성 설정" subtitle="사용자에게 맞게 목소리를 고르세요">
       <div className="voice-form">
@@ -119,6 +121,9 @@ export default function VoiceOnboardingPage() {
               max="1.3"
               step="0.1"
               value={rate}
+              style={{
+                background: `linear-gradient(to right, var(--figma-green) 0%, var(--figma-green) ${progress}%, var(--figma-gray-200) ${progress}%, var(--figma-gray-200) 100%)`,
+              }}
               onChange={(event) => setRate(Number(event.target.value))}
             />
             <button type="button" className="speed-step" onClick={() => changeRate(0.1)} aria-label="음성 속도 높이기">
