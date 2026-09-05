@@ -24,13 +24,64 @@
   text-align: left;
 }
 
-/* 03: resend button aligns with the email field, not with the helper caption. */
+/* 03: email field + 139px outline action are one 480px row. */
 .verify-email-row {
   align-items: start;
 }
 
 .verify-email-row > .mini-outline-button {
   margin-top: 32px;
+}
+
+.verify-email-input {
+  width: 100%;
+  height: 52px;
+  min-height: 52px;
+  padding: 0 16px;
+  color: var(--figma-navy);
+  background: var(--figma-gray-100);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  outline: 0;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.verify-email-input::placeholder {
+  color: var(--figma-gray-400);
+}
+
+.verify-email-input:hover {
+  border-color: var(--figma-gray-300);
+}
+
+.verify-email-input:focus {
+  background: #fff;
+  border: 2px solid var(--figma-green);
+}
+
+.verify-email-input--error,
+.verify-email-input--error:hover,
+.verify-email-input--error:focus,
+.code-field-wrap--error .code-field,
+.code-field-wrap--error .code-field:hover,
+.code-field-wrap--error .code-field:focus {
+  background: #ffeded;
+  border: 2px solid #e54c4c;
+}
+
+.verify-inline-error {
+  display: block;
+  color: #e54c4c;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.verify-meta--error {
+  justify-content: flex-end;
+  margin-top: -8px;
 }
 
 /* 04: exported title-to-button spacing is one 24px spacing token. */
