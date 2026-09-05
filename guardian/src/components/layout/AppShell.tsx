@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const user = useAuthStore((state) => state.session?.user)
   const logout = useAuthStore((state) => state.logout)
   const router = useRouter()
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const navigation = apiConfig.useMockApi ? prototypeNavigation : backendNavigation
 
   const handleLogout = async () => {
