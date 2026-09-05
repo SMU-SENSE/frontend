@@ -35,8 +35,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (message: string, type: ToastType = 'success') => {
       const id = Date.now()
       setToasts((current) => [...current, { id, message, type }])
-      // 알림은 키보드 포커스를 빼앗지 않고 aria-live로만 안내한 뒤 자동 제거한다.
-      window.setTimeout(() => dismiss(id), 3500)
+      window.setTimeout(() => dismiss(id), 3000)
     },
     [dismiss],
   )
