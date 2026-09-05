@@ -1,0 +1,28 @@
+/* Position corrections measured from the exported 1280x800 frames. */
+
+/* 06/07 content is centered around y=425 in the source frame. */
+.connection-content {
+  transform: translateY(25px);
+}
+
+/* SYS-01~03 sit slightly below geometric center in the source frame. */
+.system-error-card {
+  transform: translateY(14px);
+}
+
+/* Keep the date selection band behind the wheel copy but above the modal. */
+.birth-wheels::before {
+  z-index: 0;
+}
+
+.birth-wheel {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .connection-content,
+  .system-error-card {
+    transform: none;
+  }
+}
