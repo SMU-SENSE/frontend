@@ -13,60 +13,38 @@ import type { BackendVoiceType } from '../../../types/models'
 
 function FigmaTurtleIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M5.2 13.3c0-3.6 2.7-6.2 6.4-6.2 3.4 0 5.9 2.2 6.3 5.3"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M5.2 13.7c.45-3.75 3.35-6.45 7.15-6.45 3.55 0 6.25 2.3 6.85 5.75H5.2v.7Z"
+        fill="currentColor"
       />
-      <path
-        d="M6.2 13.2h11.4c.8 0 1.4.6 1.4 1.4 0 .9-.7 1.6-1.6 1.6H7.1c-1.1 0-1.9-.8-1.9-1.8 0-.5.4-1 .9-1.2Z"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M9 9.1v6.6M13.7 8.4v7.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="20.1" cy="13.3" r="1.8" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M4.8 13.6 3 12.7M8.2 16.3l-.8 2M15.3 16.3l.8 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="20.25" cy="13.1" r="2.05" fill="currentColor" />
+      <path d="M5.15 13.2 2.9 12.25l.55 2.45 1.9-.55-.2-.95Z" fill="currentColor" />
+      <rect x="7.1" y="15.1" width="2.7" height="2.25" rx="1.05" fill="currentColor" />
+      <rect x="14.4" y="15.1" width="2.7" height="2.25" rx="1.05" fill="currentColor" />
+      <path d="M8.25 10.9h8.45M10.05 8.75v4.15M14.4 8.55v4.35" stroke="white" strokeWidth="1.1" strokeLinecap="round" opacity=".9" />
+      <circle cx="20.85" cy="12.65" r=".35" fill="white" />
     </svg>
   )
 }
 
 function FigmaRabbitIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M13.4 8.9c1.1-1.7 1.2-4.6.4-6.1-.4-.7-1.2-.6-1.5.1-.6 1.5-.7 4.1-.1 5.7"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M15.25 8.9c-.75-1.95-.7-5.65.15-7.05.3-.5.95-.45 1.2.1.7 1.55.55 4.75-.2 7.05l-1.15-.1Z"
+        fill="currentColor"
       />
       <path
-        d="M16.1 9.5c1.7-1.1 2.9-3.8 2.7-5.5-.1-.8-.9-1.1-1.4-.5-1 1.2-1.9 3.6-1.8 5.4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M17.05 9.35c.15-2.1 1.35-5.25 2.55-6.35.45-.4 1.05-.15 1.05.45.05 1.75-1.35 4.65-2.55 6.35l-1.05-.45Z"
+        fill="currentColor"
       />
-      <path
-        d="M17.9 13.2c0 2.2-1.7 4-4 4-2.2 0-4-1.8-4-4s1.8-4 4-4c2.3 0 4 1.8 4 4Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M10.7 15.7c-2.5.5-4.2 2.2-4.2 4.1h9.9c0-1.4-.6-2.5-1.8-3.2"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="18.8" cy="16.5" r="1.7" stroke="currentColor" strokeWidth="1.7" />
-      <path d="M12.7 12.4h.1" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M8.6 20h-2M15.4 20h2.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="16.4" cy="11.15" r="3.25" fill="currentColor" />
+      <ellipse cx="12.25" cy="16.45" rx="5.1" ry="4.15" fill="currentColor" />
+      <circle cx="7.1" cy="15.35" r="1.9" fill="currentColor" />
+      <ellipse cx="15.95" cy="20" rx="3.6" ry="1.35" fill="currentColor" />
+      <circle cx="17.25" cy="10.55" r=".42" fill="white" />
+      <path d="m19.2 12.25 1.55.5-1.55.55" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
