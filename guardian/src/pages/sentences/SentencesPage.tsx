@@ -33,8 +33,8 @@ const tabs: Array<{ value: SentenceListType; label: string }> = [
 export default function SentencesPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const pathname = usePathname()
-  const tab = (searchParams.get('tab') as SentenceListType | null) ?? 'all'
+  const pathname = usePathname() ?? ''
+  const tab = (searchParams?.get('tab') as SentenceListType | null) ?? 'all'
   const [keyword, setKeyword] = useState('')
   const [sentenceInput, setSentenceInput] = useState('')
   const [categoryId, setCategoryId] = useState('')
