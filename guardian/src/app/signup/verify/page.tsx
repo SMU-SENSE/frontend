@@ -26,29 +26,31 @@ export default function VerifyEmailPage() {
     return `${mm}:${ss}`
   }, [seconds])
 
+  const resend = () => {
+    setSeconds(600)
+    setCode('')
+    showToast('인증 메일을 다시 전송했어요.')
+  }
+
   return (
     <AuthLayout>
       <div className="auth-heading auth-heading--center">
         <h1>이메일 인증</h1>
-        <p>가입한 이메일로 보낸 인증번호 6자리를 입력해 주세요.</p>
+        <p>인증 메일을 보낸 뒤, 받은 번호가 맞는지 확인해 주세요</p>
       </div>
+
       <div className="verify-email-row">
-        <div>
+        <div className="verify-email-field">
           <span className="form-label">이메일</span>
           <div className="readonly-field">{email}</div>
+          <span className="verify-email-help">메일이 없으면 스팸함을 확인하세요</span>
         </div>
-        <button
-          type="button"
-          className="mini-outline-button"
-          onClick={() => {
-            setSeconds(600)
-            showToast('인증 메일을 다시 보냈어요.')
-          }}
-        >
-          인증 메일 재전송
+        <button type="button" className="mini-outline-button" onClick={resend}>
+          인증 메일 보내기
         </button>
       </div>
-      <div className="auth-form">
+
+      <div className="auth-form verify-code-form">
         <label className="code-field-wrap">
           <span className="form-label">인증번호</span>
           <input
@@ -58,10 +60,26 @@ export default function VerifyEmailPage() {
             value={code}
             onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
             placeholder="6자리 숫자"
+            aria-describedby="verification-time"
           />
-          <span className="verify-timer">{time}</span>
         </label>
-        <Button fullWidth size="lg" disabled={code.length !== 6} onClick={() => router.push('/signup/verified')}>
+        <div className="verify-meta" id="verification-time">
+          <span>남은 시간 {time}</span>
+          <span aria-hidden="true">·</span>
+          <button type="button" onClick={resend}>다시 보내기</button>
+        </div>
+        <Button
+          fullWidth
+          size="lg"
+          disabled={code.length !== 6 || seconds === 0}
+          onClick={() => {
+            if (seconds === 0) {
+              showToast('인증번호가 만료됐어요.', 'error')
+              return
+            }
+            router.push('/signup/verified')
+          }}
+        >
           인증번호 확인
         </Button>
       </div>
