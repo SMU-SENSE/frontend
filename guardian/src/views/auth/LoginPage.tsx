@@ -21,9 +21,10 @@ export default function LoginPage() {
     register,
     handleSubmit,
     setError,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    mode: 'onChange',
     defaultValues: { email: '', password: '' },
   })
 
@@ -68,7 +69,7 @@ export default function LoginPage() {
           error={errors.password?.message}
           {...register('password')}
         />
-        <Button type="submit" fullWidth size="lg" loading={loginMutation.isPending}>
+        <Button type="submit" fullWidth size="lg" disabled={!isValid} loading={loginMutation.isPending}>
           로그인
         </Button>
       </form>
