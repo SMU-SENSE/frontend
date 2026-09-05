@@ -1,5 +1,10 @@
 /* Position corrections measured from the exported 1280x800 frames. */
 
+/* Every 09~12 Figma content group is centered around y≈420, 20px below the viewport midpoint. */
+.onboarding-card {
+  transform: translateY(20px);
+}
+
 /* 06/07 content is centered around y=425 in the source frame. */
 .connection-content {
   transform: translateY(25px);
@@ -33,6 +38,21 @@
   margin-top: 39px;
 }
 
+/* 12: target outer list is 480x215, ending exactly 24px above the CTA. */
+.confirm-box {
+  width: 480px;
+  max-width: 100%;
+  height: 215px;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  box-sizing: border-box;
+}
+
+.confirm-row {
+  height: auto;
+  min-height: 0 !important;
+}
+
 /* 01-A-2 / 02: the password guidance panel is exactly 64px high. */
 .password-reset-hint,
 .password-hint--figma {
@@ -41,6 +61,7 @@
 }
 
 @media (max-width: 640px) {
+  .onboarding-card,
   .connection-content,
   .system-error-card {
     transform: none;
@@ -48,5 +69,14 @@
 
   .birth-modal__actions {
     margin-top: 24px;
+  }
+
+  .confirm-box {
+    height: auto;
+    grid-template-rows: none;
+  }
+
+  .confirm-row {
+    min-height: 52px !important;
   }
 }
