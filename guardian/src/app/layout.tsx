@@ -4,6 +4,7 @@ import '../styles/global.css'
 import '../styles/figma-flow.css'
 import '../styles/figma-restore.css'
 import '../styles/figma-restore-extra.css'
+import '../styles/figma-connect.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
