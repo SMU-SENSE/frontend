@@ -51,7 +51,7 @@ export default function FindPasswordPage() {
           autoComplete="email"
           error={error}
         />
-        <Button type="submit" fullWidth size="lg" disabled={!validEmail}>
+        <Button type="submit" fullWidth size="lg">
           인증 메일 보내기
         </Button>
       </form>
