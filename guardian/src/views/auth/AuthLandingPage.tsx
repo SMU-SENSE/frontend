@@ -39,11 +39,7 @@ export default function AuthLandingPage() {
   const router = useRouter()
   const { showToast } = useToast()
 
-  const openPrototypeOnly = (feature: string, mockPath?: string) => {
-    if (apiConfig.useMockApi && mockPath) {
-      router.push(mockPath)
-      return
-    }
+  const openPrototypeOnly = (feature: string) => {
     showToast(`${feature}은 아직 백엔드 API가 연결되지 않았어요.`)
   }
 
@@ -75,7 +71,14 @@ export default function AuthLandingPage() {
         >
           카카오로 계속
         </Button>
-        <Button fullWidth size="lg" variant="outline" leftIcon={<GoogleIcon />} onClick={handleGoogle}>
+        <Button
+          fullWidth
+          size="lg"
+          variant="outline"
+          className="social-google-button"
+          leftIcon={<GoogleIcon />}
+          onClick={handleGoogle}
+        >
           구글로 계속
         </Button>
       </div>
