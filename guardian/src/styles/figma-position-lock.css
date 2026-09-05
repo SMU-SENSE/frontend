@@ -20,6 +20,19 @@
   z-index: 1;
 }
 
+/* 09-B exact vertical geometry: selection band y=375, actions y=557. */
+.birth-modal h2 {
+  margin-bottom: 22px;
+}
+
+.birth-wheel-labels {
+  margin-bottom: 10px;
+}
+
+.birth-modal__actions {
+  margin-top: 39px;
+}
+
 /* 01-A-2 / 02: the password guidance panel is exactly 64px high. */
 .password-reset-hint,
 .password-hint--figma {
@@ -31,5 +44,9 @@
   .connection-content,
   .system-error-card {
     transform: none;
+  }
+
+  .birth-modal__actions {
+    margin-top: 24px;
   }
 }
