@@ -91,7 +91,7 @@ export default function ResetPasswordPage() {
           error={confirmError}
         />
 
-        <Button type="submit" fullWidth size="lg" disabled={!valid}>
+        <Button type="submit" fullWidth size="lg">
           비밀번호 변경
         </Button>
       </form>
