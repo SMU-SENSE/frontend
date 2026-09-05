@@ -1,0 +1,75 @@
+.terms-list--figma {
+  display: grid;
+  gap: 0;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--mm-gray-200);
+  border-radius: var(--mm-radius-md);
+}
+
+.terms-list--figma .terms-row {
+  min-height: 58px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+}
+
+.terms-list--figma .terms-row--all {
+  min-height: 54px;
+  margin-bottom: 2px;
+  background: var(--mm-green-light);
+  border-radius: var(--mm-radius-sm);
+}
+
+.terms-list--figma .terms-row--all strong {
+  color: var(--mm-navy);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.terms-row__label {
+  color: var(--mm-navy);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.auth-layout .auth-panel--wide {
+  width: min(100%, 720px);
+}
+
+.policy-card {
+  max-height: min(52vh, 470px);
+  padding: 24px 28px;
+  color: var(--mm-navy);
+  background: #fff;
+  border: 1px solid var(--mm-gray-300);
+  border-radius: var(--mm-radius-md);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.policy-card h2 {
+  color: var(--mm-navy);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.policy-page--figma > .button {
+  width: min(100%, 480px);
+  justify-self: center;
+}
+
+@media (max-width: 640px) {
+  .policy-card {
+    max-height: 56vh;
+    padding: 20px;
+    font-size: 14px;
+  }
+
+  .terms-list--figma .terms-row--all strong {
+    font-size: 18px;
+  }
+}
