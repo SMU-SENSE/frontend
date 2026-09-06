@@ -26,7 +26,7 @@
 
 ## 원본 아이콘
 
-`yeoseo-source.css`에 아래 PNG를 데이터 URI로 보존해 사용한다.
+아래 PNG 원본을 `public/design/yeoseo/`에 바이트 그대로 보존하고 `yeoseo-source.css`에서 직접 참조한다.
 
 - email-glyph.png (14×14)
 - icon/play.png (32×32)
@@ -54,3 +54,8 @@
 - Kakao Yellow `#FEE500`
 
 새 화면을 임의로 기존 화면 스타일에 섞지 않는다. 원본에 없는 화면은 별도 디자인 확인 후 추가한다.
+
+## 원본 범위 밖 기능
+
+윤지님 Guardian 알림 API처럼 Figma handoff에 화면이 없는 기능은 API 연결 코드는 유지할 수 있지만,
+새 시각 UI를 최종 디자인으로 간주하지 않는다. 해당 화면/컴포넌트 원본이 전달되면 그 소스로 교체한다.
