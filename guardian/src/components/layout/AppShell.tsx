@@ -19,6 +19,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { authApi } from '../../api/auth'
 import { apiConfig } from '../../api/client'
 import { useAuthStore } from '../../stores/authStore'
+import { NotificationBell } from '../notifications/NotificationBell'
 import { Button } from '../ui/Button'
 
 type NavigationItem = {
@@ -77,11 +78,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           {menuOpen ? <X /> : <Menu />}
         </button>
         <strong>말모아</strong>
+        <NotificationBell />
       </header>
       <aside className={`sidebar ${menuOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar__brand">
           <MessageSquareText size={26} />
           <span>말모아</span>
+          <NotificationBell />
         </div>
         <div className="sidebar__profile">
           <div className="avatar" aria-hidden>
