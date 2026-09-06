@@ -11,41 +11,40 @@ import { useToast } from '../../../components/ui/ToastProvider'
 import { loadOnboardingDraft, saveOnboardingDraft, type VoiceType } from '../../../lib/onboardingDraft'
 import type { BackendVoiceType } from '../../../types/models'
 
+const FIGMA_TURTLE_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAUCAIAAAAGHlpnAAACTUlEQVR42o1Uz2sTURD+Jq6vSdmkTQJGjSVKTZFqCr20FmkVEYme1N6E/gu91ZtnwYM38SLUi/WgQvFg6kGQRMEgTQqphzRB2pS4bUoTqGvaxuyOh03SzW4izuExzMz3ve/9mCFdZ4ABaq4wORa/szkAbpZ2xJApBZvPAKT2/S1mj5OJqJGSbPqJAAYrv8orSn5bLQMY9AdPyf7z/iDABOI2aSzZzs8pJf8qtbSxlReixylcv/dVTasD8Mi+6dFodGjcRMAAka7rLVVEmF9+H0t/OHNiYPj0OSFJRmF2q/BDWTeIbo1GA7IvWchUD/evh8eiQ+Ok6w1GtVb9vJ6ZTywI0XNz5IrlVtKFXLG0aY5Uy3921qr3Zm409omtJV8kFgxf07SaVhfHJDOgrtUtpDvZaj5WWb78zajjgNvXymla/Us2NTwQDri9ANTDg3xpc3tXsVCEJvpCE30e2UvNr4XXq5/eJBfxHyaEs1Y7MJyHt2eP7gJASsk9i7/cUyv/wHtk75O7D3K7RQBhf9AtetsoADz9+jb+Pd4NfyEUmZu6L4tec9DytbCysdo46slBABW1vKdWhHAC6Je9dy5elYXLwttSwcaSKGQ+5pJnfcHpS9fk467Zxcel8k8z4PnMI7ehghlEhgpTOxEmQ5HJ0EiDlDEVHnuXXuqXfS7hUsrFSCjiFi4jZeBbKjq2Wcfet48COMAMEDPbetnSnV3Hh8OIEFmnQOO0pmnCzGCwEWRu7krmR21TyAwiMo2GrjPNYcW3uMmun5v5o15n5r8pcBF5EKI9LQAAAABJRU5ErkJggg=='
+const FIGMA_RABBIT_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAZCAIAAABRt/K6AAADdUlEQVR42nVUb2hbVRT/nVA05b2+9+qwzdq1oZ1RV+dCleH+uIIyikNwQhuZ7INanYK6Mv02/WjLkE1RYxGR9YO1IFVRa51/FmQ2OBxaJG8lftjW9KW1zTJpk/ja1EDv8cPNe3nJ8H643HvO+Z1z7u+ce0gIBhggVBYD8EiklgnEtSr45N2LtqzsN5O/VoMxPX3ZvDwHUG0kIVgIZmZ5EILvDj0T2NIXfe9LIZgFC8GpVEb1PxrY0nfhQkJULxmfmcsOxz6ObZZKHwwfHYlOAsxgIgwPjR/u7X66f98nYzEnBZkF+WoeH4+bfY/c1xVqXVzIWlYWIGaYiVRvzz0PdHecm7qE6uWrfg/S6eyOUIuu+rc2G2bimhQmZ1NtAaMr1FrIr+Vya44tufyxwznS81lNvRVAa6Axl1sHIAFdoRZd9QPI523XGECdU5j/Xfm8fZOM3DL7UAEzAE1XCva/AAp2MRhsAhAMNgNYzKxKI11XvV7q3CITCMCucMdfyysAljI5o1GR2m1tTQvLKwW7qOmKYShu8YmozuVfZhHe1fnFeExrqLfXNo5EhqVhobB2Pv7ntoCx894OMDuMEzOTEFVvTyTmDuwdVBX/U317u+5s0VQ/gOSV5fPx5O/m/AsvPnb6zLFyutKHg2dmpNPZQ70nH9q9/cTAQb2hvoa0sxPxUyPfTX0/3NMTlggQquI/f+zt4o3Vt16PJK8uJa8s9x+6v1x/53p2Ij42OXPxUtRhgX2eD4dPx386MXAQwDujsdHPLrp+Ryd+GYp+C+DZJw5slkqmec1bf1kJtqwsgLatjQBOn4x4Mz/zWiT/T1Ged9wRsOaz6IG3/wGQLGze3gCgN9TrDfXFv1du/JYoFWwpkYjFTM4wFDdl2f8MsGEo+x7c+e5ozA1rpxZWZ8z1pYwr+TGeXC+JcLjT7eA677T58KNX9u8Z1FS/ZOH23WH9ru23aKrL4hvRqcFX+9uDTZVOrvDPDCLTnDsSGQrcpgxE9u/p7tRUf8HeSF5d+vzczFc//HHqzedeOv64d/6Q2BQg8mTBlnV9+ufZkfe/Ts6mpJWmK08effjl44fb25upbFzea/qvZpDCsq7rumIYalnFXOk9huwf4fmPdNPw9fiVnV8VgnwVMLsuyDNRWDIDMIgAKu8OyueYugqvF3gycoesd6f/AGYxo/kGuyZYAAAAAElFTkSuQmCC'
+
 function FigmaTurtleIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M5.2 13.7c.45-3.75 3.35-6.45 7.15-6.45 3.55 0 6.25 2.3 6.85 5.75H5.2v.7Z"
-        fill="currentColor"
-      />
-      <circle cx="20.25" cy="13.1" r="2.05" fill="currentColor" />
-      <path d="M5.15 13.2 2.9 12.25l.55 2.45 1.9-.55-.2-.95Z" fill="currentColor" />
-      <rect x="7.1" y="15.1" width="2.7" height="2.25" rx="1.05" fill="currentColor" />
-      <rect x="14.4" y="15.1" width="2.7" height="2.25" rx="1.05" fill="currentColor" />
-      <path d="M8.25 10.9h8.45M10.05 8.75v4.15M14.4 8.55v4.35" stroke="white" strokeWidth="1.1" strokeLinecap="round" opacity=".9" />
-      <circle cx="20.85" cy="12.65" r=".35" fill="white" />
-    </svg>
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'block',
+        width: 20,
+        height: 20,
+        backgroundImage: `url("${FIGMA_TURTLE_ICON}")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        backgroundSize: '22px 20px',
+      }}
+    />
   )
 }
 
 function FigmaRabbitIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M15.25 8.9c-.75-1.95-.7-5.65.15-7.05.3-.5.95-.45 1.2.1.7 1.55.55 4.75-.2 7.05l-1.15-.1Z"
-        fill="currentColor"
-      />
-      <path
-        d="M17.05 9.35c.15-2.1 1.35-5.25 2.55-6.35.45-.4 1.05-.15 1.05.45.05 1.75-1.35 4.65-2.55 6.35l-1.05-.45Z"
-        fill="currentColor"
-      />
-      <circle cx="16.4" cy="11.15" r="3.25" fill="currentColor" />
-      <ellipse cx="12.25" cy="16.45" rx="5.1" ry="4.15" fill="currentColor" />
-      <circle cx="7.1" cy="15.35" r="1.9" fill="currentColor" />
-      <ellipse cx="15.95" cy="20" rx="3.6" ry="1.35" fill="currentColor" />
-      <circle cx="17.25" cy="10.55" r=".42" fill="white" />
-      <path d="m19.2 12.25 1.55.5-1.55.55" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <span
+      aria-hidden="true"
+      style={{
+        display: 'block',
+        width: 20,
+        height: 20,
+        backgroundImage: `url("${FIGMA_RABBIT_ICON}")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        backgroundSize: '17px 20px',
+      }}
+    />
   )
 }
 
@@ -162,7 +161,7 @@ export default function VoiceOnboardingPage() {
               style={{
                 background: `linear-gradient(to right, var(--figma-green) 0%, var(--figma-green) ${progress}%, var(--figma-gray-200) ${progress}%, var(--figma-gray-200) 100%)`,
               }}
-              onChange={(event) => setRate(Number(event.target.value))}
+              onChange={(event) => setRate(Number(event.target.value))
             />
             <button type="button" className="speed-step" onClick={() => changeRate(0.1)} aria-label="음성 속도 높이기">
               +
