@@ -1,0 +1,206 @@
+/*
+ * Authoritative visual lock from 예서님's supplied Figma export ZIP.
+ * Do not redraw or substitute exported assets where the handoff supplies them.
+ * This file is intentionally imported LAST.
+ */
+:root {
+  --figma-green: #149e69;
+  --figma-green-hover: #0f7a52;
+  --figma-green-pressed: #0a6140;
+  --figma-green-light: #e6f7f1;
+  --figma-navy: #06054f;
+  --figma-gray-100: #f0f0f4;
+  --figma-gray-200: #e5e4ea;
+  --figma-gray-300: #cfced7;
+  --figma-gray-400: #b9b8c4;
+  --figma-gray-500: #a3a2b0;
+  --figma-gray-600: #77768a;
+  --figma-red: #e53e3e;
+  --figma-red-light: #fce7e7;
+  --figma-yellow: #fee500;
+  --yeoseo-email-glyph: url('/design/yeoseo/email-glyph.png');
+  --yeoseo-play: url('/design/yeoseo/icon/play.png');
+  --yeoseo-play-sm: url('/design/yeoseo/icon/play-sm.png');
+  --yeoseo-check: url('/design/yeoseo/icon/check.png');
+  --yeoseo-chevron-right: url('/design/yeoseo/icon/chevron-right.png');
+  --yeoseo-camera: url('/design/yeoseo/icon/camera.png');
+  --yeoseo-speaker: url('/design/yeoseo/icon/speaker.png');
+  --yeoseo-person: url('/design/yeoseo/icon/person.png');
+  --yeoseo-link: url('/design/yeoseo/icon/link.png');
+}
+
+/* Foundation colors/states copied from UI States.png. */
+.auth-layout,
+.onboarding-layout,
+.connection-page,
+.system-error-page {
+  color: var(--figma-navy);
+}
+
+.auth-layout .button--primary,
+.onboarding-layout .button--primary {
+  background: var(--figma-green);
+  border-color: var(--figma-green);
+}
+
+.auth-layout .button--primary:hover:not(:disabled),
+.onboarding-layout .button--primary:hover:not(:disabled) {
+  background: var(--figma-green-hover);
+  border-color: var(--figma-green-hover);
+}
+
+.auth-layout .button--primary:active:not(:disabled),
+.onboarding-layout .button--primary:active:not(:disabled) {
+  background: var(--figma-green-pressed);
+  border-color: var(--figma-green-pressed);
+}
+
+.auth-layout .button:disabled,
+.onboarding-layout .button:disabled {
+  color: var(--figma-gray-500);
+  background: var(--figma-gray-300);
+  border-color: var(--figma-gray-300);
+}
+
+/* 00 시작: replace the hand-drawn email SVG with 예서님's exact 14×14 export. */
+.auth-actions--figma .button:first-child > .social-icon {
+  display: none !important;
+}
+.auth-actions--figma .button:first-child::before {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateY(-50%);
+  background: var(--yeoseo-email-glyph) center / 14px 14px no-repeat;
+}
+
+/* All source back controls use icon/chevron-right.png rotated 180deg. */
+.back-button__icon > svg,
+.onboarding-back__icon > svg,
+.connection-back__icon > svg {
+  display: none !important;
+}
+.back-button__icon::before,
+.onboarding-back__icon::before,
+.connection-back__icon::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  background: var(--figma-green);
+  -webkit-mask: var(--yeoseo-chevron-right) center / contain no-repeat;
+  mask: var(--yeoseo-chevron-right) center / contain no-repeat;
+  transform: rotate(180deg);
+}
+
+/* 02 회원가입 / 01-A-2 reset guidance. */
+.password-hint--figma,
+.password-reset-hint {
+  color: var(--figma-navy);
+  background: var(--figma-green-light);
+  border-left-color: var(--figma-green);
+}
+.password-hint--figma > svg,
+.password-reset-hint > svg {
+  color: var(--figma-green);
+  flex: 0 0 auto;
+}
+
+/* 05 약관 동의: source frame has the checkbox only, no extra chevron. */
+.terms-list--figma .terms-row__actions > a {
+  display: none !important;
+}
+.terms-list--figma input[type="checkbox"] {
+  accent-color: var(--figma-green);
+}
+
+/* 05-A / 05-B: text is read-only inside the source card. */
+.policy-card {
+  scrollbar-width: thin;
+  scrollbar-color: var(--figma-gray-300) transparent;
+}
+.policy-card p {
+  margin: 0;
+}
+
+/* 09 사용자 프로필: exact 28x28 camera exported by 예서님. */
+.avatar-upload > svg {
+  display: none !important;
+}
+.avatar-upload:not(.avatar-upload--selected)::before {
+  content: "";
+  width: 28px;
+  height: 28px;
+  background: var(--yeoseo-camera) center / 28px 28px no-repeat;
+}
+
+/* Reuse the exact exported chevron silhouette for the birth-date selector. */
+.profile-date-button > svg {
+  display: none !important;
+}
+.profile-date-button::after {
+  content: "";
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  color: var(--figma-gray-600);
+  background: currentColor;
+  -webkit-mask: var(--yeoseo-chevron-right) center / contain no-repeat;
+  mask: var(--yeoseo-chevron-right) center / contain no-repeat;
+  transform: rotate(90deg);
+}
+
+/* 11 TTS 미리듣기: exact icon/play-sm.png. */
+.voice-preview > svg {
+  display: none !important;
+}
+.voice-preview::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  background: var(--yeoseo-play-sm) center / 20px 20px no-repeat;
+}
+
+/* 12 가입정보 확인: exact exported chevron shape tinted to source navy. */
+.confirm-row__chevron {
+  width: 20px;
+  height: 20px;
+  overflow: hidden;
+  color: transparent !important;
+  font-size: 0 !important;
+  background: var(--figma-gray-500);
+  -webkit-mask: var(--yeoseo-chevron-right) center / contain no-repeat;
+  mask: var(--yeoseo-chevron-right) center / contain no-repeat;
+}
+
+/* Source uses clean white cards and no app-invented shadows on auth/onboarding CTAs. */
+.auth-layout .button,
+.onboarding-layout .button,
+.mini-outline-button,
+.voice-preview,
+.connection-card {
+  box-shadow: none !important;
+}
+
+/* UI States error colors. */
+.field--error .field__control input,
+.verify-email-input--error,
+.code-field-wrap--error .code-field {
+  border-color: var(--figma-red) !important;
+  background: var(--figma-red-light) !important;
+}
+.field__message--error,
+.verify-inline-error,
+.verify-meta--error {
+  color: var(--figma-red) !important;
+}
+
+/* Preserve desktop source geometry while letting narrow screens shrink safely. */
+@media (max-width: 640px) {
+  .auth-actions--figma .button:first-child::before {
+    left: 16px;
+  }
+}
