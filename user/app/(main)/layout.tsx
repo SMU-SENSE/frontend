@@ -33,7 +33,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <header className="home-header">
         <img src='/logo.svg' alt="말모아로고" className="logo" />
         
-        <Link href="/" className="header-design" 
+        <Link href="/main" className="header-design" 
         style={{ backgroundColor: pathname !== '/setting' ? '#E6F8F1' : 'transparent',
               transform: pathname === '/setting' ? 'scale(0.95)' : 'scale(1)',
               color: pathname !== '/setting' ? '#149E69' : '#9C9BA8'}}>
@@ -51,10 +51,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <div className="content-cover">
           <div className="main">
             <aside className="leftbar">
-              <Link href="/" className="leftbar-design"
+              <Link href="/main" className="leftbar-design"
                style={{
-                  backgroundColor: pathname === '/' ? '#E6F8F1' : '#F0F0F4',
-                  color: pathname === '/' ? '#149E69' : '#9C9BA8'
+                  backgroundColor: pathname === '/main' ? '#E6F8F1' : '#F0F0F4',
+                  color: pathname === '/main' ? '#149E69' : '#9C9BA8'
                 }}>
                <Sparkles size={32} /> 추천
               </Link>
