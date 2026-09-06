@@ -161,7 +161,7 @@ export default function VoiceOnboardingPage() {
               style={{
                 background: `linear-gradient(to right, var(--figma-green) 0%, var(--figma-green) ${progress}%, var(--figma-gray-200) ${progress}%, var(--figma-gray-200) 100%)`,
               }}
-              onChange={(event) => setRate(Number(event.target.value))
+              onChange={(event) => setRate(Number(event.target.value))}
             />
             <button type="button" className="speed-step" onClick={() => changeRate(0.1)} aria-label="음성 속도 높이기">
               +
