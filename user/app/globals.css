@@ -65,6 +65,7 @@ html, body {
   height: 100%;
   gap: 12px;
 }
+/*MoveButton*/
 .leftbar-design{
   text-decoration: none;
   flex-direction: column;
@@ -86,10 +87,11 @@ html, body {
   white-space: nowrap;
   font-size: clamp(0.8rem, 2.5vw, 1.2rem);
 }
-.main-content{
+.main-content {
   flex: 1;
+  min-width: 0;
+  min-height: 0; 
   overflow-y: auto;
-  height: 100%;
   background-color: #F5F6F9;
 }
 .bottom {
@@ -117,56 +119,11 @@ html, body {
   height: 56px;
   transition: background-color 0.1s ease, color 0.1s ease;
 }
-.main-design{
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-  font-size: 24px;
-  border-radius: 24px;
-  border: none;
-  padding: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  max-width: 169px;
-  height: 168px;
-  transition: background-color 0.1s ease, color 0.1s ease;
-}
-.image{
-  object-fit: contain;
-  width: 169px;
-  height: 168px;
-}
-.grid{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  width: 100%; 
-  max-width: 579px;
-  height: 100%;
-  background-color: #F5F6F9;
-  padding: 24px;
-  text-decoration: none;
-  box-sizing: border-box;
-}
-.rightbar{
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 24px;
-  background-color: #ffffff;
-  width: 557px;
-  height: 100%;
-  overflow-y: auto;
+
+.rightbar {
+  width: clamp(280px, 30vw, 557px);
   flex-shrink: 0;
-}
-.make{
-  background-color: #F0F0F4;
-  width: 522px;
-  height: 180px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 24px;
+  min-height: 0;
 }
 .error{
   display: flex;
@@ -291,6 +248,7 @@ html, body {
   text-align: center;
   position: relative;
 }
+/*뒤로가기 버튼*/
 .back {
   position: absolute;
   top: 30px;
@@ -311,22 +269,26 @@ html, body {
   padding: 4px;
   border-radius: 50%;
 }
+/*코드 입력*/
 .code-title {
   font-size: 24px;
   font-weight: bold;
   color: #06054F;
   margin-bottom: 8px;
 }
+/*6자리 코드를 입력하세요*/
 .code-sub {
   color: #7a7a8c;
   font-size: 14px;
   margin-bottom: 32px;
 }
+/*입력*/
 .code-button {
   display: flex;
   gap: 10px;
   margin-bottom: 32px;
 }
+/* 6자리 입력 칸 */
 .code-input {
   width: 50px;
   height: 60px;
@@ -339,6 +301,7 @@ html, body {
   color: #1a1a2e;
   outline: none;
 }
+/*연결하기*/
 .code-main {
   width: 100%;
   max-width: 360px;
@@ -353,6 +316,7 @@ html, body {
   box-shadow: 0 4px 12px rgba(20, 158, 105, 0.2);
   margin-bottom: 20px;
 }
+/*QR로 스캔*/
 .code-QR {
   background: none;
   border: none;

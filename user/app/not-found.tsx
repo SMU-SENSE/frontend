@@ -18,7 +18,7 @@ export default function NotFound() {
         주소가 바뀌었거나 삭제되었을 수 있어요
       </p>
 
-      <Link href="/main" className="error-button">
+      <Link href="/home" className="error-button">
         홈으로
       </Link>
     </div>
