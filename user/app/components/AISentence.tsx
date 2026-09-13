@@ -279,14 +279,15 @@ export default function AISentence({
       }
       // ────────────────────────────────────────────
 
-      // AI 문장 생성 API 가 정해지면 아래를 쓰면 됨
-      // const res = await apiClient.post(API_ENDPOINTS.AAC.MAKE_SENTENCE, {
-      //   aacUserId: getAacUserId(),
-      //   words: labels,
-      //   count: SUGGESTION_COUNT,
-      // });
+      // AI 문장 생성 API 를 붙일 때는 아래를 쓰면 됨.
+      // services/ttsService.ts 의 sentenceAndLogService.generateSentences 와 같은 API.
+      // 주의: 글자가 아니라 symbolIds(숫자 배열)를 보내야 함.
+      // const res = await apiClient.post(
+      //   API_ENDPOINTS.AAC_USERS.GENERATE_SENTENCE(getAacUserId()),
+      //   { symbolIds, tone: 'POLITE' }
+      // );
       // const source = (res as any)?.data ?? res;
-      // setSuggestions(source?.sentences ?? makeMockSentences(labels));
+      // setSuggestions(source?.candidates ?? []);
 
       setSuggestions(makeMockSentences(labels));
     } catch (error) {

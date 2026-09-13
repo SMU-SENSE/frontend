@@ -24,6 +24,17 @@ export const API_ENDPOINTS = {
 
     USAGE_LOGS: (aacUserId: number) =>
       `/api/v1/aac-users/${aacUserId}/usage-logs`,
+
+    PROFILE: (aacUserId: number) =>
+      `/api/v1/aac-users/${aacUserId}/profile`,
+
+    // AI 문장 생성 — 경로는 백엔드 명세 확정되면 수정
+    GENERATE_SENTENCE: (aacUserId: number) =>
+      `/api/v1/aac-users/${aacUserId}/generate-sentence`,
+
+    // 긴급 상황 알림 — 경로는 백엔드 명세 확정되면 수정
+    EMERGENCY_TRIGGER: (aacUserId: number) =>
+      `/api/v1/aac-users/${aacUserId}/emergency`,
   },
 
   // 카테고리
