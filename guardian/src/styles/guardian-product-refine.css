@@ -1,0 +1,411 @@
+/* Latest guardian handoff visual QA overrides — 2026-09-16
+ * Reference targets: environment settings, routine modal, category editor and voice settings.
+ * Loaded after guardian-product.css so the original implementation remains easy to compare.
+ */
+
+/* Environment settings */
+.gp-page{
+  padding:30px 32px 44px;
+}
+.gp-page__title{
+  height:62px;
+  gap:24px;
+  margin-bottom:26px;
+}
+.gp-page__title h1{
+  font-size:36px;
+  letter-spacing:-.05em;
+}
+.gp-setting-card{
+  min-height:282px;
+  padding:35px 34px 33px;
+}
+.gp-setting-card h2,.gp-routine-card h2,.gp-account-card h2{
+  font-size:25px;
+  letter-spacing:-.045em;
+}
+.gp-setting-card p,.gp-routine-card p{
+  font-size:15px;
+}
+.gp-choice-row{
+  gap:20px;
+  margin-top:27px;
+}
+.gp-choice{
+  height:126px;
+  border-radius:29px;
+  font-size:36px;
+  letter-spacing:-.03em;
+}
+.gp-choice-row--voice{
+  gap:13px;
+}
+.gp-choice-row--voice .gp-choice{
+  height:77px;
+  border-radius:24px;
+  font-size:18px;
+}
+.gp-routine-card{
+  margin-top:26px;
+  min-height:448px;
+  padding:34px;
+}
+.gp-routine-list{
+  margin-top:31px;
+}
+.gp-routine-row{
+  min-height:100px;
+}
+.gp-routine-copy strong{
+  font-size:20px;
+  letter-spacing:-.02em;
+}
+.gp-repeat{
+  padding:4px 11px;
+}
+.gp-switch{
+  width:68px;
+  height:38px;
+}
+.gp-add-button{
+  height:48px;
+  padding:0 20px;
+}
+.gp-shortcut{
+  min-height:132px;
+}
+
+/* Routine modal — reference is a 960px card with a 48px radius. */
+.gp-modal-backdrop{
+  background:rgba(28,29,31,.43);
+}
+.gp-routine-modal{
+  width:min(960px,calc(100vw - 70px));
+  border-radius:48px;
+}
+.gp-routine-modal__head{
+  height:138px;
+  padding:0 48px;
+}
+.gp-routine-modal__head h2{
+  font-size:32px;
+  letter-spacing:-.04em;
+}
+.gp-routine-modal__body{
+  padding:41px 48px 30px;
+}
+.gp-field-title{
+  font-size:19px;
+  margin-bottom:18px;
+}
+.gp-repeat-row button{
+  height:90px;
+  border-radius:29px;
+  font-size:25px;
+}
+.gp-time-section{
+  margin-top:60px;
+}
+.gp-time-picker{
+  gap:20px;
+}
+.gp-ampm{
+  gap:16px;
+  margin-right:25px;
+}
+.gp-ampm button{
+  width:92px;
+  height:67px;
+  border-radius:31px;
+  font-size:20px;
+}
+.gp-time-column{
+  grid-template-rows:auto 80px 128px 80px;
+  gap:8px;
+}
+.gp-time-column button{
+  width:80px;
+  height:80px;
+  border-radius:30px;
+}
+.gp-time-value{
+  width:128px;
+  height:128px;
+  border-radius:30px;
+  font-size:56px;
+}
+.gp-colon{
+  margin-top:73px;
+}
+.gp-selected-time{
+  margin-top:22px!important;
+  font-size:19px!important;
+}
+.gp-sentence-field{
+  margin-top:43px;
+}
+.gp-sentence-field input{
+  height:94px;
+  border-radius:30px;
+  padding:0 35px;
+  font-size:21px;
+}
+.gp-routine-modal__foot{
+  padding:32px 48px;
+  grid-template-columns:1fr 150px;
+}
+.gp-routine-modal__foot button{
+  height:88px;
+  border-radius:30px;
+  font-size:24px;
+}
+
+/* Category editor — latest handoff is left-heavy (~59/41) and uses rounded list cards. */
+.gp-category-page{
+  grid-template-columns:59% 41%;
+  background:#fff;
+}
+.gp-category-maker{
+  padding:26px 16px 0 17px;
+}
+.gp-category-maker .gp-voice-back{
+  display:none;
+}
+.gp-category-preview{
+  height:176px;
+  border-radius:31px;
+  justify-content:flex-start;
+  gap:31px;
+  padding:0 31px;
+  background:#f2f3f6;
+}
+.gp-category-preview span{
+  width:112px;
+  height:112px;
+  border:4px solid var(--gp-green);
+  border-radius:30px;
+  background:#dff1ea;
+  display:grid;
+  place-items:center;
+  font-size:53px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);
+}
+.gp-category-preview strong{
+  font-size:33px;
+  color:#a7a7b2;
+  letter-spacing:-.04em;
+}
+.gp-category-maker h3{
+  margin:27px 0 13px;
+  font-size:22px;
+  color:#a2a2ad;
+  letter-spacing:-.04em;
+}
+.gp-icon-palette{
+  grid-template-columns:repeat(8,minmax(0,1fr));
+  gap:10px 12px;
+}
+.gp-icon-palette button{
+  width:100%;
+  max-width:78px;
+  justify-self:center;
+  font-size:31px;
+  background:#f4f5f8;
+}
+.gp-icon-palette button.is-selected{
+  box-shadow:0 0 0 4px var(--gp-green);
+}
+.gp-category-maker input{
+  height:88px;
+  border-radius:30px;
+  padding:0 34px;
+  font-size:25px;
+  font-weight:800;
+  color:#57575f;
+  background:#f7f7f9;
+}
+.gp-color-palette{
+  gap:13px;
+  flex-wrap:nowrap;
+}
+.gp-color-palette button{
+  width:75px;
+  height:75px;
+  border:0;
+  box-shadow:none;
+  flex:0 1 75px;
+}
+.gp-color-palette button.is-selected{
+  box-shadow:0 0 0 4px #fff,0 0 0 7px var(--gp-green);
+}
+.gp-category-add{
+  height:106px;
+  margin-top:54px;
+  border-radius:31px;
+  font-size:27px;
+  letter-spacing:-.03em;
+}
+.gp-category-list{
+  padding:27px 17px 24px 30px;
+}
+.gp-category-list h1{
+  margin:0 0 18px;
+  font-size:27px;
+  letter-spacing:-.04em;
+}
+.gp-category-list>p{
+  margin:0 0 39px;
+  font-size:17px;
+}
+.gp-category-row{
+  height:104px;
+  margin-bottom:12px;
+  padding:0 22px;
+  border:0;
+  border-radius:31px;
+  background:#f4f5f8;
+  grid-template-columns:28px 58px 1fr auto;
+  gap:18px;
+}
+.gp-category-row>span{
+  width:58px;
+  height:58px;
+  font-size:27px;
+}
+.gp-category-row strong{
+  font-size:23px;
+  letter-spacing:-.03em;
+}
+.gp-category-row em{
+  padding:6px 14px;
+  font-size:14px;
+}
+
+/* Voice settings — match the compact 658×510 reference instead of the older wizard layout. */
+.gp-voice-page{
+  min-height:100vh;
+  max-width:658px;
+  padding:27px 98px 28px;
+  text-align:center;
+}
+.gp-voice-page .gp-voice-back{
+  display:none;
+}
+.gp-progress{
+  gap:7px;
+  margin:0 0 16px;
+}
+.gp-progress i{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+}
+.gp-voice-page h1{
+  margin:0 0 10px;
+  font-size:31px;
+  text-align:center;
+  letter-spacing:-.04em;
+}
+.gp-voice-page>p{
+  margin:0 0 24px;
+  font-size:16px;
+  text-align:center;
+}
+.gp-voice-options{
+  gap:9px;
+}
+.gp-voice-option{
+  height:58px;
+  border-radius:15px;
+  padding:0 16px;
+  font-size:16px;
+}
+.gp-voice-option:after{
+  display:none;
+}
+.gp-voice-option.is-selected{
+  color:var(--gp-navy);
+}
+.gp-voice-option:disabled{
+  display:none;
+}
+.gp-speed-title{
+  margin-top:25px;
+  font-size:16px;
+}
+.gp-speed-control{
+  grid-template-columns:24px 40px 1fr 40px 24px;
+  gap:8px;
+  margin-top:15px;
+  text-align:center;
+}
+.gp-speed-control button{
+  height:38px;
+  border-radius:8px;
+  font-size:20px;
+}
+.gp-speed-control input{
+  height:5px;
+}
+.gp-speed-scale{
+  margin:5px 67px 0;
+  font-size:11px;
+}
+.gp-preview{
+  height:68px;
+  margin-top:25px;
+  border-radius:14px;
+  grid-template-columns:42px 1fr;
+  padding:0 16px;
+  text-align:center;
+}
+.gp-preview>span{
+  width:24px;
+  height:24px;
+  justify-self:end;
+  background:var(--gp-green);
+  color:#fff;
+}
+.gp-preview>span svg{
+  width:13px;
+  height:13px;
+}
+.gp-preview strong{
+  font-size:16px;
+}
+.gp-preview small{
+  font-size:12px;
+}
+
+@media(max-width:1050px){
+  .gp-category-page{grid-template-columns:1fr}
+  .gp-category-maker{padding:24px 20px 30px;border-right:0;border-bottom:1px solid #ececf0}
+  .gp-category-list{padding:30px 20px}
+  .gp-icon-palette{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .gp-color-palette{flex-wrap:wrap}
+}
+
+@media(max-width:700px){
+  .gp-page{padding:18px 14px 34px}
+  .gp-page__title h1{font-size:28px}
+  .gp-setting-card,.gp-routine-card{padding:22px 18px}
+  .gp-choice{height:88px;font-size:26px;border-radius:22px}
+  .gp-choice-row--voice .gp-choice{height:64px;font-size:15px}
+  .gp-routine-modal{width:calc(100vw - 24px);border-radius:30px}
+  .gp-routine-modal__head{height:96px;padding:0 24px}
+  .gp-routine-modal__head>span{width:54px;height:54px}
+  .gp-routine-modal__head button{right:24px}
+  .gp-routine-modal__body{padding:28px 24px 22px}
+  .gp-routine-modal__foot{padding:22px 24px;grid-template-columns:1fr 100px}
+  .gp-repeat-row button{height:68px;font-size:20px}
+  .gp-ampm{margin-right:4px}
+  .gp-ampm button{width:72px;height:56px}
+  .gp-time-column button{width:58px;height:58px}
+  .gp-time-column{grid-template-rows:auto 58px 86px 58px}
+  .gp-time-value{width:86px;height:86px;font-size:38px}
+  .gp-colon{font-size:38px;margin-top:56px}
+  .gp-voice-page{max-width:none;padding:26px 24px 30px}
+  .gp-speed-scale{margin:5px 57px 0}
+  .gp-icon-palette{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .gp-category-preview strong{font-size:25px}
+}
