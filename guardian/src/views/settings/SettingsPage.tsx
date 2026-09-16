@@ -1,261 +1,314 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Grid3X3, Play, RotateCcw, ScanLine, Volume2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { userApi } from '../../api/user'
-import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
-import { Button } from '../../components/ui/Button'
-import { Card } from '../../components/ui/Card'
-import { PageHeader } from '../../components/ui/PageHeader'
-import { useToast } from '../../components/ui/ToastProvider'
 import {
-  defaultPreferences,
-  usePreferencesStore,
-} from '../../stores/preferencesStore'
-import type { UserPreferences } from '../../types/models'
+  ArrowLeft,
+  BarChart3,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Clock3,
+  Info,
+  LogOut,
+  Plus,
+  Trash2,
+  TriangleAlert,
+  X,
+} from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { aacUserApi } from '../../api/aacUsers'
+import { authApi } from '../../api/auth'
+import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
+import { useToast } from '../../components/ui/ToastProvider'
+import { useAuthStore } from '../../stores/authStore'
+import { usePreferencesStore } from '../../stores/preferencesStore'
+import type { BackendGridSize, BackendVoiceType } from '../../types/models'
 
-interface VoiceOption {
+type Routine = {
   id: string
-  label: string
+  time: string
+  repeat: '매일' | '요일'
+  sentence: string
+  enabled: boolean
 }
 
+type RoutineDraft = {
+  repeat: '매일' | '요일'
+  ampm: '오전' | '오후'
+  hour: number
+  minute: number
+  sentence: string
+}
+
+const DEFAULT_ROUTINES: Routine[] = [
+  { id: 'school', time: '08:00', repeat: '매일', sentence: '등교 준비 — 학교 상징 우선', enabled: true },
+  { id: 'medicine', time: '12:30', repeat: '매일', sentence: '점심 약 복용 알림 팝업', enabled: true },
+  { id: 'sleep', time: '21:00', repeat: '매일', sentence: '취침 루틴 — 양치, 약, 졸려요', enabled: false },
+]
+
+const ROUTINE_STORAGE_KEY = 'malmoa-guardian-routines'
+
 export default function SettingsPage() {
+  const router = useRouter()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
-  const setStoredPreferences = usePreferencesStore((state) => state.setPreferences)
-  const [draft, setDraft] = useState<UserPreferences>(defaultPreferences)
-  const [voices, setVoices] = useState<VoiceOption[]>([
-    { id: 'ko-KR-default', label: '한국어 기본 음성' },
-  ])
-  const preferencesQuery = useQuery({
-    queryKey: ['user', 'preferences'],
-    queryFn: userApi.getPreferences,
-  })
+  const logoutStore = useAuthStore((state) => state.logout)
+  const patchPreferences = usePreferencesStore((state) => state.patchPreferences)
+  const [routineModalOpen, setRoutineModalOpen] = useState(false)
+  const [routines, setRoutines] = useState<Routine[]>(DEFAULT_ROUTINES)
+
+  const usersQuery = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
+  const user = useMemo(
+    () => usersQuery.data?.find((item) => item.active) ?? usersQuery.data?.[0] ?? null,
+    [usersQuery.data],
+  )
 
   useEffect(() => {
-    if (preferencesQuery.data) {
-      // 서버 응답을 편집용 draft와 다른 AAC 화면이 읽는 전역 Store에 동기화한다.
-      setDraft(preferencesQuery.data)
-      setStoredPreferences(preferencesQuery.data)
+    const saved = window.localStorage.getItem(ROUTINE_STORAGE_KEY)
+    if (!saved) return
+    try {
+      const parsed = JSON.parse(saved) as Routine[]
+      if (Array.isArray(parsed)) setRoutines(parsed)
+    } catch {
+      // 잘못된 로컬 값은 기본 루틴을 유지한다.
     }
-  }, [preferencesQuery.data, setStoredPreferences])
-
-  useEffect(() => {
-    // 브라우저 TTS 음성 목록은 비동기로 준비될 수 있어 voiceschanged도 구독한다.
-    if (!('speechSynthesis' in window)) return
-    const loadVoices = () => {
-      const browserVoices = window.speechSynthesis
-        .getVoices()
-        .filter((voice) => voice.lang.startsWith('ko'))
-        .map((voice) => ({ id: voice.voiceURI, label: voice.name }))
-      if (browserVoices.length > 0) {
-        setVoices([{ id: 'ko-KR-default', label: '한국어 기본 음성' }, ...browserVoices])
-      }
-    }
-    loadVoices()
-    window.speechSynthesis.addEventListener('voiceschanged', loadVoices)
-    return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices)
   }, [])
 
-  const mutation = useMutation({
-    mutationFn: userApi.updatePreferences,
-    onSuccess: (preferences) => {
-      queryClient.setQueryData(['user', 'preferences'], preferences)
-      setStoredPreferences(preferences)
-      showToast('사용 환경 설정을 저장했어요.')
+  const gridMutation = useMutation({
+    mutationFn: ({ userId, gridSize }: { userId: number; gridSize: BackendGridSize }) =>
+      aacUserApi.updateGrid(userId, gridSize),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['aac-users'], (current: typeof usersQuery.data) =>
+        current?.map((item) => (item.id === updated.id ? updated : item)),
+      )
+      const columns = updated.gridSize === 'GRID_2X2' ? 2 : updated.gridSize === 'GRID_3X3' ? 3 : 4
+      if (columns >= 3) patchPreferences({ gridColumns: columns as 3 | 4 })
+      showToast('화면 격자 설정이 저장되었습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
 
-  const isDirty = useMemo(
-    // 설정 구조가 단순한 값 객체이므로 직렬화 비교로 저장 버튼 활성화를 결정한다.
-    () => JSON.stringify(draft) !== JSON.stringify(preferencesQuery.data),
-    [draft, preferencesQuery.data],
-  )
+  const voiceMutation = useMutation({
+    mutationFn: ({ userId, voiceType, speechRate }: { userId: number; voiceType: BackendVoiceType; speechRate: number }) =>
+      aacUserApi.updateVoice(userId, voiceType, speechRate),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['aac-users'], (current: typeof usersQuery.data) =>
+        current?.map((item) => (item.id === updated.id ? updated : item)),
+      )
+      patchPreferences({ voiceRate: updated.speechRate ?? 1 })
+      showToast('TTS 음성 설정이 저장되었습니다.')
+    },
+    onError: (error) => showToast(error.message, 'error'),
+  })
 
-  const testVoice = () => {
-    if (!('speechSynthesis' in window)) {
-      showToast('현재 브라우저에서는 음성 미리듣기를 지원하지 않아요.', 'error')
-      return
-    }
-    window.speechSynthesis.cancel()
-    // 미리듣기는 서버에 저장하기 전 draft 값을 사용한다.
-    const utterance = new SpeechSynthesisUtterance('안녕하세요. 말모아 음성 미리듣기입니다.')
-    utterance.lang = 'ko-KR'
-    utterance.rate = draft.voiceRate
-    utterance.pitch = draft.voicePitch
-    const selected = window.speechSynthesis
-      .getVoices()
-      .find((voice) => voice.voiceURI === draft.voiceId)
-    if (selected) utterance.voice = selected
-    window.speechSynthesis.speak(utterance)
+  function persistRoutines(next: Routine[]) {
+    setRoutines(next)
+    window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next))
   }
 
-  if (preferencesQuery.isLoading) return <PageLoader />
-  if (preferencesQuery.error) {
-    return (
-      <ErrorState
-        message={preferencesQuery.error.message}
-        onRetry={() => preferencesQuery.refetch()}
-      />
-    )
+  async function handleLogout() {
+    try {
+      await authApi.logout()
+    } catch {
+      // 세션 만료 상태여도 클라이언트 세션은 정리한다.
+    } finally {
+      logoutStore()
+      router.replace('/welcome')
+    }
+  }
+
+  if (usersQuery.isLoading) return <PageLoader label="사용자 설정을 불러오는 중입니다." />
+  if (usersQuery.error) return <ErrorState message={usersQuery.error.message} onRetry={() => usersQuery.refetch()} />
+  if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => usersQuery.refetch()} />
+
+  return (
+    <main className="gp-page">
+      <header className="gp-page__title">
+        <Link className="gp-back" href="/" aria-label="메인으로 돌아가기"><ChevronLeft size={30} /></Link>
+        <h1>환경 설정</h1>
+      </header>
+
+      <div className="gp-settings-top">
+        <section className="gp-card gp-setting-card">
+          <h2>화면 격자 크기</h2>
+          <p>소근육 조절 능력에 맞게 설정</p>
+          <div className="gp-choice-row">
+            {([
+              ['GRID_2X2', '2×2'],
+              ['GRID_3X3', '3×3'],
+              ['GRID_4X4', '4×4'],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={user.gridSize === value ? 'gp-choice is-selected' : 'gp-choice'}
+                disabled={gridMutation.isPending}
+                onClick={() => gridMutation.mutate({ userId: user.id, gridSize: value })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="gp-card gp-setting-card">
+          <h2>TTS 음성</h2>
+          <p>또래 집단과 어울리는 자연스러운 음성</p>
+          <div className="gp-choice-row gp-choice-row--voice">
+            <button
+              type="button"
+              className={user.voiceType === 'CHILD_MALE' ? 'gp-choice is-selected' : 'gp-choice'}
+              disabled={voiceMutation.isPending}
+              onClick={() => voiceMutation.mutate({ userId: user.id, voiceType: 'CHILD_MALE', speechRate: user.speechRate ?? 1 })}
+            >또래 남아</button>
+            <button
+              type="button"
+              className={user.voiceType === 'CHILD_FEMALE' ? 'gp-choice is-selected' : 'gp-choice'}
+              disabled={voiceMutation.isPending}
+              onClick={() => voiceMutation.mutate({ userId: user.id, voiceType: 'CHILD_FEMALE', speechRate: user.speechRate ?? 1 })}
+            >또래 여아</button>
+            <Link href="/settings/voice" className="gp-choice" style={{ display: 'grid', placeItems: 'center', textDecoration: 'none' }}>성인 여성</Link>
+          </div>
+        </section>
+      </div>
+
+      <section className="gp-card gp-routine-card">
+        <div className="gp-routine-head">
+          <div><h2>루틴 스케줄러</h2><p>지정 시간에 완성형 문장 자동 팝업</p></div>
+          <button type="button" className="gp-add-button" onClick={() => setRoutineModalOpen(true)}><Plus size={19} /> 추가</button>
+        </div>
+        <div className="gp-routine-list">
+          {routines.map((routine) => (
+            <div className="gp-routine-row" key={routine.id}>
+              <Clock3 className="gp-routine-clock" size={31} />
+              <div className="gp-routine-copy">
+                <strong>{routine.time}</strong><span className="gp-repeat">{routine.repeat}</span>
+                <p>{routine.sentence}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={routine.enabled}
+                className={routine.enabled ? 'gp-switch is-on' : 'gp-switch'}
+                onClick={() => persistRoutines(routines.map((item) => item.id === routine.id ? { ...item, enabled: !item.enabled } : item))}
+              ><i /></button>
+              <button type="button" className="gp-trash" aria-label="루틴 삭제" onClick={() => persistRoutines(routines.filter((item) => item.id !== routine.id))}><Trash2 size={23} /></button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="gp-lower-grid">
+        <Link className="gp-card gp-shortcut" href="/settings/report">
+          <span className="gp-shortcut__icon"><BarChart3 size={31} /></span>
+          <div><strong>사용 기록 조회</strong><small>월별 / 일별 발화 기록 확인 및 삭제</small></div><ChevronRight size={28} />
+        </Link>
+        <Link className="gp-card gp-shortcut" href="/settings/language">
+          <span className="gp-shortcut__icon is-yellow"><Info size={31} /></span>
+          <div><strong>도움말 · 버전 정보</strong><small>FAQ · 고객센터 · 앱 지원 · v2.4.1</small></div><ChevronRight size={28} />
+        </Link>
+      </div>
+
+      <section className="gp-card gp-account-card">
+        <h2>계정</h2>
+        <div className="gp-account-actions">
+          <button type="button" onClick={() => void handleLogout()}><LogOut size={23} style={{ verticalAlign: 'middle', marginRight: 10 }} />로그아웃</button>
+          <button type="button" className="danger" disabled title="회원 탈퇴 백엔드 API 연결 후 활성화"><TriangleAlert size={23} style={{ verticalAlign: 'middle', marginRight: 10 }} />회원탈퇴</button>
+        </div>
+      </section>
+
+      <nav aria-label="세부 설정" style={{ display: 'none' }}>
+        <Link href="/settings/language">문장 이해 수준 설정</Link>
+        <Link href="/settings/categories">카테고리 편집</Link>
+        <Link href="/settings/location">장소 관리</Link>
+        <Link href="/settings/voice">TTS 음성 설정</Link>
+      </nav>
+
+      <button type="button" className="gp-help" aria-label="도움말">?</button>
+      {routineModalOpen ? <RoutineModal onClose={() => setRoutineModalOpen(false)} onSave={(routine) => { persistRoutines([...routines, routine]); setRoutineModalOpen(false); showToast('루틴이 추가되었습니다.') }} /> : null}
+    </main>
+  )
+}
+
+function RoutineModal({ onClose, onSave }: { onClose: () => void; onSave: (routine: Routine) => void }) {
+  const [draft, setDraft] = useState<RoutineDraft>({ repeat: '매일', ampm: '오전', hour: 9, minute: 0, sentence: '' })
+  const canSave = draft.sentence.trim().length > 0
+
+  function bump(field: 'hour' | 'minute', delta: number) {
+    setDraft((current) => {
+      if (field === 'hour') {
+        const next = current.hour + delta
+        return { ...current, hour: next > 12 ? 1 : next < 1 ? 12 : next }
+      }
+      return { ...current, minute: (current.minute + delta + 60) % 60 }
+    })
+  }
+
+  function submit() {
+    if (!canSave) return
+    let hour = draft.hour
+    if (draft.ampm === '오후' && hour < 12) hour += 12
+    if (draft.ampm === '오전' && hour === 12) hour = 0
+    onSave({
+      id: crypto.randomUUID(),
+      time: `${String(hour).padStart(2, '0')}:${String(draft.minute).padStart(2, '0')}`,
+      repeat: draft.repeat,
+      sentence: draft.sentence.trim(),
+      enabled: true,
+    })
   }
 
   return (
-    <div className="page page--narrow">
-      <PageHeader
-        title="사용 환경 설정"
-        description="격자, 자동 스캔, 음성 설정을 사용자에게 맞게 저장할 수 있어요."
-      />
-
-      <Card className="settings-section">
-        <div className="settings-section__heading">
-          <span><Grid3X3 size={20} /></span>
-          <div>
-            <h2>격자 크기</h2>
-            <p>한 화면에 표시할 상징 수를 선택하세요.</p>
+    <div className="gp-modal-backdrop" role="presentation">
+      <section className="gp-routine-modal" role="dialog" aria-modal="true" aria-labelledby="routine-title">
+        <header className="gp-routine-modal__head">
+          <span><Clock3 size={39} /></span><h2 id="routine-title">루틴 추가</h2>
+          <button type="button" aria-label="닫기" onClick={onClose}><X size={38} /></button>
+        </header>
+        <div className="gp-routine-modal__body">
+          <span className="gp-field-title">반복 주기</span>
+          <div className="gp-repeat-row">
+            <button type="button" className={draft.repeat === '매일' ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, repeat: '매일' })}>매일</button>
+            <button type="button" className={draft.repeat === '요일' ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, repeat: '요일' })}>요일</button>
+          </div>
+          <div className="gp-time-section">
+            <span className="gp-field-title">시간</span>
+            <div className="gp-time-picker">
+              <div className="gp-ampm">
+                <button type="button" className={draft.ampm === '오전' ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, ampm: '오전' })}>오전</button>
+                <button type="button" className={draft.ampm === '오후' ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, ampm: '오후' })}>오후</button>
+              </div>
+              <TimeColumn label="시" value={draft.hour} onUp={() => bump('hour', 1)} onDown={() => bump('hour', -1)} />
+              <b className="gp-colon">:</b>
+              <TimeColumn label="분" value={draft.minute} onUp={() => bump('minute', 5)} onDown={() => bump('minute', -5)} />
+            </div>
+            <p className="gp-selected-time">선택된 시간: <b>{draft.ampm} {String(draft.hour).padStart(2, '0')}:{String(draft.minute).padStart(2, '0')}</b></p>
+          </div>
+          <div className="gp-sentence-field">
+            <span className="gp-field-title">출력할 문장</span>
+            <input autoFocus={false} placeholder="예: 물과 약을 가져다주세요" value={draft.sentence} onChange={(event) => setDraft({ ...draft, sentence: event.target.value })} />
           </div>
         </div>
-        <div className="segmented-options">
-          {([3, 4, 5] as const).map((columns) => (
-            <button
-              type="button"
-              key={columns}
-              className={draft.gridColumns === columns ? 'is-active' : ''}
-              onClick={() => setDraft((current) => ({ ...current, gridColumns: columns }))}
-            >
-              <span className={`mini-grid mini-grid--${columns}`} aria-hidden>
-                {Array.from({ length: columns * 2 }).map((_, index) => (
-                  <i key={index} />
-                ))}
-              </span>
-              {columns}열
-            </button>
-          ))}
-        </div>
-      </Card>
+        <footer className="gp-routine-modal__foot">
+          <button type="button" className="primary" disabled={!canSave} onClick={submit}><Check size={26} style={{ verticalAlign: 'middle', marginRight: 10 }} />저장</button>
+          <button type="button" onClick={onClose}>취소</button>
+        </footer>
+      </section>
+    </div>
+  )
+}
 
-      <Card className="settings-section">
-        <div className="settings-section__heading">
-          <span><ScanLine size={20} /></span>
-          <div>
-            <h2>자동 스캔 속도</h2>
-            <p>포커스가 다음 항목으로 이동하는 간격이에요.</p>
-          </div>
-        </div>
-        <div className="settings-control">
-          <input
-            type="range"
-            min="0"
-            max="3"
-            step="1"
-            aria-label="자동 스캔 속도"
-            value={([800, 1200, 1800, 2400] as const).indexOf(draft.scanSpeedMs)}
-            onChange={(event) => {
-              const value = ([800, 1200, 1800, 2400] as const)[Number(event.target.value)]
-              if (value) setDraft((current) => ({ ...current, scanSpeedMs: value }))
-            }}
-          />
-          <output>{(draft.scanSpeedMs / 1000).toFixed(1)}초</output>
-        </div>
-      </Card>
-
-      <Card className="settings-section">
-        <div className="settings-section__heading">
-          <span><Volume2 size={20} /></span>
-          <div>
-            <h2>음성 설정</h2>
-            <p>TTS에서 사용할 목소리와 말하기 방식을 설정하세요.</p>
-          </div>
-        </div>
-        <div className="settings-grid">
-          <label>
-            음성
-            <select
-              value={draft.voiceId}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, voiceId: event.target.value }))
-              }
-            >
-              {voices.map((voice) => (
-                <option value={voice.id} key={voice.id}>
-                  {voice.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            말하기 속도
-            <input
-              type="range"
-              min="0.6"
-              max="1.4"
-              step="0.1"
-              value={draft.voiceRate}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  voiceRate: Number(event.target.value),
-                }))
-              }
-            />
-            <output>{draft.voiceRate.toFixed(1)}배</output>
-          </label>
-          <label>
-            음높이
-            <input
-              type="range"
-              min="0.7"
-              max="1.3"
-              step="0.1"
-              value={draft.voicePitch}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  voicePitch: Number(event.target.value),
-                }))
-              }
-            />
-            <output>{draft.voicePitch.toFixed(1)}</output>
-          </label>
-          <label className="toggle-row">
-            <span>
-              <strong>문장 선택 후 자동 재생</strong>
-              <small>선택을 완료하면 TTS를 바로 재생합니다.</small>
-            </span>
-            <input
-              type="checkbox"
-              role="switch"
-              checked={draft.autoSpeak}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, autoSpeak: event.target.checked }))
-              }
-            />
-          </label>
-        </div>
-        <Button variant="outline" leftIcon={<Play size={16} />} onClick={testVoice}>
-          음성 미리듣기
-        </Button>
-      </Card>
-
-      <div className="sticky-actions">
-        <Button
-          variant="outline"
-          leftIcon={<RotateCcw size={16} />}
-          disabled={!isDirty || mutation.isPending}
-          onClick={() => setDraft(preferencesQuery.data ?? defaultPreferences)}
-        >
-          변경 취소
-        </Button>
-        <Button
-          disabled={!isDirty}
-          loading={mutation.isPending}
-          onClick={() => mutation.mutate(draft)}
-        >
-          설정 저장
-        </Button>
-      </div>
+function TimeColumn({ label, value, onUp, onDown }: { label: string; value: number; onUp: () => void; onDown: () => void }) {
+  return (
+    <div className="gp-time-column">
+      <span>{label}</span>
+      <button type="button" aria-label={`${label} 증가`} onClick={onUp}><ChevronUp /></button>
+      <div className="gp-time-value">{String(value).padStart(2, '0')}</div>
+      <button type="button" aria-label={`${label} 감소`} onClick={onDown}><ChevronDown /></button>
     </div>
   )
 }
