@@ -17,6 +17,7 @@ import '../styles/figma-source-lock.css'
 import '../styles/figma-position-lock.css'
 import '../styles/yeoseo-source.css'
 import '../styles/guardian-product.css'
+import '../styles/guardian-onboarding.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
