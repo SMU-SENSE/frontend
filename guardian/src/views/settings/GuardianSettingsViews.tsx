@@ -113,35 +113,85 @@ export function CategoryEditorPage() {
   const [icon, setIcon] = useState('📁')
   const [name, setName] = useState('')
   const [color, setColor] = useState('#149E69')
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [orderIds, setOrderIds] = useState<string[]>([])
+  const [iconMap, setIconMap] = useState<Record<string, string>>({})
   const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list })
+
+  useEffect(() => {
+    try {
+      const rawIcons = window.localStorage.getItem('malmoa-category-icons')
+      if (rawIcons) setIconMap(JSON.parse(rawIcons) as Record<string, string>)
+      const rawOrder = window.localStorage.getItem('malmoa-category-order')
+      if (rawOrder) setOrderIds(JSON.parse(rawOrder) as string[])
+    } catch {}
+  }, [])
+
   const createMutation = useMutation({
     mutationFn: () => categoriesApi.create({ name: name.trim(), color }),
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      const nextIcons = { ...iconMap, [created.id]: icon }
+      setIconMap(nextIcons)
+      window.localStorage.setItem('malmoa-category-icons', JSON.stringify(nextIcons))
       setName('')
+      setIcon('📁')
       showToast('카테고리가 추가되었습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
   const removeMutation = useMutation({
     mutationFn: categoriesApi.remove,
-    onSuccess: () => {
+    onSuccess: (_result, categoryId) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      const nextOrder = orderIds.filter((id) => id !== categoryId)
+      const nextIcons = { ...iconMap }
+      delete nextIcons[categoryId]
+      setOrderIds(nextOrder)
+      setIconMap(nextIcons)
+      window.localStorage.setItem('malmoa-category-order', JSON.stringify(nextOrder))
+      window.localStorage.setItem('malmoa-category-icons', JSON.stringify(nextIcons))
       showToast('카테고리가 삭제되었습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
 
   const items = useMemo(() => {
-    if (categories.data?.length) return categories.data
-    return DEFAULT_CATEGORY_NAMES.map((categoryName, index) => ({
-      id: `base-${index}`,
-      name: categoryName,
-      color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-      order: index,
-      sentenceCount: 0,
-    }))
-  }, [categories.data])
+    const base = categories.data?.length
+      ? [...categories.data]
+      : DEFAULT_CATEGORY_NAMES.map((categoryName, index) => ({
+          id: `base-${index}`,
+          name: categoryName,
+          color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+          order: index,
+          sentenceCount: 0,
+        }))
+    const natural = [...base].sort((x, y) => x.order - y.order)
+    if (!orderIds.length) return natural
+    const rank = new Map(orderIds.map((id, index) => [id, index]))
+    return natural.sort((x, y) => (rank.get(x.id) ?? 9999 + x.order) - (rank.get(y.id) ?? 9999 + y.order))
+  }, [categories.data, orderIds])
+
+  function persistOrder(next: string[]) {
+    setOrderIds(next)
+    window.localStorage.setItem('malmoa-category-order', JSON.stringify(next))
+    if (next.every((id) => !id.startsWith('base-'))) {
+      categoriesApi.reorder(next).then(() => queryClient.invalidateQueries({ queryKey: ['categories'] })).catch(() => {
+        // 실제 서버에 정렬 API가 아직 없으면 현재 보호자 기기 순서를 유지한다.
+      })
+    }
+  }
+
+  function moveCategory(targetId: string) {
+    if (!dragId || dragId === targetId) return
+    const ids = items.map((item) => item.id)
+    const from = ids.indexOf(dragId)
+    const to = ids.indexOf(targetId)
+    if (from < 0 || to < 0) return
+    ids.splice(to, 0, ids.splice(from, 1)[0])
+    persistOrder(ids)
+    setDragId(null)
+  }
 
   if (categories.isLoading) return <PageLoader label="카테고리를 불러오는 중입니다." />
   if (categories.error) return <ErrorState message={categories.error.message} onRetry={() => categories.refetch()} />
@@ -157,7 +207,7 @@ export function CategoryEditorPage() {
         <input placeholder="예: 취미활동" value={name} onChange={(event) => setName(event.target.value)} />
         <h3>대표 색상</h3>
         <div className="gp-color-palette">{CATEGORY_COLORS.map((value) => <button type="button" aria-label={`색상 ${value}`} key={value} className={color === value ? 'is-selected' : ''} style={{ background: value }} onClick={() => setColor(value)} />)}</div>
-        <button type="button" className="gp-category-add" disabled={!name.trim() || createMutation.isPending} onClick={() => createMutation.mutate()}>+ 카테고리 추가</button>
+        <button type="button" className="gp-category-add" disabled={!name.trim() || createMutation.isPending} onClick={() => createMutation.mutate()}>＋ 카테고리 추가</button>
       </section>
       <section className="gp-category-list">
         <h1>내 카테고리 ({items.length}개)</h1>
@@ -165,9 +215,17 @@ export function CategoryEditorPage() {
         {items.map((item, index) => {
           const isFallback = item.id.startsWith('base-')
           return (
-            <div className="gp-category-row" key={item.id}>
+            <div
+              className={dragId === item.id ? 'gp-category-row is-dragging' : 'gp-category-row'}
+              key={item.id}
+              draggable
+              onDragStart={() => setDragId(item.id)}
+              onDragEnd={() => setDragId(null)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => moveCategory(item.id)}
+            >
               <GripVertical />
-              <span style={{ background: `${item.color}20`, color: item.color }}>{CATEGORY_ICONS[index % CATEGORY_ICONS.length]}</span>
+              <span style={{ background: `${item.color}20`, color: item.color }}>{iconMap[item.id] || CATEGORY_ICONS[index % CATEGORY_ICONS.length]}</span>
               <strong>{item.name}</strong>
               {isFallback ? <em>기본</em> : <button type="button" aria-label={`${item.name} 삭제`} onClick={() => removeMutation.mutate(item.id)}><Trash2 size={19} /></button>}
             </div>
