@@ -28,6 +28,9 @@ type Place = {
   address: string
   start: string
   end: string
+  latitude?: number
+  longitude?: number
+  radius?: number
 }
 
 const CATEGORY_ICONS = ['📁', '🌟', '❤️', '🎯', '🎨', '🎵', '🏃', '🍎', '🌈', '🔥', '💎', '🦋']
