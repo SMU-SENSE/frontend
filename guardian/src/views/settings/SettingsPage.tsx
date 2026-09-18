@@ -219,7 +219,12 @@ export default function SettingsPage() {
               disabled={voiceMutation.isPending}
               onClick={() => voiceMutation.mutate({ userId: user.id, voiceType: 'CHILD_FEMALE', speechRate: user.speechRate ?? 1 })}
             >또래 여아</button>
-            <Link href="/settings/voice" className="gp-choice" style={{ display: 'grid', placeItems: 'center', textDecoration: 'none' }}>성인 여성</Link>
+            <button
+              type="button"
+              className={user.voiceType === 'ADULT_FEMALE' ? 'gp-choice is-selected' : 'gp-choice'}
+              disabled={voiceMutation.isPending}
+              onClick={() => voiceMutation.mutate({ userId: user.id, voiceType: 'ADULT_FEMALE', speechRate: user.speechRate ?? 1 })}
+            >성인 여성</button>
           </div>
         </section>
       </div>
@@ -273,6 +278,7 @@ export default function SettingsPage() {
         <Link href="/settings/language"><span>🧠</span><div><strong>문장 이해 수준</strong><small>AI 추천 문장 길이 설정</small></div><ChevronRight size={22} /></Link>
         <Link href="/settings/categories"><span>🗂️</span><div><strong>카테고리 편집</strong><small>아이콘·색상·순서 관리</small></div><ChevronRight size={22} /></Link>
         <Link href="/settings/location"><span>📍</span><div><strong>장소 관리</strong><small>GPS·안심존·시간 조건</small></div><ChevronRight size={22} /></Link>
+        <Link href="/connect"><span>🔗</span><div><strong>사용자 기기 연결</strong><small>QR·초대 코드·연결 기기 관리</small></div><ChevronRight size={22} /></Link>
         <Link href="/settings/voice"><span>🔊</span><div><strong>TTS 상세 설정</strong><small>음성 종류·속도·미리듣기</small></div><ChevronRight size={22} /></Link>
       </nav>
 
