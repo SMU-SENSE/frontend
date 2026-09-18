@@ -589,3 +589,52 @@ body::after{
 .gp-support-row strong,.gp-support-row small{display:block}.gp-support-row small{color:#9b9ba7;margin-top:3px}
 .gp-support-contact{margin-top:16px;height:48px;border-radius:13px;background:#f3f4f7;color:#60606b;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800}
 @media(max-width:760px){.gp-help-grid{grid-template-columns:1fr}.gp-help-hero,.gp-help-grid>section{border-radius:24px;padding:22px}}
+
+
+/* Live backend data refinements */
+.gp-coordinate-preview{
+  display:block;
+  padding:9px 12px;
+  border-radius:10px;
+  background:#f4f8f6;
+  color:#638176;
+  font-size:11px;
+  font-weight:700;
+}
+.gp-live-heart-list{
+  position:absolute;
+  inset:18px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  align-content:center;
+}
+.gp-live-heart-list span{
+  min-height:74px;
+  border-radius:14px;
+  background:rgba(255,255,255,.88);
+  display:grid;
+  place-items:center;
+  padding:8px;
+}
+.gp-live-heart-list b{color:#149E69;font-size:15px}
+.gp-live-heart-list small{color:#9a9aa5;font-size:10px}
+.gp-sensor-events{display:grid;gap:8px;margin-top:14px}
+.gp-sensor-events article{
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  gap:10px;
+  align-items:center;
+  padding:11px 12px;
+  border-radius:12px;
+  background:#f6f7f9;
+  font-size:11px;
+}
+.gp-sensor-events article strong{color:#50515a}
+.gp-sensor-events article span{color:#149E69;font-weight:800}
+.gp-sensor-events article time{color:#9a9aa5}
+@media(max-width:700px){
+  .gp-live-heart-list{grid-template-columns:repeat(2,1fr)}
+  .gp-sensor-events article{grid-template-columns:1fr auto}
+  .gp-sensor-events article time{grid-column:1/-1}
+}
