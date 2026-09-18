@@ -32,8 +32,9 @@ type Place = {
 }
 
 const CATEGORY_ICONS = ['📁', '🌟', '❤️', '🎯', '🎨', '🎵', '🏃', '🍎', '🌈', '🔥', '💎', '🦋']
-const CATEGORY_COLORS = ['#149E69', '#F2C14E', '#F07478', '#FF9D52', '#7F8BF3', '#79C7DE', '#F4AE7B', '#B8C4BF']
+const CATEGORY_COLORS = ['#149E69', '#F2C14E', '#FF9D52', '#F07478', '#7F8BF3', '#79C7DE', '#F4AE7B', '#B8C4BF']
 const DEFAULT_CATEGORY_NAMES = ['긴급어', '사람', '음식·장소·신체', '행동', '감정·설명', '대화', '문법']
+const DEFAULT_CATEGORY_ICONS: Record<string, string> = { 긴급어: '🆘', 사람: '👩', '음식·장소·신체': '🍱', 행동: '🙌', '감정·설명': '😊', 대화: '💬', 문법: '🔗' }
 
 function ProductTitle({ title }: { title: string }) {
   return (
@@ -200,22 +201,28 @@ export function CategoryEditorPage() {
       <section className="gp-category-list">
         <h1>내 카테고리 ({items.length}개)</h1>
         <p>⠿ 아이콘을 드래그해서 순서 변경</p>
-        {items.map((item, index) => (
-          <div
-            className={dragId === item.id ? 'gp-category-row is-dragging' : 'gp-category-row'}
-            key={item.id}
-            draggable
-            onDragStart={() => setDragId(item.id)}
-            onDragEnd={() => setDragId(null)}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={() => void moveCategory(item.id)}
-          >
-            <GripVertical />
-            <span style={{ background: `${item.color}20`, color: item.color }}>{iconMap[item.id] || CATEGORY_ICONS[index % CATEGORY_ICONS.length]}</span>
-            <strong>{item.name}</strong>
-            <button type="button" aria-label={`${item.name} 삭제`} onClick={() => removeMutation.mutate(item.id)}><Trash2 size={19} /></button>
-          </div>
-        ))}
+        {items.map((item, index) => {
+          const isDefault = DEFAULT_CATEGORY_NAMES.includes(item.name)
+          const categoryIcon = iconMap[item.id] || DEFAULT_CATEGORY_ICONS[item.name] || CATEGORY_ICONS[index % CATEGORY_ICONS.length]
+          return (
+            <div
+              className={dragId === item.id ? 'gp-category-row is-dragging' : 'gp-category-row'}
+              key={item.id}
+              draggable
+              onDragStart={() => setDragId(item.id)}
+              onDragEnd={() => setDragId(null)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => void moveCategory(item.id)}
+            >
+              <GripVertical />
+              <span style={{ background: `${item.color}20`, color: item.color }}>{categoryIcon}</span>
+              <strong>{item.name}</strong>
+              {isDefault
+                ? <em>기본</em>
+                : <button type="button" aria-label={`${item.name} 삭제`} onClick={() => removeMutation.mutate(item.id)}><Trash2 size={19} /></button>}
+            </div>
+          )
+        })}
       </section>
     </main>
   )
