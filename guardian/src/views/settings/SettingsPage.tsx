@@ -231,7 +231,7 @@ export default function SettingsPage() {
           <span className="gp-shortcut__icon"><BarChart3 size={31} /></span>
           <div><strong>사용 기록 조회</strong><small>월별 / 일별 발화 기록 확인 및 삭제</small></div><ChevronRight size={28} />
         </Link>
-        <Link className="gp-card gp-shortcut" href="/settings/language">
+        <Link className="gp-card gp-shortcut" href="/settings/help">
           <span className="gp-shortcut__icon is-yellow"><Info size={31} /></span>
           <div><strong>도움말 · 버전 정보</strong><small>FAQ · 고객센터 · 앱 지원 · v2.4.1</small></div><ChevronRight size={28} />
         </Link>
