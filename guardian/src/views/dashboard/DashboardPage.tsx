@@ -67,6 +67,16 @@ export default function DashboardPage() {
     },
     onError: (error) => showToast(error.message, 'error'),
   })
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { content?: string; imageUrl?: string | null } }) =>
+      sentencesApi.update(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sentences'] })
+      setEditing(null)
+      showToast('상징 카드가 저장되었습니다.')
+    },
+    onError: (error) => showToast(error.message, 'error'),
+  })
 
   const isLoading = categories.isLoading || sentences.isLoading || notifications.isLoading || aacUsers.isLoading
   const error = categories.error ?? sentences.error ?? notifications.error ?? aacUsers.error
@@ -74,7 +84,7 @@ export default function DashboardPage() {
   if (error) return <ErrorState message={error.message} onRetry={() => { categories.refetch(); sentences.refetch(); notifications.refetch(); aacUsers.refetch() }} />
 
   const sentenceItems = sentences.data ?? []
-  const categoryItems = categories.data ?? []
+  const categoryItems = [...(categories.data ?? [])].sort((a, b) => a.order - b.order)
   const activeUser = aacUsers.data?.find((item) => item.active) ?? aacUsers.data?.[0]
   const columns = activeUser?.gridSize === 'GRID_2X2' ? 2 : activeUser?.gridSize === 'GRID_3X3' ? 3 : 4
   const visible = categoryId === 'all'
@@ -133,6 +143,8 @@ export default function DashboardPage() {
             {visible.length === 0 ? <div className="gp-empty">이 카테고리에 표시할 카드가 아직 없어요.</div> : visible.map((sentence, index) => {
               const customized = customizations[sentence.id]
               const selected = selectedId === sentence.id
+              const displayText = customized?.text || sentence.content
+              const displayImage = customized?.imageUrl || sentence.imageUrl || ''
               return (
                 <button
                   type="button"
@@ -153,8 +165,8 @@ export default function DashboardPage() {
                     onClick={(event) => { event.stopPropagation(); favoriteMutation.mutate({ id: sentence.id, favorite: !sentence.favorite }) }}
                     onKeyDown={(event) => { if (event.key === 'Enter') favoriteMutation.mutate({ id: sentence.id, favorite: !sentence.favorite }) }}
                   >{sentence.favorite ? '★' : '☆'}</span>
-                  {customized?.imageUrl ? <img src={customized.imageUrl} alt="" className="gp-symbol__visual" style={{ objectFit: 'cover' }} /> : <span className="gp-symbol__visual">{CARD_EMOJI[index % CARD_EMOJI.length]}</span>}
-                  <strong>{customized?.text || sentence.content}</strong>
+                  {displayImage ? <img src={displayImage} alt="" className="gp-symbol__visual" style={{ objectFit: 'cover' }} /> : <span className="gp-symbol__visual">{CARD_EMOJI[index % CARD_EMOJI.length]}</span>}
+                  <strong>{displayText}</strong>
                 </button>
               )
             })}
@@ -162,7 +174,16 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      {editing ? <CardEditor sentence={editing} customization={customizations[editing.id]} onClose={() => setEditing(null)} onSave={(next) => { persistCustomization(editing.id, next); setEditing(null); showToast('상징 카드 표시가 저장되었습니다.') }} onFavorite={() => favoriteMutation.mutate({ id: editing.id, favorite: !editing.favorite })} onDelete={() => { if (window.confirm('상징 카드를 삭제하시겠습니까?')) removeMutation.mutate(editing.id) }} /> : null}
+      {editing ? <CardEditor sentence={editing} customization={customizations[editing.id]} onClose={() => setEditing(null)} onSave={(next) => {
+        persistCustomization(editing.id, next)
+        updateMutation.mutate({
+          id: editing.id,
+          input: {
+            content: next.text?.trim() || editing.content,
+            imageUrl: next.imageUrl ?? editing.imageUrl ?? null,
+          },
+        })
+      }} onFavorite={() => favoriteMutation.mutate({ id: editing.id, favorite: !editing.favorite })} onDelete={() => { if (window.confirm('상징 카드를 삭제하시겠습니까?')) removeMutation.mutate(editing.id) }} /> : null}
       {newCardOpen ? <NewCardModal categories={categoryItems} onClose={() => setNewCardOpen(false)} /> : null}
       {onboardingStep ? <Onboarding step={onboardingStep} onNext={() => onboardingStep === 1 ? setOnboardingStep(2) : closeOnboarding()} onSkip={closeOnboarding} /> : null}
     </main>
@@ -171,7 +192,7 @@ export default function DashboardPage() {
 
 function CardEditor({ sentence, customization, onClose, onSave, onFavorite, onDelete }: { sentence: Sentence; customization?: CardCustomization; onClose: () => void; onSave: (next: CardCustomization) => void; onFavorite: () => void; onDelete: () => void }) {
   const [text, setText] = useState(customization?.text ?? sentence.content)
-  const [imageUrl, setImageUrl] = useState(customization?.imageUrl ?? '')
+  const [imageUrl, setImageUrl] = useState(customization?.imageUrl ?? sentence.imageUrl ?? '')
   function loadImage(file?: File) {
     if (!file) return
     const reader = new FileReader()
@@ -184,7 +205,11 @@ function CardEditor({ sentence, customization, onClose, onSave, onFavorite, onDe
         <button type="button" className="gp-modal-x" onClick={onClose}><X /></button>
         <h2>상징 카드 편집</h2>
         <label>카드 텍스트<input value={text} onChange={(event) => setText(event.target.value)} /></label>
-        <label>이미지 변경<span className="gp-head-btn" style={{ justifyContent: 'center' }}><ImagePlus size={18} /> 이미지 선택<input hidden type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} /></span></label>
+        <label>이미지 변경
+          {imageUrl ? <img src={imageUrl} alt="선택한 상징 미리보기" className="gp-card-image-preview" /> : null}
+          <span className="gp-head-btn" style={{ justifyContent: 'center' }}><ImagePlus size={18} /> 이미지 선택<input hidden type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} /></span>
+          {imageUrl ? <button type="button" className="gp-image-remove" onClick={() => setImageUrl('')}>이미지 제거</button> : null}
+        </label>
         <button type="button" className="gp-head-btn" style={{ width: '100%', justifyContent: 'center' }} onClick={onFavorite}><Star size={18} />{sentence.favorite ? '즐겨찾기 해제' : '즐겨찾기 등록'}</button>
         <div className="gp-edit-modal__actions"><button type="button" className="danger" onClick={onDelete}><Trash2 size={17} /> 삭제</button><button type="button" className="primary" onClick={() => onSave({ text: text.trim() || sentence.content, imageUrl: imageUrl || undefined })}>저장</button></div>
       </section>
