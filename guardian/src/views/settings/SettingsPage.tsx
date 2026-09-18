@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
 import { authApi } from '../../api/auth'
+import { guardianLiveApi, type LiveRoutine } from '../../api/guardianLive'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { useToast } from '../../components/ui/ToastProvider'
 import { useAuthStore } from '../../stores/authStore'
@@ -29,7 +30,7 @@ import { usePreferencesStore } from '../../stores/preferencesStore'
 import type { BackendGridSize, BackendVoiceType } from '../../types/models'
 
 type Routine = {
-  id: string
+  id: string | number
   time: string
   repeat: '매일' | '요일'
   sentence: string
@@ -52,8 +53,6 @@ const DEFAULT_ROUTINES: Routine[] = [
   { id: 'sleep', time: '21:00', repeat: '매일', sentence: '취침 루틴 — 양치, 약, 졸려요', enabled: false },
 ]
 
-const ROUTINE_STORAGE_KEY = 'malmoa-guardian-routines'
-
 export default function SettingsPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -61,24 +60,17 @@ export default function SettingsPage() {
   const logoutStore = useAuthStore((state) => state.logout)
   const patchPreferences = usePreferencesStore((state) => state.patchPreferences)
   const [routineModalOpen, setRoutineModalOpen] = useState(false)
-  const [routines, setRoutines] = useState<Routine[]>(DEFAULT_ROUTINES)
 
   const usersQuery = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
   const user = useMemo(
     () => usersQuery.data?.find((item) => item.active) ?? usersQuery.data?.[0] ?? null,
     [usersQuery.data],
   )
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(ROUTINE_STORAGE_KEY)
-    if (!saved) return
-    try {
-      const parsed = JSON.parse(saved) as Routine[]
-      if (Array.isArray(parsed)) setRoutines(parsed)
-    } catch {
-      // 잘못된 로컬 값은 기본 루틴을 유지한다.
-    }
-  }, [])
+  const routinesQuery = useQuery({
+    queryKey: ['guardian-routines', user?.id],
+    queryFn: () => guardianLiveApi.routines(user!.id),
+    enabled: Boolean(user),
+  })
 
   const gridMutation = useMutation({
     mutationFn: ({ userId, gridSize }: { userId: number; gridSize: BackendGridSize }) =>
@@ -107,17 +99,55 @@ export default function SettingsPage() {
     onError: (error) => showToast(error.message, 'error'),
   })
 
-  function persistRoutines(next: Routine[]) {
-    setRoutines(next)
-    window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next))
-    // 사용자 AAC 앱이 같은 origin에서 열려 있을 때 즉시 갱신할 수 있도록 변경 신호를 보낸다.
-    try {
-      const channel = new BroadcastChannel('malmoa-routines')
-      channel.postMessage({ type: 'routines-updated', routines: next })
-      channel.close()
-    } catch {}
-    window.dispatchEvent(new StorageEvent('storage', { key: ROUTINE_STORAGE_KEY, newValue: JSON.stringify(next) }))
-  }
+  const dayMap = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY']
+  const routines: Routine[] = (routinesQuery.data ?? []).map((item) => ({
+    id: item.id,
+    time: item.timeOfDay.slice(0, 5),
+    repeat: item.daysOfWeek.length >= 7 ? '매일' : '요일',
+    sentence: item.message,
+    enabled: item.enabled,
+    days: item.daysOfWeek.map((day) => dayMap.indexOf(day)).filter((day) => day >= 0),
+  }))
+
+  const createRoutineMutation = useMutation({
+    mutationFn: (routine: Routine) => guardianLiveApi.createRoutine(user!.id, {
+      title: routine.sentence.length > 24 ? `${routine.sentence.slice(0, 24)}…` : routine.sentence,
+      message: routine.sentence,
+      timeOfDay: `${routine.time}:00`,
+      daysOfWeek: routine.repeat === '매일' ? dayMap : (routine.days ?? [1,2,3,4,5]).map((day) => dayMap[day]),
+      timezone: 'Asia/Seoul',
+      enabled: routine.enabled,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guardian-routines', user?.id] })
+      setRoutineModalOpen(false)
+      showToast('루틴이 추가되었습니다.')
+    },
+    onError: (error) => showToast(error.message, 'error'),
+  })
+
+  const updateRoutineMutation = useMutation({
+    mutationFn: ({ routine, enabled }: { routine: LiveRoutine; enabled: boolean }) => guardianLiveApi.updateRoutine(user!.id, routine.id, {
+      title: routine.title,
+      message: routine.message,
+      timeOfDay: routine.timeOfDay,
+      daysOfWeek: routine.daysOfWeek,
+      timezone: routine.timezone,
+      enabled,
+      lastTriggeredDate: routine.lastTriggeredDate,
+    }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guardian-routines', user?.id] }),
+    onError: (error) => showToast(error.message, 'error'),
+  })
+
+  const deleteRoutineMutation = useMutation({
+    mutationFn: (routineId: string | number) => guardianLiveApi.deleteRoutine(user!.id, routineId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guardian-routines', user?.id] })
+      showToast('루틴을 삭제했습니다.')
+    },
+    onError: (error) => showToast(error.message, 'error'),
+  })
 
   async function handleLogout() {
     try {
@@ -145,8 +175,9 @@ export default function SettingsPage() {
     }
   }
 
-  if (usersQuery.isLoading) return <PageLoader label="사용자 설정을 불러오는 중입니다." />
-  if (usersQuery.error) return <ErrorState message={usersQuery.error.message} onRetry={() => usersQuery.refetch()} />
+  if (usersQuery.isLoading || (user && routinesQuery.isLoading)) return <PageLoader label="사용자 설정을 불러오는 중입니다." />
+  const settingsError = usersQuery.error ?? routinesQuery.error
+  if (settingsError) return <ErrorState message={settingsError.message} onRetry={() => { usersQuery.refetch(); routinesQuery.refetch() }} />
   if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => usersQuery.refetch()} />
 
   return (
@@ -218,9 +249,9 @@ export default function SettingsPage() {
                 role="switch"
                 aria-checked={routine.enabled}
                 className={routine.enabled ? 'gp-switch is-on' : 'gp-switch'}
-                onClick={() => persistRoutines(routines.map((item) => item.id === routine.id ? { ...item, enabled: !item.enabled } : item))}
+                onClick={() => { const source = routinesQuery.data?.find((item) => String(item.id) === String(routine.id)); if (source) updateRoutineMutation.mutate({ routine: source, enabled: !source.enabled }) }}
               ><i /></button>
-              <button type="button" className="gp-trash" aria-label="루틴 삭제" onClick={() => persistRoutines(routines.filter((item) => item.id !== routine.id))}><Trash2 size={23} /></button>
+              <button type="button" className="gp-trash" aria-label="루틴 삭제" onClick={() => deleteRoutineMutation.mutate(routine.id)}><Trash2 size={23} /></button>
             </div>
           ))}
         </div>
@@ -253,7 +284,7 @@ export default function SettingsPage() {
       </nav>
 
       <button type="button" className="gp-help" aria-label="도움말" onClick={() => window.alert('말모아 보호자 M+\n설정 · 카드 편집 · 사용자 연결 및 리포트 기능을 제공합니다.')}>?</button>
-      {routineModalOpen ? <RoutineModal onClose={() => setRoutineModalOpen(false)} onSave={(routine) => { persistRoutines([...routines, routine]); setRoutineModalOpen(false); showToast('루틴이 추가되었습니다.') }} /> : null}
+      {routineModalOpen ? <RoutineModal onClose={() => setRoutineModalOpen(false)} onSave={(routine) => createRoutineMutation.mutate(routine)} /> : null}
     </main>
   )
 }
