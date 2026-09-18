@@ -130,6 +130,21 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleWithdraw() {
+    const confirmed = window.confirm('말모아 회원을 탈퇴하시겠습니까? 저장된 보호자 설정과 연결 정보가 삭제될 수 있습니다.')
+    if (!confirmed) return
+    const typed = window.prompt('계속하려면 “탈퇴”를 입력해 주세요.')
+    if (typed !== '탈퇴') return
+    try {
+      await authApi.deleteAccount()
+      Object.keys(window.localStorage).filter((key) => key.startsWith('malmoa-')).forEach((key) => window.localStorage.removeItem(key))
+      logoutStore()
+      router.replace('/welcome')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '회원 탈퇴를 처리하지 못했습니다.', 'error')
+    }
+  }
+
   if (usersQuery.isLoading) return <PageLoader label="사용자 설정을 불러오는 중입니다." />
   if (usersQuery.error) return <ErrorState message={usersQuery.error.message} onRetry={() => usersQuery.refetch()} />
   if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => usersQuery.refetch()} />
@@ -226,7 +241,7 @@ export default function SettingsPage() {
         <h2>계정</h2>
         <div className="gp-account-actions">
           <button type="button" onClick={() => void handleLogout()}><LogOut size={23} style={{ verticalAlign: 'middle', marginRight: 10 }} />로그아웃</button>
-          <button type="button" className="danger" disabled title="회원 탈퇴 백엔드 API 연결 후 활성화"><TriangleAlert size={23} style={{ verticalAlign: 'middle', marginRight: 10 }} />회원탈퇴</button>
+          <button type="button" className="danger" onClick={() => void handleWithdraw()}><TriangleAlert size={23} style={{ verticalAlign: 'middle', marginRight: 10 }} />회원탈퇴</button>
         </div>
       </section>
 
@@ -237,7 +252,7 @@ export default function SettingsPage() {
         <Link href="/settings/voice"><span>🔊</span><div><strong>TTS 상세 설정</strong><small>음성 종류·속도·미리듣기</small></div><ChevronRight size={22} /></Link>
       </nav>
 
-      <button type="button" className="gp-help" aria-label="도움말">?</button>
+      <button type="button" className="gp-help" aria-label="도움말" onClick={() => window.alert('말모아 보호자 M+\n설정 · 카드 편집 · 사용자 연결 및 리포트 기능을 제공합니다.')}>?</button>
       {routineModalOpen ? <RoutineModal onClose={() => setRoutineModalOpen(false)} onSave={(routine) => { persistRoutines([...routines, routine]); setRoutineModalOpen(false); showToast('루틴이 추가되었습니다.') }} /> : null}
     </main>
   )
