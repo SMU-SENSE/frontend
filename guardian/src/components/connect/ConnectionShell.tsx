@@ -8,27 +8,28 @@ export function ConnectionShell({
   title,
   subtitle,
   children,
-  backLabel = '뒤로가기',
 }: {
   title: string
   subtitle?: string
   children: ReactNode
-  backLabel?: string
 }) {
   const router = useRouter()
 
   return (
     <main className="connection-page">
+      <button type="button" className="connection-back" onClick={() => router.back()}>
+        <span className="connection-back__icon" aria-hidden="true">
+          <ArrowLeft size={20} strokeWidth={2.2} />
+        </span>
+        <span>뒤로가기</span>
+      </button>
+
       <section className="connection-content">
         <div className="connection-heading">
           <h1>{title}</h1>
           {subtitle ? <p>{subtitle}</p> : null}
         </div>
         {children}
-        <button type="button" className="connection-bottom-back" onClick={() => router.back()}>
-          <ArrowLeft size={20} strokeWidth={2.2} />
-          <span>{backLabel}</span>
-        </button>
       </section>
     </main>
   )
