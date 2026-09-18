@@ -57,9 +57,9 @@ export default function QrConnectionPage() {
   const qrImage = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=${encodeURIComponent(payload)}`
 
   return (
-    <ConnectionShell title="QR로 연결" subtitle="사용자 기기에서 스캔하면 바로 연결돼요">
+    <ConnectionShell title="사용자 기기 연결">
+      <div className="connection-reference-title"><h2>QR 코드</h2><p>아래 QR 코드를 사용자 기기에서 스캔해주세요.</p></div>
       <div className="connection-card connection-card--qr">
-        <p className="connection-card__instruction">사용자 기기에서 이 QR 코드를 스캔하세요</p>
         <div className={`qr-box ${expired ? 'qr-box--expired' : ''}`}>
           <img className="qr-real-image" src={qrImage} alt="사용자 기기 연결 QR 코드" />
           {expired ? (
@@ -69,17 +69,13 @@ export default function QrConnectionPage() {
             </div>
           ) : null}
         </div>
-        {!expired ? (
-          <div className="connection-timer">
-            <span>남은 시간 {time}</span>
-            <span aria-hidden="true">·</span>
-            <button type="button" disabled={refresh.isPending} onClick={() => refresh.mutate()}><RefreshCw size={16} /> 새로고침</button>
-          </div>
-        ) : null}
+        <div className="connection-valid-time">유효 시간 <strong>{time}</strong></div>
+        <button type="button" className="connection-refresh-button" disabled={refresh.isPending} onClick={() => refresh.mutate()}><RefreshCw size={17} /> 새로고침</button>
+        <p className="connection-refresh-note">새로고침 시 기존 QR 코드는 폐기돼요.</p>
         <button type="button" className="connection-copy-payload" onClick={async () => { await navigator.clipboard.writeText(payload); showToast('QR 연결 링크를 복사했습니다.') }}><Copy size={16} /> 연결 링크 복사</button>
       </div>
 
-      <Link className="connection-switch" href="/connect/code">초대 코드로 연결</Link>
+      <Link className="connection-switch" href="/connect/code">6자리 초대 코드로 연결하기</Link>
     </ConnectionShell>
   )
 }
