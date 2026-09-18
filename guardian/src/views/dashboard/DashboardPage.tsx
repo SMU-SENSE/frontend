@@ -347,7 +347,7 @@ function Onboarding({ step, onNext, onSkip }: { step: number; onNext: () => void
       <section className="gp-onboarding" role="dialog" aria-modal="true">
         <span className="gp-onboarding__step">{step} / 2</span>
         {step === 1 ? <><Sparkles size={46} /><h2>사용자 문장 이해 수준 설정</h2><p>사용자의 언어 발달 수준에 맞춰 AI 추천 문장 길이를 맞춤 설정하세요.</p><Link href="/settings/language">언어 수준 바로 설정하기</Link></> : <><SlidersHorizontal size={46} /><h2>보호자 편집 모드</h2><p>보호자 편집 모드 버튼을 켜거나 상징 카드를 꾹 누르면 글자 수정과 즐겨찾기 편집을 할 수 있어요.</p><div className="gp-longpress"><span>꾹</span><strong>상징 카드를 1초 이상 눌러보세요</strong></div></>}
-        <div className="gp-onboarding__actions"><button type="button" onClick={onSkip}>건너뛰기</button><button type="button" onClick={onNext}>{step === 1 ? '다음' : '시작하기'}</button></div>
+        <div className="gp-onboarding__actions"><button type="button" onClick={onSkip}>건너뛰기</button><button type="button" onClick={onNext}>다음</button></div>
       </section>
     </div>
   )
