@@ -166,6 +166,52 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   return requestReal<T>(path, options)
 }
 
+
+export async function apiRawRequest<T>(
+  path: string,
+  options: Omit<RequestInit, 'body'> & { body?: BodyInit; skipCsrf?: boolean } = {},
+): Promise<T> {
+  if (USE_MOCK_API) {
+    throw new ApiError('Raw API는 실제 백엔드 연결에서만 사용합니다.', 400, 'MOCK_RAW_UNSUPPORTED')
+  }
+
+  const method = String(options.method ?? 'GET').toUpperCase()
+  const { body, skipCsrf, ...fetchOptions } = options
+  const headers = new Headers(options.headers)
+  headers.set('Accept', 'application/json')
+
+  if (isMutation(method) && !skipCsrf) {
+    const token = await ensureCsrfToken()
+    headers.set(token.headerName, token.token)
+  }
+
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...fetchOptions,
+      method,
+      headers,
+      credentials: 'include',
+      body,
+    })
+  } catch {
+    routeToSystemError('/error/network')
+    throw new ApiError('네트워크에 연결되지 않았어요.', 0, 'NETWORK_ERROR')
+  }
+
+  if (!response.ok) {
+    if (response.status >= 500) routeToSystemError('/error')
+    throw await parseError(response)
+  }
+  if (response.status === 204) return undefined as T
+
+  const payload = (await response.json()) as T | ApiEnvelope<T>
+  if (payload && typeof payload === 'object' && 'success' in payload && 'data' in payload) {
+    return (payload as ApiEnvelope<T>).data
+  }
+  return payload as T
+}
+
 export function resetCsrfToken() {
   csrfToken = null
 }
