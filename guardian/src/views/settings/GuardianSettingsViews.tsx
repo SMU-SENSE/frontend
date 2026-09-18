@@ -499,44 +499,54 @@ export function GuardianReportPage() {
   const [period, setPeriod] = useState<'week' | 'month' | 'custom'>('week')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const sentences = useQuery({ queryKey: ['sentences', 'all'], queryFn: () => sentencesApi.list('all') })
-  const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list })
-  const notifications = useQuery({ queryKey: ['notifications'], queryFn: notificationsApi.list })
-  const error = sentences.error ?? categories.error ?? notifications.error
+  const { showToast } = useToast()
+  const users = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
+  const user = users.data?.find((item) => item.active) ?? users.data?.[0] ?? null
 
-  if (sentences.isLoading || categories.isLoading || notifications.isLoading) return <PageLoader label="리포트를 만드는 중입니다." />
-  if (error) return <ErrorState message={error.message} onRetry={() => { sentences.refetch(); categories.refetch(); notifications.refetch() }} />
+  const range = useMemo(() => {
+    const now = new Date()
+    if (period === 'custom' && startDate && endDate) {
+      return {
+        from: new Date(`${startDate}T00:00:00`).toISOString(),
+        to: new Date(`${endDate}T23:59:59.999`).toISOString(),
+      }
+    }
+    const from = new Date(now)
+    from.setDate(from.getDate() - (period === 'month' ? 30 : 7))
+    return { from: from.toISOString(), to: now.toISOString() }
+  }, [endDate, period, startDate])
 
-  const sentenceItems = sentences.data ?? []
-  const top = [...sentenceItems].sort((a, b) => b.useCount - a.useCount).slice(0, 5)
-  const maxUse = Math.max(1, ...top.map((item) => item.useCount))
-  const emergencyItems = (notifications.data ?? []).filter((item) => {
-    if (period !== 'custom' || !startDate || !endDate) return true
-    const created = new Date(item.createdAt).getTime()
-    return created >= new Date(`${startDate}T00:00:00`).getTime() && created <= new Date(`${endDate}T23:59:59`).getTime()
+  const report = useQuery({
+    queryKey: ['guardian-report', user?.id, range.from, range.to],
+    queryFn: () => guardianLiveApi.report(user!.id, range.from, range.to),
+    enabled: Boolean(user) && (period !== 'custom' || Boolean(startDate && endDate)),
   })
-  const emergencyCount = emergencyItems.length
-  const categoryMap = new Map((categories.data ?? []).map((item) => [item.id, item.name]))
-  const categoryCounts = sentenceItems.reduce<Record<string, number>>((acc, item) => {
-    const name = item.categoryName ?? (item.categoryId ? categoryMap.get(item.categoryId) : undefined) ?? '기타'
-    acc[name] = (acc[name] ?? 0) + item.useCount
-    return acc
-  }, {})
-  const categoryEntries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
-  const totalUses = Object.values(categoryCounts).reduce((sum, count) => sum + count, 0) || 1
-  const totalUtterances = sentenceItems.reduce((sum, item) => sum + item.useCount, 0)
+
+  const exportPdf = useMutation({
+    mutationFn: () => guardianLiveApi.downloadReportPdf(user!.id, range.from, range.to),
+    onError: (error) => showToast(error.message, 'error'),
+  })
+
+  if (users.isLoading || (user && report.isLoading)) return <PageLoader label="리포트를 만드는 중입니다." />
+  const error = users.error ?? report.error
+  if (error) return <ErrorState message={error.message} onRetry={() => { users.refetch(); report.refetch() }} />
+  if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
+
+  const data = report.data
+  const top = data?.topCards ?? []
+  const maxUse = Math.max(1, ...top.map((item) => item.count))
+  const categoryEntries = data?.categoryShares ?? []
   const colors = ['#149E69', '#F2C14E', '#75B7DF', '#E96B74', '#9F90DF']
   let cursor = 0
-  const stops = categoryEntries.map(([, count], index) => {
+  const stops = categoryEntries.slice(0, 5).map((item, index) => {
     const start = cursor
-    cursor += count / totalUses * 100
+    cursor += item.percent
     return `${colors[index]} ${start}% ${cursor}%`
   }).join(',')
   const donutStyle = { background: categoryEntries.length ? `conic-gradient(${stops})` : '#ECECF0' }
-  const periodLabel = period === 'week' ? '주간' : period === 'month' ? '월간' : startDate && endDate ? `${startDate} ~ ${endDate}` : '일자 지정'
-  const insight = top[0]
-    ? `${periodLabel} 기준으로 ‘${top[0].content}’ 표현이 ${top[0].useCount}회로 가장 많이 사용되었습니다.`
-    : '사용 기록이 누적되면 자주 사용하는 표현과 변화가 여기에 표시됩니다.'
+  const sensors = data?.sensors ?? []
+  const heartRates = sensors.filter((item) => item.type === 'HEART_RATE' && typeof item.value === 'number')
+  const insight = data?.insights?.length ? data.insights.join(' ') : '실제 사용 기록이 누적되면 발화·긴급·센서 변화를 분석해 표시합니다.'
 
   return (
     <main className="gp-subpage gp-report-page">
@@ -547,34 +557,31 @@ export function GuardianReportPage() {
           <button type="button" className={period === 'month' ? 'is-selected' : ''} onClick={() => setPeriod('month')}>월간</button>
           <button type="button" className={period === 'custom' ? 'is-selected' : ''} onClick={() => setPeriod('custom')}>일자 지정</button>
         </div>
-        <button type="button" className="gp-export" onClick={() => window.print()}>PDF 리포트 내보내기</button>
+        <button type="button" className="gp-export" disabled={!data || exportPdf.isPending} onClick={() => exportPdf.mutate()}>{exportPdf.isPending ? 'PDF 생성 중…' : 'PDF 리포트 내보내기'}</button>
       </div>
       {period === 'custom' ? <div className="gp-report-dates"><label>시작일<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label><span>—</span><label>종료일<input type="date" min={startDate || undefined} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label></div> : null}
-      <div className="gp-report-grid">
+      {!data ? <section className="gp-report-card"><p>조회 기간을 선택해 주세요.</p></section> : <div className="gp-report-grid">
         <section className="gp-report-card">
-          <h2>단어 사용 패턴 분석</h2><p>사용한 문장과 카테고리의 변화를 확인합니다.</p>
+          <h2>단어 사용 패턴 분석</h2><p>서버에 기록된 실제 AAC 카드 사용 데이터를 분석합니다.</p>
           <div className="gp-summary-grid">
-            <article className="gp-summary"><span>긴급 모드 발생</span><strong>{emergencyCount}회</strong></article>
-            <article className="gp-summary"><span>전체 발화 기록</span><strong>{totalUtterances}회</strong></article>
+            <article className="gp-summary"><span>긴급 모드 발생</span><strong>{data.emergencyCount}회</strong></article>
+            <article className="gp-summary"><span>전체 카드 사용</span><strong>{data.totalCardActions}회</strong></article>
           </div>
           <h3>자주 사용한 상징 TOP 5</h3>
-          <div className="gp-bars">{top.length ? top.map((item) => <div className="gp-bar-row" key={item.id}><span>{item.content}</span><div className="gp-bar"><i style={{ width: `${Math.max(7, item.useCount / maxUse * 100)}%` }} /></div><b>{item.useCount}회</b></div>) : <p>아직 사용 기록이 없습니다.</p>}</div>
+          <div className="gp-bars">{top.length ? top.map((item) => <div className="gp-bar-row" key={String(item.id)}><span>{item.name}</span><div className="gp-bar"><i style={{ width: `${Math.max(7, item.count / maxUse * 100)}%` }} /></div><b>{item.count}회</b></div>) : <p>아직 사용 기록이 없습니다.</p>}</div>
           <h3>카테고리별 발화 비중</h3>
-          <div className="gp-donut-wrap"><div className="gp-donut" style={donutStyle} /><div>{categoryEntries.map(([name, count], index) => <div className="gp-donut-legend" key={name}><i style={{ background: colors[index] }} /><strong>{name}</strong><span>{Math.round(count / totalUses * 100)}%</span></div>)}</div></div>
+          <div className="gp-donut-wrap"><div className="gp-donut" style={donutStyle} /><div>{categoryEntries.slice(0, 5).map((item, index) => <div className="gp-donut-legend" key={String(item.id)}><i style={{ background: colors[index] }} /><strong>{item.name}</strong><span>{item.percent.toFixed(1)}%</span></div>)}</div></div>
           <div className="gp-insight"><strong>AI 발화 맥락 인사이트</strong><br />{insight}</div>
         </section>
         <section className="gp-report-card">
-          <h2>심박 변동 및 표정 변화</h2><p>생체 심박 데이터와 표정 인식 이벤트를 같은 시간축에 표시합니다.</p>
-          <div className="gp-heart-chart"><svg viewBox="0 0 600 240" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,150 70,145 130,158 190,139 245,150 300,75 330,55 355,135 420,148 500,140 600,150" fill="none" stroke="#149E69" strokeWidth="5" /><circle cx="330" cy="55" r="8" fill="#ef5d64" /></svg><div className="gp-chart-label">60~100 BPM 안정 구간</div></div>
-          <div className="gp-event"><strong>센서 이벤트 타임라인</strong><small>심박 110 BPM 이상·표정 변화·AAC 발화가 수신되면 같은 시간축에 연결됩니다.</small></div>
-          <div className="gp-sensor-empty">현재 연결된 심박·표정 센서 데이터가 없습니다. 센서 백엔드가 연결되면 실제 관측값으로 자동 전환됩니다.</div>
-          <div className="gp-insight">장소·시간 융합 정서 리포트는 GPS 및 센서 백엔드 연동 후 실제 관측 데이터로 갱신됩니다.</div>
+          <h2>심박 변동 및 표정 변화</h2><p>사용자 기기에서 서버로 전송된 센서 이벤트입니다.</p>
+          <div className="gp-heart-chart">
+            {heartRates.length ? <div className="gp-live-heart-list">{heartRates.slice(-8).map((item, index) => <span key={`${item.recordedAt}-${index}`}><b>{Math.round(item.value!)} BPM</b><small>{new Date(item.recordedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</small></span>)}</div> : <div className="gp-live-location"><strong>심박 데이터 없음</strong><span>센서 이벤트가 수신되면 이 영역에 표시됩니다.</span></div>}
+          </div>
+          <div className="gp-event"><strong>센서 이벤트 타임라인</strong><small>{sensors.length ? `선택 기간에 ${sensors.length}개의 센서 이벤트가 기록되었습니다.` : '아직 센서 이벤트가 없습니다.'}</small></div>
+          <div className="gp-sensor-events">{sensors.slice(-8).reverse().map((item, index) => <article key={`${item.recordedAt}-${index}`}><strong>{item.type}</strong><span>{item.value ?? item.label ?? '-'}</span><time>{new Date(item.recordedAt).toLocaleString('ko-KR')}</time></article>)}</div>
         </section>
-      </div>
-      <section className="gp-report-events">
-        <h2>긴급 이벤트</h2>
-        {emergencyItems.length ? emergencyItems.slice(0, 10).map((item) => <article key={item.id}><div><strong>{item.aacUserName}</strong><p>{item.message}</p></div><time>{new Date(item.createdAt).toLocaleString('ko-KR')}</time></article>) : <p className="gp-report-empty">선택한 기간의 긴급 이벤트가 없습니다.</p>}
-      </section>
+      </div>}
     </main>
   )
 }
