@@ -188,7 +188,7 @@ export default function DashboardPage() {
           <NotificationBell />
           <Link href="/settings" className="gp-head-btn"><Settings size={18} /> 설정</Link>
           <button type="button" className={editMode ? 'gp-edit-toggle is-on' : 'gp-edit-toggle'} onClick={() => setEditMode((value) => !value)}><SlidersHorizontal size={18} /> 보호자 편집 모드 <b>{editMode ? 'ON' : 'OFF'}</b></button>
-          <span className={hasEmergency ? 'gp-status is-alert' : 'gp-status'}><i />{hasEmergency ? '긴급' : '안정'}</span>
+          <Link href="/connect" className={hasEmergency ? 'gp-status is-alert' : 'gp-status'} aria-label="사용자 연결 관리"><i />{hasEmergency ? '긴급' : '안정'}</Link>
         </div>
       </header>
 
