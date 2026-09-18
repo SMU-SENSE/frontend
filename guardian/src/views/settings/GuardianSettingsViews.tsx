@@ -252,12 +252,21 @@ export function VoiceSettingsPage() {
       if (!user) throw new Error('연결된 사용자가 없습니다.')
       return aacUserApi.updateVoice(user.id, voiceType, speechRate)
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['aac-users'] })
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['aac-users'], (current: typeof users.data) =>
+        current?.map((item) => (item.id === updated.id ? updated : item)),
+      )
       showToast('음성 설정이 저장되었습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
+
+  const voiceOptions: Array<{ value: BackendVoiceType; label: string }> = [
+    { value: 'CHILD_MALE', label: '남성 아동' },
+    { value: 'CHILD_FEMALE', label: '여성 아동' },
+    { value: 'ADULT_FEMALE', label: '성인 여성' },
+    { value: 'ADULT_MALE', label: '성인 남성' },
+  ]
 
   function saveRate(next: number) {
     const clamped = Math.max(.7, Math.min(1.3, Number(next.toFixed(1))))
@@ -266,12 +275,22 @@ export function VoiceSettingsPage() {
   }
 
   function preview() {
-    if (!('speechSynthesis' in window)) return
+    if (!('speechSynthesis' in window)) {
+      showToast('이 기기에서는 음성 미리듣기를 지원하지 않습니다.', 'error')
+      return
+    }
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance('안녕하세요! 말모아입니다.')
     utterance.lang = 'ko-KR'
     utterance.rate = rate
-    utterance.pitch = user?.voiceType === 'CHILD_FEMALE' ? 1.35 : 1.15
+    const type = user?.voiceType ?? 'CHILD_MALE'
+    utterance.pitch = type === 'CHILD_FEMALE' ? 1.35 : type === 'CHILD_MALE' ? 1.15 : type === 'ADULT_FEMALE' ? 1.08 : .95
+    const voices = window.speechSynthesis.getVoices().filter((voice) => voice.lang.toLowerCase().startsWith('ko'))
+    const preferred = voices.find((voice) => {
+      const name = voice.name.toLowerCase()
+      return type.includes('FEMALE') ? /female|여성|yuna|sora|sunhi/.test(name) : /male|남성|injoon|heami/.test(name)
+    })
+    if (preferred) utterance.voice = preferred
     window.speechSynthesis.speak(utterance)
   }
 
@@ -279,25 +298,33 @@ export function VoiceSettingsPage() {
   if (users.error) return <ErrorState message={users.error.message} onRetry={() => users.refetch()} />
   if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
 
+  const currentVoice = user.voiceType ?? 'CHILD_MALE'
+  const currentLabel = voiceOptions.find((option) => option.value === currentVoice)?.label ?? '남성 아동'
+
   return (
     <main className="gp-voice-page">
       <Link href="/settings" className="gp-voice-back" aria-label="환경 설정으로"><ArrowLeft /></Link>
       <div className="gp-progress"><i /><i /><i /><i className="off" /></div>
       <h1>음성 설정</h1><p>사용자에게 맞게 목소리를 고르세요</p>
       <div className="gp-voice-options">
-        <button type="button" className={user.voiceType === 'CHILD_MALE' ? 'gp-voice-option is-selected' : 'gp-voice-option'} onClick={() => mutation.mutate({ voiceType: 'CHILD_MALE', speechRate: rate })}>남성 아동</button>
-        <button type="button" className={user.voiceType === 'CHILD_FEMALE' ? 'gp-voice-option is-selected' : 'gp-voice-option'} onClick={() => mutation.mutate({ voiceType: 'CHILD_FEMALE', speechRate: rate })}>여성 아동</button>
-        <button type="button" className="gp-voice-option" disabled title="백엔드 voiceType 확장 후 활성화">성인 여성</button>
-        <button type="button" className="gp-voice-option" disabled title="백엔드 voiceType 확장 후 활성화">성인 남성</button>
+        {voiceOptions.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={currentVoice === option.value ? 'gp-voice-option is-selected' : 'gp-voice-option'}
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate({ voiceType: option.value, speechRate: rate })}
+          >{option.label}</button>
+        ))}
       </div>
       <div className="gp-speed-title"><strong>음성 속도</strong><b>{rate.toFixed(1)}×</b></div>
       <div className="gp-speed-control">
         <span>🐢</span><button type="button" onClick={() => saveRate(rate - .1)}>−</button>
-        <input type="range" min="0.7" max="1.3" step="0.1" value={rate} onChange={(event) => setRate(Number(event.target.value))} onPointerUp={() => user.voiceType && mutation.mutate({ voiceType: user.voiceType, speechRate: rate })} />
+        <input type="range" min="0.7" max="1.3" step="0.1" value={rate} onChange={(event) => setRate(Number(event.target.value))} onPointerUp={() => mutation.mutate({ voiceType: currentVoice, speechRate: rate })} />
         <button type="button" onClick={() => saveRate(rate + .1)}>＋</button><span>🐰</span>
       </div>
       <div className="gp-speed-scale"><span>0.7×</span><span>1.3×</span></div>
-      <button type="button" className="gp-preview" onClick={preview}><span><Play size={20} fill="currentColor" /></span><div><strong>미리듣기</strong><small>{user.voiceType === 'CHILD_FEMALE' ? '여성 아동' : '남성 아동'} · {rate.toFixed(1)}×</small></div></button>
+      <button type="button" className="gp-preview" onClick={preview}><span><Play size={20} fill="currentColor" /></span><div><strong>미리듣기</strong><small>{currentLabel} · {rate.toFixed(1)}×</small></div></button>
     </main>
   )
 }
