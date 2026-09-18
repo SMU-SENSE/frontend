@@ -114,12 +114,17 @@ export default function VoiceOnboardingPage() {
     setRate((current) => Math.min(1.3, Math.max(0.7, Number((current + delta).toFixed(1)))))
   }
 
+  const skip = () => {
+    setVoiceType('male-child')
+    setRate(1)
+    void saveAndContinue('male-child', 1)
+  }
+
   const progress = Math.round(((rate - 0.7) / 0.6) * 100)
 
   return (
-    <OnboardingLayout step={3} title="TTS 음성 설정" subtitle="사용자에게 맞는 음성과 속도를 선택해주세요.">
+    <OnboardingLayout step={3} title="음성 설정" subtitle="사용자에게 맞게 목소리를 고르세요">
       <div className="voice-form">
-        <div className="voice-section-label">음성 선택</div>
         <div className="voice-choice-row">
           <button
             type="button"
@@ -163,9 +168,9 @@ export default function VoiceOnboardingPage() {
             </button>
             <span className="speed-animal speed-animal--fast" aria-hidden="true"><FigmaRabbitIcon /></span>
           </div>
-          <div className="speed-scale speed-scale--words">
-            <span>느리게</span>
-            <span>빠르게</span>
+          <div className="speed-scale">
+            <span>0.7×</span>
+            <span>1.3×</span>
           </div>
         </div>
 
@@ -181,6 +186,9 @@ export default function VoiceOnboardingPage() {
       <Button fullWidth size="lg" loading={submitting} onClick={submit}>
         다음
       </Button>
+      <button type="button" className="onboarding-later" disabled={submitting} onClick={skip}>
+        나중에 설정하기
+      </button>
     </OnboardingLayout>
   )
 }
