@@ -485,6 +485,9 @@ export function LocationManagerPage() {
 }
 
 export function GuardianReportPage() {
+  const [period, setPeriod] = useState<'week' | 'month' | 'custom'>('week')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const sentences = useQuery({ queryKey: ['sentences', 'all'], queryFn: () => sentencesApi.list('all') })
   const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list })
   const notifications = useQuery({ queryKey: ['notifications'], queryFn: notificationsApi.list })
@@ -496,36 +499,72 @@ export function GuardianReportPage() {
   const sentenceItems = sentences.data ?? []
   const top = [...sentenceItems].sort((a, b) => b.useCount - a.useCount).slice(0, 5)
   const maxUse = Math.max(1, ...top.map((item) => item.useCount))
-  const emergencyCount = notifications.data?.length ?? 0
+  const emergencyItems = (notifications.data ?? []).filter((item) => {
+    if (period !== 'custom' || !startDate || !endDate) return true
+    const created = new Date(item.createdAt).getTime()
+    return created >= new Date(`${startDate}T00:00:00`).getTime() && created <= new Date(`${endDate}T23:59:59`).getTime()
+  })
+  const emergencyCount = emergencyItems.length
   const categoryMap = new Map((categories.data ?? []).map((item) => [item.id, item.name]))
   const categoryCounts = sentenceItems.reduce<Record<string, number>>((acc, item) => {
     const name = item.categoryName ?? (item.categoryId ? categoryMap.get(item.categoryId) : undefined) ?? '기타'
     acc[name] = (acc[name] ?? 0) + item.useCount
     return acc
   }, {})
+  const categoryEntries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
   const totalUses = Object.values(categoryCounts).reduce((sum, count) => sum + count, 0) || 1
+  const totalUtterances = sentenceItems.reduce((sum, item) => sum + item.useCount, 0)
+  const colors = ['#149E69', '#F2C14E', '#75B7DF', '#E96B74', '#9F90DF']
+  let cursor = 0
+  const stops = categoryEntries.map(([, count], index) => {
+    const start = cursor
+    cursor += count / totalUses * 100
+    return `${colors[index]} ${start}% ${cursor}%`
+  }).join(',')
+  const donutStyle = { background: categoryEntries.length ? `conic-gradient(${stops})` : '#ECECF0' }
+  const periodLabel = period === 'week' ? '주간' : period === 'month' ? '월간' : startDate && endDate ? `${startDate} ~ ${endDate}` : '일자 지정'
+  const insight = top[0]
+    ? `${periodLabel} 기준으로 ‘${top[0].content}’ 표현이 ${top[0].useCount}회로 가장 많이 사용되었습니다.`
+    : '사용 기록이 누적되면 자주 사용하는 표현과 변화가 여기에 표시됩니다.'
 
   return (
-    <main className="gp-subpage">
+    <main className="gp-subpage gp-report-page">
       <ProductTitle title="보호자 리포트" />
-      <div className="gp-report-toolbar"><div className="gp-report-tabs"><button type="button" className="is-selected">주간</button><button type="button">월간</button><button type="button">일자 지정</button></div><button type="button" className="gp-export" onClick={() => window.print()}>PDF 리포트 내보내기</button></div>
+      <div className="gp-report-toolbar">
+        <div className="gp-report-tabs">
+          <button type="button" className={period === 'week' ? 'is-selected' : ''} onClick={() => setPeriod('week')}>주간</button>
+          <button type="button" className={period === 'month' ? 'is-selected' : ''} onClick={() => setPeriod('month')}>월간</button>
+          <button type="button" className={period === 'custom' ? 'is-selected' : ''} onClick={() => setPeriod('custom')}>일자 지정</button>
+        </div>
+        <button type="button" className="gp-export" onClick={() => window.print()}>PDF 리포트 내보내기</button>
+      </div>
+      {period === 'custom' ? <div className="gp-report-dates"><label>시작일<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label><span>—</span><label>종료일<input type="date" min={startDate || undefined} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label></div> : null}
       <div className="gp-report-grid">
         <section className="gp-report-card">
           <h2>단어 사용 패턴 분석</h2><p>사용한 문장과 카테고리의 변화를 확인합니다.</p>
-          <div className="gp-summary-grid"><article className="gp-summary"><span>긴급 모드 발생</span><strong>{emergencyCount}회</strong></article><article className="gp-summary"><span>전체 발화 기록</span><strong>{sentenceItems.reduce((sum, item) => sum + item.useCount, 0)}회</strong></article></div>
+          <div className="gp-summary-grid">
+            <article className="gp-summary"><span>긴급 모드 발생</span><strong>{emergencyCount}회</strong></article>
+            <article className="gp-summary"><span>전체 발화 기록</span><strong>{totalUtterances}회</strong></article>
+          </div>
           <h3>자주 사용한 상징 TOP 5</h3>
           <div className="gp-bars">{top.length ? top.map((item) => <div className="gp-bar-row" key={item.id}><span>{item.content}</span><div className="gp-bar"><i style={{ width: `${Math.max(7, item.useCount / maxUse * 100)}%` }} /></div><b>{item.useCount}회</b></div>) : <p>아직 사용 기록이 없습니다.</p>}</div>
           <h3>카테고리별 발화 비중</h3>
-          <div className="gp-donut-wrap"><div className="gp-donut" /><div>{Object.entries(categoryCounts).slice(0, 5).map(([name, count]) => <div key={name} style={{ marginBottom: 6 }}><strong>{name}</strong> {Math.round(count / totalUses * 100)}%</div>)}</div></div>
-          <div className="gp-insight">AI 발화 맥락 인사이트는 시간·장소·감정 데이터가 누적되면 해당 구간의 변화를 함께 요약합니다.</div>
+          <div className="gp-donut-wrap"><div className="gp-donut" style={donutStyle} /><div>{categoryEntries.map(([name, count], index) => <div className="gp-donut-legend" key={name}><i style={{ background: colors[index] }} /><strong>{name}</strong><span>{Math.round(count / totalUses * 100)}%</span></div>)}</div></div>
+          <div className="gp-insight"><strong>AI 발화 맥락 인사이트</strong><br />{insight}</div>
         </section>
         <section className="gp-report-card">
           <h2>심박 변동 및 표정 변화</h2><p>생체 심박 데이터와 표정 인식 이벤트를 같은 시간축에 표시합니다.</p>
-          <div className="gp-heart-chart"><svg viewBox="0 0 600 240" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,150 70,145 130,158 190,139 245,150 300,75 330,55 355,135 420,148 500,140 600,150" fill="none" stroke="#149E69" strokeWidth="5" /><circle cx="330" cy="55" r="8" fill="#ef5d64" /></svg></div>
-          <div className="gp-event"><strong>14:15 · 센서 이벤트 영역</strong><small>심박 110 BPM 이상 또는 표정 변화가 감지되면 발화 기록과 함께 표시됩니다.</small></div>
+          <div className="gp-heart-chart"><svg viewBox="0 0 600 240" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,150 70,145 130,158 190,139 245,150 300,75 330,55 355,135 420,148 500,140 600,150" fill="none" stroke="#149E69" strokeWidth="5" /><circle cx="330" cy="55" r="8" fill="#ef5d64" /></svg><div className="gp-chart-label">60~100 BPM 안정 구간</div></div>
+          <div className="gp-event"><strong>센서 이벤트 타임라인</strong><small>심박 110 BPM 이상·표정 변화·AAC 발화가 수신되면 같은 시간축에 연결됩니다.</small></div>
+          <div className="gp-sensor-empty">현재 연결된 심박·표정 센서 데이터가 없습니다. 센서 백엔드가 연결되면 실제 관측값으로 자동 전환됩니다.</div>
           <div className="gp-insight">장소·시간 융합 정서 리포트는 GPS 및 센서 백엔드 연동 후 실제 관측 데이터로 갱신됩니다.</div>
         </section>
       </div>
+      <section className="gp-report-events">
+        <h2>긴급 이벤트</h2>
+        {emergencyItems.length ? emergencyItems.slice(0, 10).map((item) => <article key={item.id}><div><strong>{item.aacUserName}</strong><p>{item.message}</p></div><time>{new Date(item.createdAt).toLocaleString('ko-KR')}</time></article>) : <p className="gp-report-empty">선택한 기간의 긴급 이벤트가 없습니다.</p>}
+      </section>
     </main>
   )
 }
+
