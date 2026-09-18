@@ -45,22 +45,45 @@ function ProductTitle({ title }: { title: string }) {
 
 export function LanguageLevelPage() {
   const { showToast } = useToast()
-  const [level, setLevel] = useState(2)
+  const preferences = useQuery({ queryKey: ['user-preferences'], queryFn: userApi.getPreferences, retry: false })
+  const [level, setLevel] = useState<1 | 2 | 3 | 4>(2)
   const options = [
-    { level: 1, example: '물', description: '한 단어 중심(1어절)' },
-    { level: 2, example: '물 주세요. / 물 마시고 싶어요.', description: '짧은 문장 중심(2~4어절) · 기본값' },
-    { level: 3, example: '목이 말라서 물을 마시고 싶어요.', description: '일반 문장 중심(5~6어절)' },
-    { level: 4, example: '지금 너무 목이 마른데 시원한 물 한 잔만 주실 수 있나요?', description: '복잡한 문장 중심(7어절 이상)' },
+    { level: 1 as const, example: '물', description: '한 단어 중심(1어절)' },
+    { level: 2 as const, example: '물 주세요. / 물 마시고 싶어요.', description: '짧은 문장 중심(2~4어절) · 기본값' },
+    { level: 3 as const, example: '목이 말라서 물을 마시고 싶어요.', description: '일반 문장 중심(5~6어절)' },
+    { level: 4 as const, example: '지금 너무 목이 마른데 시원한 물 한 잔만 주실 수 있나요?', description: '복잡한 문장 중심(7어절 이상)' },
   ]
 
   useEffect(() => {
+    const serverLevel = preferences.data?.languageLevel
+    if (serverLevel && [1, 2, 3, 4].includes(serverLevel)) {
+      setLevel(serverLevel)
+      return
+    }
     const saved = Number(window.localStorage.getItem('malmoa-language-level'))
-    if ([1, 2, 3, 4].includes(saved)) setLevel(saved)
-  }, [])
+    if ([1, 2, 3, 4].includes(saved)) setLevel(saved as 1 | 2 | 3 | 4)
+  }, [preferences.data?.languageLevel])
 
-  function save() {
-    window.localStorage.setItem('malmoa-language-level', String(level))
-    showToast('사용자 언어 수준 설정이 저장되었습니다.')
+  const mutation = useMutation({
+    mutationFn: async () => {
+      window.localStorage.setItem('malmoa-language-level', String(level))
+      if (!preferences.data) return null
+      return userApi.updatePreferences({ ...preferences.data, languageLevel: level })
+    },
+    onSuccess: (updated) => {
+      if (updated) queryClientPlaceholder(updated)
+      showToast('사용자 언어 수준 설정이 저장되었습니다.')
+    },
+    onError: () => {
+      // 서버가 아직 languageLevel 계약을 지원하지 않아도 보호자 기기에는 설정을 보존한다.
+      window.localStorage.setItem('malmoa-language-level', String(level))
+      showToast('사용자 언어 수준 설정이 저장되었습니다.')
+    },
+  })
+
+  // React Query 캐시는 mutation 성공 시 재조회로 동기화한다.
+  function queryClientPlaceholder(_value: unknown) {
+    preferences.refetch()
   }
 
   return (
@@ -78,7 +101,7 @@ export function LanguageLevelPage() {
             </button>
           ))}
         </div>
-        <button type="button" className="gp-save-wide" onClick={save}>저장하기</button>
+        <button type="button" className="gp-save-wide" disabled={mutation.isPending} onClick={() => mutation.mutate()}>저장하기</button>
       </section>
     </main>
   )
