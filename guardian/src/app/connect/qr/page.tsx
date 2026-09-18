@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { Copy, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { aacUserApi } from '../../../api/aacUsers'
 import { guardianLiveApi, type PairingResponse } from '../../../api/guardianLive'
@@ -76,7 +76,6 @@ export default function QrConnectionPage() {
             <button type="button" disabled={refresh.isPending} onClick={() => refresh.mutate()}><RefreshCw size={16} /> 새로고침</button>
           </div>
         ) : null}
-        <button type="button" className="connection-copy-payload" onClick={async () => { await navigator.clipboard.writeText(payload); showToast('QR 연결 링크를 복사했습니다.') }}><Copy size={16} /> 연결 링크 복사</button>
       </div>
 
       <Link className="connection-switch" href="/connect/code">초대 코드로 연결</Link>
