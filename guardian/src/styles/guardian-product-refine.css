@@ -1021,3 +1021,225 @@ body::after{
   .gp-onboarding h2{font-size:21px}
   .gp-onboarding__actions{grid-template-columns:1fr 1fr}
 }
+
+
+/* P-002 guardian user connection management */
+.gp-connect-manager{
+  min-height:100vh;
+  padding:34px 32px 48px;
+  background:#f4f5f8;
+  color:#26262b;
+}
+.gp-connect-manager__head{
+  display:flex;
+  align-items:flex-start;
+  gap:22px;
+  margin-bottom:26px;
+}
+.gp-connect-manager__head>a{
+  width:36px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  color:#aaaab5;
+}
+.gp-connect-manager__head h1{
+  margin:0;
+  font-size:34px;
+  letter-spacing:-.045em;
+}
+.gp-connect-manager__head p{
+  margin:7px 0 0;
+  color:#9c9ca8;
+  font-size:14px;
+  font-weight:600;
+}
+.gp-connect-manager__methods{
+  display:grid;
+  grid-template-columns:1fr 64px 1fr;
+  align-items:stretch;
+  gap:14px;
+}
+.gp-connect-method{
+  min-height:220px;
+  padding:28px;
+  border:1px solid #e5e5eb;
+  border-radius:30px;
+  background:#fff;
+  color:#26262b;
+  text-decoration:none;
+  display:grid;
+  grid-template-rows:auto auto auto 1fr;
+  justify-items:start;
+  gap:9px;
+}
+.gp-connect-method>span{
+  width:62px;
+  height:62px;
+  border-radius:20px;
+  background:#e6f7f1;
+  color:#149e69;
+  display:grid;
+  place-items:center;
+}
+.gp-connect-method>strong{
+  margin-top:6px;
+  font-size:24px;
+}
+.gp-connect-method>small{
+  color:#9a9aa6;
+  font-size:13px;
+  line-height:1.6;
+}
+.gp-connect-method>b{
+  align-self:end;
+  min-height:46px;
+  padding:0 18px;
+  border-radius:14px;
+  background:#149e69;
+  color:#fff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:14px;
+}
+.gp-connect-or{
+  align-self:center;
+  justify-self:center;
+  color:#a5a5af;
+  font-size:12px;
+  font-weight:800;
+  position:relative;
+}
+.gp-connect-or::after{
+  content:'→';
+  display:block;
+  margin-top:5px;
+  font-size:18px;
+}
+.gp-connect-manager__devices{
+  margin-top:24px;
+  padding:28px;
+  border-radius:30px;
+  background:#fff;
+}
+.gp-connect-manager__devices-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+}
+.gp-connect-manager__devices-head h2{
+  margin:0;
+  font-size:22px;
+}
+.gp-connect-manager__devices-head p{
+  margin:5px 0 0;
+  color:#9a9aa6;
+  font-size:13px;
+}
+.gp-connect-manager__devices-head>span{
+  padding:7px 12px;
+  border-radius:999px;
+  background:#f0f1f4;
+  color:#92929d;
+  font-size:11px;
+  font-weight:900;
+}
+.gp-connect-manager__devices-head>span.is-connected{
+  background:#e6f7f1;
+  color:#149e69;
+}
+.gp-connect-device-list{
+  margin-top:20px;
+}
+.gp-connect-device-list article{
+  display:grid;
+  grid-template-columns:48px 1fr 38px;
+  gap:12px;
+  align-items:center;
+  min-height:78px;
+  border-top:1px solid #ececf0;
+}
+.gp-connect-device-list article:first-child{
+  border-top:0;
+}
+.gp-connect-device-icon{
+  width:44px;
+  height:44px;
+  border-radius:15px;
+  background:#e6f7f1;
+  color:#149e69;
+  display:grid;
+  place-items:center;
+}
+.gp-connect-device-list strong,
+.gp-connect-device-list small{
+  display:block;
+}
+.gp-connect-device-list small{
+  margin-top:4px;
+  color:#9b9ba6;
+  font-size:11px;
+}
+.gp-connect-device-list button{
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:10px;
+  background:#fff0f1;
+  color:#e54c55;
+  display:grid;
+  place-items:center;
+}
+.gp-connect-manager__empty{
+  min-height:180px;
+  margin-top:18px;
+  border:1px dashed #d9dae2;
+  border-radius:20px;
+  background:#fafafa;
+  color:#a0a0aa;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8px;
+  text-align:center;
+}
+.gp-connect-manager__empty>svg{
+  color:#149e69;
+}
+.gp-connect-manager__empty>strong{
+  color:#5d5d66;
+  font-size:14px;
+}
+.gp-connect-manager__empty>span{
+  font-size:12px;
+}
+@media(max-width:760px){
+  .gp-connect-manager{
+    padding:22px 16px 34px;
+  }
+  .gp-connect-manager__head h1{
+    font-size:28px;
+  }
+  .gp-connect-manager__methods{
+    grid-template-columns:1fr;
+  }
+  .gp-connect-or{
+    padding:0;
+  }
+  .gp-connect-or::after{
+    content:'↓';
+    display:inline;
+    margin-left:6px;
+  }
+  .gp-connect-method{
+    min-height:190px;
+    border-radius:24px;
+    padding:22px;
+  }
+  .gp-connect-manager__devices{
+    padding:22px 18px;
+    border-radius:24px;
+  }
+}
