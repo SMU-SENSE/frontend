@@ -181,7 +181,7 @@ export async function apiRawRequest<T>(
   const method = String(options.method ?? 'GET').toUpperCase()
   const { body, skipCsrf, ...fetchOptions } = options
   const headers = new Headers(options.headers)
-  headers.set('Accept', 'application/json')
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json')
 
   if (isMutation(method) && !skipCsrf) {
     const token = await ensureCsrfToken()
@@ -203,10 +203,16 @@ export async function apiRawRequest<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 403 && isMutation(method) && !skipCsrf) csrfToken = null
     if (response.status >= 500) routeToSystemError('/error')
     throw await parseError(response)
   }
   if (response.status === 204) return undefined as T
+
+  const contentType = response.headers.get('content-type') ?? ''
+  if (contentType.includes('application/pdf') || options.headers && new Headers(options.headers).get('Accept') === 'application/pdf') {
+    return (await response.blob()) as T
+  }
 
   const payload = (await response.json()) as T | ApiEnvelope<T>
   if (payload && typeof payload === 'object' && 'success' in payload && 'data' in payload) {
