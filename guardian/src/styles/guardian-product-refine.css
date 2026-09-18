@@ -1243,3 +1243,192 @@ body::after{
     border-radius:24px;
   }
 }
+
+
+/* Reference-lock: routine scheduler + account blocks (exported 2026-09-16 screens) */
+.gp-routine-card{
+  margin-top:26px;
+  min-height:542px;
+  padding:40px 40px 26px;
+  border-radius:48px;
+  background:#fff;
+}
+.gp-routine-head{
+  min-height:72px;
+  align-items:flex-start;
+}
+.gp-routine-head h2{
+  margin:0 0 4px;
+  color:#26262B;
+  font-size:30px;
+  font-weight:900;
+  line-height:1.25;
+  letter-spacing:-.045em;
+}
+.gp-routine-head p{
+  color:#AAA9B5;
+  font-size:20px;
+  font-weight:700;
+  line-height:1.4;
+}
+.gp-add-button{
+  min-width:120px;
+  height:58px;
+  padding:0 24px;
+  border-radius:999px;
+  background:#E6F7F1;
+  color:#149E69;
+  font-size:22px;
+  font-weight:900;
+  gap:8px;
+}
+.gp-routine-list{
+  margin-top:22px;
+}
+.gp-routine-row{
+  min-height:122px;
+  grid-template-columns:54px minmax(0,1fr) 100px 48px;
+  gap:10px;
+  border-bottom:1px solid #E6E6EC;
+}
+.gp-routine-clock{
+  width:39px;
+  height:39px;
+  color:#149E69;
+}
+.gp-routine-copy{
+  grid-template-columns:auto auto 1fr;
+  column-gap:12px;
+  row-gap:2px;
+}
+.gp-routine-copy strong{
+  color:#26262B;
+  font-size:27px;
+  font-weight:900;
+  line-height:1.15;
+}
+.gp-repeat{
+  min-width:66px;
+  padding:5px 12px;
+  border-radius:999px;
+  background:#E6F7F1;
+  color:#149E69;
+  font-size:16px;
+  font-weight:900;
+  text-align:center;
+}
+.gp-routine-copy p{
+  grid-column:1/-1;
+  margin-top:3px;
+  color:#AAA9B5;
+  font-size:20px;
+  font-weight:700;
+  line-height:1.4;
+}
+.gp-switch{
+  width:96px;
+  height:57px;
+  padding:6px;
+  border-radius:999px;
+  background:#DADCE5;
+}
+.gp-switch i{
+  width:45px;
+  height:45px;
+  border-radius:50%;
+  box-shadow:0 1px 5px rgba(0,0,0,.10);
+}
+.gp-switch.is-on{
+  background:#149E69;
+}
+.gp-trash{
+  width:44px;
+  height:44px;
+  color:#ADADBA;
+}
+.gp-trash svg{
+  width:29px;
+  height:29px;
+}
+
+/* Reference-lock: account section */
+.gp-account-card{
+  margin-top:26px;
+  padding:40px;
+  border-radius:48px;
+  background:#fff;
+}
+.gp-account-card h2{
+  margin:0 0 34px;
+  color:#26262B;
+  font-size:31px;
+  font-weight:900;
+  line-height:1.2;
+  letter-spacing:-.04em;
+}
+.gp-account-actions{
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+  margin-top:0;
+}
+.gp-account-actions button{
+  height:106px;
+  border-radius:30px;
+  background:#F0F1F4;
+  color:#46534F;
+  font-size:29px;
+  font-weight:900;
+}
+.gp-account-actions button svg{
+  width:27px;
+  height:27px;
+}
+.gp-account-actions .danger{
+  background:#FFE9EB;
+  color:#EF4444;
+}
+@media(max-width:760px){
+  .gp-routine-card{
+    min-height:0;
+    padding:26px 20px 18px;
+    border-radius:28px;
+  }
+  .gp-routine-head h2{font-size:24px}
+  .gp-routine-head p{font-size:15px}
+  .gp-add-button{
+    min-width:92px;
+    height:44px;
+    padding:0 16px;
+    font-size:16px;
+  }
+  .gp-routine-row{
+    min-height:100px;
+    grid-template-columns:38px minmax(0,1fr) 64px 36px;
+    gap:8px;
+  }
+  .gp-routine-clock{width:30px;height:30px}
+  .gp-routine-copy strong{font-size:20px}
+  .gp-repeat{min-width:52px;font-size:12px;padding:4px 8px}
+  .gp-routine-copy p{font-size:14px}
+  .gp-switch{width:58px;height:34px;padding:4px}
+  .gp-switch i{width:26px;height:26px}
+  .gp-trash{width:34px;height:34px}
+  .gp-trash svg{width:22px;height:22px}
+  .gp-account-card{
+    padding:26px 20px;
+    border-radius:28px;
+  }
+  .gp-account-card h2{
+    margin-bottom:20px;
+    font-size:24px;
+  }
+  .gp-account-actions{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .gp-account-actions button{
+    height:68px;
+    border-radius:20px;
+    font-size:20px;
+  }
+}
