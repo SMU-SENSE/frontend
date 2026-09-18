@@ -5,6 +5,13 @@ import Link from 'next/link'
 import { RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import qrcode from '../../../lib/vendor/qrcode.mjs'
+
+function createLocalQrDataUrl(payload: string) {
+  const code = qrcode(0, 'M')
+  code.addData(payload, 'Byte')
+  code.make()
+  return code.createDataURL(8, 4)
+}
 import { aacUserApi } from '../../../api/aacUsers'
 import { guardianLiveApi, type PairingResponse } from '../../../api/guardianLive'
 import { ConnectionShell } from '../../../components/connect/ConnectionShell'
@@ -55,12 +62,7 @@ export default function QrConnectionPage() {
 
   const expired = seconds <= 0
   const payload = pairing.data.qrPayload
-  const qrImage = useMemo(() => {
-    const code = qrcode(0, 'M')
-    code.addData(payload, 'Byte')
-    code.make()
-    return code.createDataURL(8, 4)
-  }, [payload])
+  const qrImage = createLocalQrDataUrl(payload)
 
   return (
     <ConnectionShell title="QR로 연결" subtitle="사용자 기기에서 스캔하면 바로 연결돼요">
