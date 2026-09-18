@@ -252,8 +252,10 @@ export function VoiceSettingsPage() {
   })
 
   const voiceOptions: Array<{ value: BackendVoiceType; label: string }> = [
-    { value: 'CHILD_MALE', label: '남성 아동' },
-    { value: 'CHILD_FEMALE', label: '여성 아동' },
+    { value: 'CHILD_MALE', label: '또래 남아 아동' },
+    { value: 'CHILD_FEMALE', label: '또래 여아 아동' },
+    { value: 'ADULT_FEMALE', label: '성인 여성' },
+    { value: 'ADULT_MALE', label: '성인 남성' },
   ]
 
   function saveRate(next: number) {
@@ -286,7 +288,7 @@ export function VoiceSettingsPage() {
   if (users.error) return <ErrorState message={users.error.message} onRetry={() => users.refetch()} />
   if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
 
-  const currentVoice: BackendVoiceType = user.voiceType === 'CHILD_FEMALE' || user.voiceType === 'ADULT_FEMALE' ? 'CHILD_FEMALE' : 'CHILD_MALE'
+  const currentVoice: BackendVoiceType = user.voiceType ?? 'CHILD_MALE'
   const currentLabel = voiceOptions.find((option) => option.value === currentVoice)?.label ?? '남성 아동'
 
   return (
