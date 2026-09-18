@@ -14,12 +14,10 @@ import {
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
-import { categoriesApi, sentencesApi } from '../../api/sentences'
-import { notificationsApi } from '../../api/notifications'
-import { userApi } from '../../api/user'
+import { guardianLiveApi, type LivePlace } from '../../api/guardianLive'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { useToast } from '../../components/ui/ToastProvider'
-import type { BackendVoiceType, Category, Sentence } from '../../types/models'
+import type { BackendVoiceType } from '../../types/models'
 
 type Place = {
   id: string
@@ -47,8 +45,10 @@ function ProductTitle({ title }: { title: string }) {
 }
 
 export function LanguageLevelPage() {
+  const queryClient = useQueryClient()
   const { showToast } = useToast()
-  const preferences = useQuery({ queryKey: ['user-preferences'], queryFn: userApi.getPreferences, retry: false })
+  const users = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
+  const user = users.data?.find((item) => item.active) ?? users.data?.[0] ?? null
   const [level, setLevel] = useState<1 | 2 | 3 | 4>(2)
   const options = [
     { level: 1 as const, example: '물', description: '한 단어 중심(1어절)' },
@@ -58,36 +58,25 @@ export function LanguageLevelPage() {
   ]
 
   useEffect(() => {
-    const serverLevel = preferences.data?.languageLevel
-    if (serverLevel && [1, 2, 3, 4].includes(serverLevel)) {
-      setLevel(serverLevel)
-      return
-    }
-    const saved = Number(window.localStorage.getItem('malmoa-language-level'))
-    if ([1, 2, 3, 4].includes(saved)) setLevel(saved as 1 | 2 | 3 | 4)
-  }, [preferences.data?.languageLevel])
+    if (user?.sentenceLevel) setLevel(user.sentenceLevel)
+  }, [user?.sentenceLevel])
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      window.localStorage.setItem('malmoa-language-level', String(level))
-      if (!preferences.data) return null
-      return userApi.updatePreferences({ ...preferences.data, languageLevel: level })
+    mutationFn: () => {
+      if (!user) throw new Error('연결된 AAC 사용자가 없습니다.')
+      return guardianLiveApi.sentenceLevel(user.id, level)
     },
-    onSuccess: (updated) => {
-      if (updated) queryClientPlaceholder(updated)
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['aac-users'] })
+      queryClient.invalidateQueries({ queryKey: ['guardian-board', user?.id] })
       showToast('사용자 언어 수준 설정이 저장되었습니다.')
     },
-    onError: () => {
-      // 서버가 아직 languageLevel 계약을 지원하지 않아도 보호자 기기에는 설정을 보존한다.
-      window.localStorage.setItem('malmoa-language-level', String(level))
-      showToast('사용자 언어 수준 설정이 저장되었습니다.')
-    },
+    onError: (error) => showToast(error.message, 'error'),
   })
 
-  // React Query 캐시는 mutation 성공 시 재조회로 동기화한다.
-  function queryClientPlaceholder(_value: unknown) {
-    preferences.refetch()
-  }
+  if (users.isLoading) return <PageLoader label="사용자 설정을 불러오는 중입니다." />
+  if (users.error) return <ErrorState message={users.error.message} onRetry={() => users.refetch()} />
+  if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
 
   return (
     <main className="gp-subpage">
