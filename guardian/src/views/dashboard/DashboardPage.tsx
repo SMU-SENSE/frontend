@@ -15,8 +15,8 @@ import {
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
-import { notificationsApi } from '../../api/notifications'
-import { categoriesApi, sentencesApi } from '../../api/sentences'
+import { apiConfig } from '../../api/client'
+import { guardianLiveApi, type LiveId } from '../../api/guardianLive'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { useToast } from '../../components/ui/ToastProvider'
 import type { Sentence } from '../../types/models'
@@ -31,10 +31,14 @@ const CARD_EMOJI = ['💬', '👤', '🍚', '🏠', '🙌', '😊', '🔗']
 export default function DashboardPage() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
-  const categories = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list })
-  const sentences = useQuery({ queryKey: ['sentences', 'all'], queryFn: () => sentencesApi.list('all') })
-  const notifications = useQuery({ queryKey: ['notifications'], queryFn: notificationsApi.list })
   const aacUsers = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
+  const activeUser = aacUsers.data?.find((item) => item.active) ?? aacUsers.data?.[0] ?? null
+  const board = useQuery({
+    queryKey: ['guardian-board', activeUser?.id],
+    queryFn: () => guardianLiveApi.board(activeUser!.id),
+    enabled: Boolean(activeUser),
+    refetchInterval: apiConfig.useMockApi ? false : 15000,
+  })
   const [categoryId, setCategoryId] = useState<string>('all')
   const [editMode, setEditMode] = useState(false)
   const [editing, setEditing] = useState<Sentence | null>(null)
@@ -52,15 +56,26 @@ export default function DashboardPage() {
     if (window.localStorage.getItem(ONBOARDING_KEY) !== '1') setOnboardingStep(1)
   }, [])
 
+  useEffect(() => {
+    if (apiConfig.useMockApi || !activeUser) return
+    const source = new EventSource(`${apiConfig.baseUrl}/api/v1/me/aac-users/${activeUser.id}/events`, { withCredentials: true })
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser.id] })
+    ;['BOARD_UPDATED', 'SETTINGS_UPDATED', 'STATUS_UPDATED', 'CARD_USED', 'ROUTINE_TRIGGERED', 'ALERT'].forEach((eventName) => source.addEventListener(eventName, refresh))
+    source.onerror = () => {
+      // EventSource 자체가 자동 재연결하므로 화면을 오류 페이지로 보내지 않는다.
+    }
+    return () => source.close()
+  }, [activeUser, queryClient])
+
   const favoriteMutation = useMutation({
-    mutationFn: ({ id, favorite }: { id: string; favorite: boolean }) => sentencesApi.setFavorite(id, favorite),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sentences'] }),
+    mutationFn: ({ id, favorite }: { id: LiveId; favorite: boolean }) => guardianLiveApi.setFavorite(activeUser!.id, id, favorite),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] }),
     onError: (error) => showToast(error.message, 'error'),
   })
   const removeMutation = useMutation({
-    mutationFn: sentencesApi.remove,
+    mutationFn: (id: LiveId) => guardianLiveApi.deleteCard(activeUser!.id, id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sentences'] })
+      queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] })
       setEditing(null)
       setSelectedId(null)
       showToast('상징 카드가 삭제되었습니다.')
@@ -68,31 +83,46 @@ export default function DashboardPage() {
     onError: (error) => showToast(error.message, 'error'),
   })
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: { content?: string; imageUrl?: string | null } }) =>
-      sentencesApi.update(id, input),
+    mutationFn: ({ id, input }: { id: LiveId; input: { content?: string; imageUrl?: string | null } }) =>
+      guardianLiveApi.updateCard(activeUser!.id, id, { text: input.content, imageUrl: input.imageUrl }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sentences'] })
+      queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] })
       setEditing(null)
       showToast('상징 카드가 저장되었습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
 
-  const isLoading = categories.isLoading || sentences.isLoading || notifications.isLoading || aacUsers.isLoading
-  const error = categories.error ?? sentences.error ?? notifications.error ?? aacUsers.error
+  const isLoading = aacUsers.isLoading || (Boolean(activeUser) && board.isLoading)
+  const error = aacUsers.error ?? board.error
   if (isLoading) return <PageLoader label="AAC 판을 불러오는 중입니다." />
-  if (error) return <ErrorState message={error.message} onRetry={() => { categories.refetch(); sentences.refetch(); notifications.refetch(); aacUsers.refetch() }} />
+  if (error) return <ErrorState message={error.message} onRetry={() => { aacUsers.refetch(); board.refetch() }} />
+  if (!activeUser || !board.data) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => aacUsers.refetch()} />
 
-  const sentenceItems = sentences.data ?? []
-  const categoryItems = [...(categories.data ?? [])].sort((a, b) => a.order - b.order)
-  const activeUser = aacUsers.data?.find((item) => item.active) ?? aacUsers.data?.[0]
-  const columns = activeUser?.gridSize === 'GRID_2X2' ? 2 : activeUser?.gridSize === 'GRID_3X3' ? 3 : 4
+  const categoryItems = [...board.data.categories]
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map((item) => ({ id: String(item.id), name: item.name, color: item.color, order: item.displayOrder, sentenceCount: 0 }))
+  const sentenceItems: Sentence[] = [...board.data.cards]
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map((item) => ({
+      id: String(item.id),
+      content: item.text,
+      categoryId: String(item.categoryId),
+      categoryName: board.data?.categories.find((category) => String(category.id) === String(item.categoryId))?.name,
+      favorite: item.favorite,
+      source: 'manual',
+      useCount: 0,
+      lastUsedAt: null,
+      createdAt: '',
+      imageUrl: item.imageUrl,
+    }))
+  const columns = board.data.gridSize === 'GRID_2X2' ? 2 : board.data.gridSize === 'GRID_3X3' ? 3 : 4
   const visible = categoryId === 'all'
     ? sentenceItems
     : categoryId === 'favorite'
       ? sentenceItems.filter((item) => item.favorite)
       : sentenceItems.filter((item) => item.categoryId === categoryId)
-  const hasEmergency = (notifications.data ?? []).some((item) => !item.read)
+  const hasEmergency = board.data.status === 'EMERGENCY'
 
   function beginPress(sentence: Sentence) {
     pressTimer.current = setTimeout(() => setEditing(sentence), 1000)
@@ -165,7 +195,7 @@ export default function DashboardPage() {
                     onClick={(event) => { event.stopPropagation(); favoriteMutation.mutate({ id: sentence.id, favorite: !sentence.favorite }) }}
                     onKeyDown={(event) => { if (event.key === 'Enter') favoriteMutation.mutate({ id: sentence.id, favorite: !sentence.favorite }) }}
                   >{sentence.favorite ? '★' : '☆'}</span>
-                  {displayImage ? <img src={displayImage} alt="" className="gp-symbol__visual" style={{ objectFit: 'cover' }} /> : <span className="gp-symbol__visual">{CARD_EMOJI[index % CARD_EMOJI.length]}</span>}
+                  {displayImage ? <img src={displayImage.startsWith('/api/') ? `${apiConfig.baseUrl}${displayImage}` : displayImage} alt="" className="gp-symbol__visual" style={{ objectFit: 'cover' }} /> : <span className="gp-symbol__visual">{CARD_EMOJI[index % CARD_EMOJI.length]}</span>}
                   <strong>{displayText}</strong>
                 </button>
               )
@@ -174,7 +204,7 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      {editing ? <CardEditor sentence={editing} customization={customizations[editing.id]} onClose={() => setEditing(null)} onSave={(next) => {
+      {editing ? <CardEditor sentence={editing} customization={customizations[editing.id]} onClose={() => setEditing(null)} onUploadImage={(file) => guardianLiveApi.uploadImage(activeUser.id, file).then((result) => result.url)} onSave={(next) => {
         persistCustomization(editing.id, next)
         updateMutation.mutate({
           id: editing.id,
@@ -184,20 +214,24 @@ export default function DashboardPage() {
           },
         })
       }} onFavorite={() => favoriteMutation.mutate({ id: editing.id, favorite: !editing.favorite })} onDelete={() => { if (window.confirm('상징 카드를 삭제하시겠습니까?')) removeMutation.mutate(editing.id) }} /> : null}
-      {newCardOpen ? <NewCardModal categories={categoryItems} onClose={() => setNewCardOpen(false)} /> : null}
+      {newCardOpen ? <NewCardModal userId={activeUser.id} categories={categoryItems} onClose={() => setNewCardOpen(false)} /> : null}
       {onboardingStep ? <Onboarding step={onboardingStep} onNext={() => onboardingStep === 1 ? setOnboardingStep(2) : closeOnboarding()} onSkip={closeOnboarding} /> : null}
     </main>
   )
 }
 
-function CardEditor({ sentence, customization, onClose, onSave, onFavorite, onDelete }: { sentence: Sentence; customization?: CardCustomization; onClose: () => void; onSave: (next: CardCustomization) => void; onFavorite: () => void; onDelete: () => void }) {
+function CardEditor({ sentence, customization, onClose, onUploadImage, onSave, onFavorite, onDelete }: { sentence: Sentence; customization?: CardCustomization; onClose: () => void; onUploadImage: (file: File) => Promise<string>; onSave: (next: CardCustomization) => void; onFavorite: () => void; onDelete: () => void }) {
   const [text, setText] = useState(customization?.text ?? sentence.content)
   const [imageUrl, setImageUrl] = useState(customization?.imageUrl ?? sentence.imageUrl ?? '')
-  function loadImage(file?: File) {
+  const [uploading, setUploading] = useState(false)
+  async function loadImage(file?: File) {
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => { if (typeof reader.result === 'string') setImageUrl(reader.result) }
-    reader.readAsDataURL(file)
+    setUploading(true)
+    try {
+      setImageUrl(await onUploadImage(file))
+    } finally {
+      setUploading(false)
+    }
   }
   return (
     <div className="gp-edit-modal-backdrop">
@@ -207,7 +241,7 @@ function CardEditor({ sentence, customization, onClose, onSave, onFavorite, onDe
         <label>카드 텍스트<input value={text} onChange={(event) => setText(event.target.value)} /></label>
         <label>이미지 변경
           {imageUrl ? <img src={imageUrl} alt="선택한 상징 미리보기" className="gp-card-image-preview" /> : null}
-          <span className="gp-head-btn" style={{ justifyContent: 'center' }}><ImagePlus size={18} /> 이미지 선택<input hidden type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} /></span>
+          <span className="gp-head-btn" style={{ justifyContent: 'center' }}><ImagePlus size={18} /> {uploading ? '업로드 중…' : '이미지 선택'}<input hidden disabled={uploading} type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} /></span>
           {imageUrl ? <button type="button" className="gp-image-remove" onClick={() => setImageUrl('')}>이미지 제거</button> : null}
         </label>
         <button type="button" className="gp-head-btn" style={{ width: '100%', justifyContent: 'center' }} onClick={onFavorite}><Star size={18} />{sentence.favorite ? '즐겨찾기 해제' : '즐겨찾기 등록'}</button>
@@ -217,14 +251,24 @@ function CardEditor({ sentence, customization, onClose, onSave, onFavorite, onDe
   )
 }
 
-function NewCardModal({ categories, onClose }: { categories: Array<{ id: string; name: string }>; onClose: () => void }) {
+function NewCardModal({ userId, categories, onClose }: { userId: number; categories: Array<{ id: string; name: string }>; onClose: () => void }) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const [content, setContent] = useState('')
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '')
   const mutation = useMutation({
-    mutationFn: () => sentencesApi.create({ content: content.trim(), categoryId: categoryId || null, favorite: false }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['sentences'] }); showToast('새 카드가 추가되었습니다.'); onClose() },
+    mutationFn: () => guardianLiveApi.createCard(userId, {
+      content: undefined as never,
+      categoryId: /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId,
+      text: content.trim(),
+      favorite: undefined as never,
+      displayOrder: 999,
+    } as never),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guardian-board', userId] })
+      showToast('새 카드가 추가되었습니다.')
+      onClose()
+    },
     onError: (error) => showToast(error.message, 'error'),
   })
   return (
