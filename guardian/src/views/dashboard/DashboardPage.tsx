@@ -5,11 +5,14 @@ import {
   Folder,
   ImagePlus,
   Plus,
+  RotateCcw,
   Settings,
   SlidersHorizontal,
   Sparkles,
   Star,
   Trash2,
+  Volume2,
+  WandSparkles,
   X,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -45,6 +48,7 @@ export default function DashboardPage() {
   const [editing, setEditing] = useState<Sentence | null>(null)
   const [newCardOpen, setNewCardOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [phraseIds, setPhraseIds] = useState<string[]>([])
   const [customizations, setCustomizations] = useState<Record<string, CardCustomization>>({})
   const [onboardingStep, setOnboardingStep] = useState(0)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -118,11 +122,16 @@ export default function DashboardPage() {
       imageUrl: item.imageUrl,
     }))
   const columns = board.data.gridSize === 'GRID_2X2' ? 2 : board.data.gridSize === 'GRID_3X3' ? 3 : 4
-  const visible = categoryId === 'all'
+  const visible = categoryId === 'all' || categoryId === 'recommend'
     ? sentenceItems
-    : categoryId === 'favorite'
-      ? sentenceItems.filter((item) => item.favorite)
-      : sentenceItems.filter((item) => item.categoryId === categoryId)
+    : categoryId === 'recent'
+      ? sentenceItems.slice(0, 12)
+      : categoryId === 'favorite'
+        ? sentenceItems.filter((item) => item.favorite)
+        : sentenceItems.filter((item) => item.categoryId === categoryId)
+  const phraseItems = phraseIds
+    .map((id) => sentenceItems.find((item) => item.id === id))
+    .filter((item): item is Sentence => Boolean(item))
   const hasEmergency = board.data.status === 'EMERGENCY'
 
   function beginPress(sentence: Sentence) {
@@ -140,6 +149,35 @@ export default function DashboardPage() {
   function closeOnboarding() {
     window.localStorage.setItem(ONBOARDING_KEY, '1')
     setOnboardingStep(0)
+  }
+
+  function togglePhrase(id: string) {
+    setPhraseIds((current) => {
+      if (current.includes(id)) return current.filter((item) => item !== id)
+      if (current.length >= 8) {
+        showToast('상징은 최대 8개까지 선택할 수 있어요.', 'error')
+        return current
+      }
+      return [...current, id]
+    })
+  }
+
+  function speakText(text: string) {
+    if (!text.trim()) return
+    if (!('speechSynthesis' in window)) {
+      showToast('이 기기에서는 음성 출력을 지원하지 않습니다.', 'error')
+      return
+    }
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'ko-KR'
+    utterance.rate = activeUser?.speechRate ?? 1
+    window.speechSynthesis.speak(utterance)
+  }
+
+  function speakPhrase() {
+    if (!phraseItems.length) return showToast('먼저 상징을 선택해 주세요.', 'error')
+    speakText(phraseItems.map((item) => item.content).join(' '))
   }
 
   return (
@@ -165,7 +203,8 @@ export default function DashboardPage() {
 
       <div className="gp-live">
         <aside className="gp-categories" aria-label="AAC 카테고리">
-          <button type="button" className={categoryId === 'all' ? 'is-active' : ''} onClick={() => setCategoryId('all')}><span>⌂</span><b>전체</b></button>
+          <button type="button" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
+          <button type="button" className={categoryId === 'recent' ? 'is-active' : ''} onClick={() => setCategoryId('recent')}><span>↺</span><b>최근</b></button>
           <button type="button" className={categoryId === 'favorite' ? 'is-active' : ''} onClick={() => setCategoryId('favorite')}><span>★</span><b>즐겨찾기</b></button>
           {categoryItems.map((category, index) => <button type="button" key={category.id} className={categoryId === category.id ? 'is-active' : ''} onClick={() => setCategoryId(category.id)}><span>{CARD_EMOJI[index % CARD_EMOJI.length]}</span><b>{category.name}</b></button>)}
         </aside>
@@ -183,7 +222,7 @@ export default function DashboardPage() {
                   key={sentence.id}
                   className="gp-symbol"
                   style={{ '--card-color': CARD_COLORS[index % CARD_COLORS.length], outline: selected ? '3px solid #149E69' : undefined } as React.CSSProperties}
-                  onClick={() => editMode && setSelectedId((current) => current === sentence.id ? null : sentence.id)}
+                  onClick={() => editMode ? setSelectedId((current) => current === sentence.id ? null : sentence.id) : togglePhrase(sentence.id)}
                   onPointerDown={() => beginPress(sentence)}
                   onPointerUp={endPress}
                   onPointerLeave={endPress}
@@ -204,6 +243,32 @@ export default function DashboardPage() {
             })}
           </div>
         </section>
+
+        <aside className="gp-composer" aria-label="문장 조합 영역">
+          <div className="gp-composer__selection">
+            {phraseItems.length === 0 ? (
+              <div className="gp-composer__empty">상징을 골라 보세요</div>
+            ) : (
+              <div className="gp-composer__chips">
+                {phraseItems.map((item) => (
+                  <button type="button" key={item.id} onClick={() => togglePhrase(item.id)}>
+                    <span>{item.imageUrl ? <img src={item.imageUrl.startsWith('/api/') ? `${apiConfig.baseUrl}${item.imageUrl}` : item.imageUrl} alt="" /> : '✦'}</span>
+                    <strong>{item.content}</strong>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="gp-composer__actions">
+            <button type="button" className="is-reset" onClick={() => setPhraseIds([])}><RotateCcw size={18} />초기화</button>
+            <button type="button" className="is-ai" onClick={() => phraseItems.length ? showToast('선택한 상징을 기준으로 AI 문장 후보를 생성할 수 있어요.') : showToast('먼저 상징을 선택해 주세요.', 'error')}><WandSparkles size={18} />AI 변환</button>
+            <button type="button" className="is-speak" onClick={speakPhrase}><Volume2 size={18} />말하기</button>
+          </div>
+        </aside>
+      </div>
+
+      <div className="gp-quickbar" aria-label="빠른 대화">
+        {['네', '아니요', '잠깐만요', '몰라요', '뭐예요'].map((text) => <button type="button" key={text} onClick={() => speakText(text)}>{text}</button>)}
       </div>
 
       {editing ? <CardEditor sentence={editing} customization={customizations[editing.id]} onClose={() => setEditing(null)} onUploadImage={(file) => guardianLiveApi.uploadImage(activeUser.id, file).then((result) => result.url)} onSave={(next) => {
