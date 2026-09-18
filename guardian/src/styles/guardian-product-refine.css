@@ -1432,3 +1432,347 @@ body::after{
     font-size:20px;
   }
 }
+
+
+/* Reference-lock: category editor 2026-09-16 19:45:46 */
+.gp-category-page{
+  min-height:100vh;
+  grid-template-columns:minmax(0,60%) minmax(0,40%);
+  background:#fff;
+}
+.gp-category-maker{
+  padding:27px 17px 22px;
+  border-right:1px solid #ECECF0;
+}
+.gp-category-preview{
+  height:176px;
+  padding:32px;
+  border-radius:31px;
+  background:#F4F5F8;
+  justify-content:flex-start;
+  gap:30px;
+  color:#AAA9B5;
+}
+.gp-category-preview span{
+  width:112px;
+  height:112px;
+  border:4px solid #149E69;
+  border-radius:32px;
+  background:#DCEFE8;
+  display:grid;
+  place-items:center;
+  flex:0 0 112px;
+  font-size:54px;
+}
+.gp-category-preview strong{
+  color:#AAA9B5;
+  font-size:34px;
+  font-weight:900;
+}
+.gp-category-maker h3{
+  margin:28px 0 14px;
+  color:#AAA9B5;
+  font-size:24px;
+  font-weight:900;
+}
+.gp-icon-palette{
+  display:grid;
+  grid-template-columns:repeat(8,74px);
+  gap:12px 10px;
+  align-items:center;
+}
+.gp-icon-palette button{
+  width:74px;
+  height:74px;
+  aspect-ratio:auto;
+  border-radius:50%;
+  background:#F4F5F8;
+  font-size:31px;
+}
+.gp-icon-palette button.is-selected{
+  background:#DCEFE8;
+  box-shadow:0 0 0 4px #149E69;
+}
+.gp-category-maker input{
+  height:89px;
+  border:3px solid #E3E4E8;
+  border-radius:28px;
+  padding:0 34px;
+  background:#F4F5F8;
+  color:#4B4B55;
+  font-size:25px;
+  font-weight:800;
+}
+.gp-category-maker input::placeholder{
+  color:#9FA0AA;
+}
+.gp-color-palette{
+  gap:15px;
+}
+.gp-color-palette button{
+  width:74px;
+  height:74px;
+  border:0;
+  box-shadow:none;
+}
+.gp-color-palette button.is-selected{
+  box-shadow:0 0 0 4px #149E69;
+  outline:5px solid #fff;
+  outline-offset:-8px;
+}
+.gp-category-add{
+  height:108px;
+  margin-top:54px;
+  border-radius:31px;
+  background:#EEEFF3;
+  color:#AAA9B5;
+  font-size:30px;
+  font-weight:900;
+}
+.gp-category-add:enabled{
+  background:#149E69;
+  color:#fff;
+}
+.gp-category-list{
+  padding:27px 16px 24px 46px;
+}
+.gp-category-list h1{
+  margin:0 0 23px;
+  color:#26262B;
+  font-size:28px;
+  font-weight:900;
+}
+.gp-category-list>p{
+  margin:0 0 34px;
+  color:#AAA9B5;
+  font-size:18px;
+  font-weight:700;
+}
+.gp-category-row{
+  height:105px;
+  margin-bottom:12px;
+  padding:0 24px;
+  border:0;
+  border-radius:30px;
+  background:#F4F5F8;
+  grid-template-columns:28px 64px minmax(0,1fr) auto;
+  gap:18px;
+}
+.gp-category-row>svg{
+  color:#AAA9B5;
+  width:26px;
+  height:26px;
+}
+.gp-category-row>span{
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  font-size:29px;
+}
+.gp-category-row strong{
+  color:#26262B;
+  font-size:26px;
+  font-weight:900;
+}
+.gp-category-row em{
+  min-width:58px;
+  padding:6px 13px;
+  border-radius:999px;
+  background:#E6F7F1;
+  color:#149E69;
+  text-align:center;
+  font-size:16px;
+  font-weight:900;
+}
+.gp-category-row button{
+  color:#AAA9B5;
+}
+
+/* Reference-lock: standalone TTS settings 2026-09-16 20:07:54 */
+.gp-voice-page{
+  min-height:100vh;
+  width:min(658px,100%);
+  max-width:658px;
+  margin:0 auto;
+  padding:26px 98px 20px;
+  background:#fff;
+}
+.gp-progress{
+  gap:7px;
+  margin:0 0 16px;
+}
+.gp-progress i{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#149E69;
+}
+.gp-progress i.off{
+  background:#D7D8DE;
+}
+.gp-voice-page h1{
+  margin:0;
+  text-align:center;
+  color:#06054F;
+  font-size:31px;
+  font-weight:900;
+  line-height:1.25;
+}
+.gp-voice-page>p{
+  margin:12px 0 28px;
+  text-align:center;
+  color:#868595;
+  font-size:16px;
+  font-weight:500;
+}
+.gp-voice-options{
+  gap:8px;
+}
+.gp-voice-option{
+  height:58px;
+  padding:0 16px;
+  border:0;
+  border-radius:14px;
+  background:#F0F0F4;
+  color:#06054F;
+  font-size:16px;
+  font-weight:800;
+}
+.gp-voice-option:after{
+  display:none;
+}
+.gp-voice-option.is-selected{
+  border:2px solid #149E69;
+  background:#fff;
+  color:#06054F;
+}
+.gp-speed-title{
+  margin-top:26px;
+  color:#06054F;
+  font-size:16px;
+}
+.gp-speed-title b{
+  color:#149E69;
+}
+.gp-speed-control{
+  grid-template-columns:20px 38px minmax(0,1fr) 38px 20px;
+  gap:8px;
+  margin-top:18px;
+}
+.gp-speed-control button{
+  height:38px;
+  border:1px solid #E5E4EA;
+  border-radius:8px;
+  background:#fff;
+  color:#06054F;
+  font-size:20px;
+}
+.gp-speed-control input{
+  accent-color:#149E69;
+}
+.gp-speed-scale{
+  margin:4px 58px 0;
+  color:#8E8D9A;
+  font-size:12px;
+}
+.gp-preview{
+  height:68px;
+  margin-top:24px;
+  padding:0 16px;
+  border:2px solid #149E69;
+  border-radius:14px;
+  background:#fff;
+  color:#149E69;
+  grid-template-columns:44px 1fr;
+}
+.gp-preview>span{
+  width:36px;
+  height:36px;
+}
+.gp-preview strong{
+  font-size:16px;
+}
+.gp-preview small{
+  color:#8E8D9A;
+  font-size:13px;
+}
+@media(max-width:1100px){
+  .gp-category-page{
+    grid-template-columns:1fr;
+  }
+  .gp-category-maker{
+    border-right:0;
+    border-bottom:1px solid #ECECF0;
+  }
+  .gp-category-list{
+    padding:34px 24px;
+  }
+}
+@media(max-width:720px){
+  .gp-category-maker{
+    padding:18px 14px;
+  }
+  .gp-category-preview{
+    height:130px;
+    padding:20px;
+    border-radius:24px;
+  }
+  .gp-category-preview span{
+    width:84px;
+    height:84px;
+    flex-basis:84px;
+    border-radius:24px;
+    font-size:40px;
+  }
+  .gp-category-preview strong{
+    font-size:25px;
+  }
+  .gp-icon-palette{
+    grid-template-columns:repeat(6,minmax(0,1fr));
+  }
+  .gp-icon-palette button{
+    width:100%;
+    height:auto;
+    aspect-ratio:1;
+    font-size:24px;
+  }
+  .gp-category-maker input{
+    height:62px;
+    border-radius:18px;
+    font-size:18px;
+  }
+  .gp-color-palette button{
+    width:52px;
+    height:52px;
+  }
+  .gp-category-add{
+    height:68px;
+    margin-top:28px;
+    border-radius:20px;
+    font-size:20px;
+  }
+  .gp-category-row{
+    height:82px;
+    padding:0 14px;
+    border-radius:22px;
+    grid-template-columns:24px 48px minmax(0,1fr) auto;
+    gap:10px;
+  }
+  .gp-category-row>span{
+    width:48px;
+    height:48px;
+    font-size:22px;
+  }
+  .gp-category-row strong{
+    font-size:18px;
+  }
+  .gp-category-row em{
+    min-width:48px;
+    font-size:12px;
+  }
+  .gp-voice-page{
+    width:100%;
+    max-width:none;
+    padding:24px 20px;
+  }
+}
