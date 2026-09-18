@@ -44,7 +44,7 @@ export default function LoginPage() {
   })
 
   return (
-    <AuthLayout showBack={false}>
+    <AuthLayout>
       <div className="auth-heading auth-heading--center">
         <h1>이메일 로그인</h1>
       </div>
