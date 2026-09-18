@@ -31,7 +31,7 @@ export interface AccountResponse {
 
 export type RelationshipType = 'PARENT' | 'GRANDPARENT' | 'TEACHER' | 'OTHER'
 export type BackendGridSize = 'GRID_2X2' | 'GRID_3X3' | 'GRID_4X4'
-export type BackendVoiceType = 'CHILD_MALE' | 'CHILD_FEMALE'
+export type BackendVoiceType = 'CHILD_MALE' | 'CHILD_FEMALE' | 'ADULT_FEMALE' | 'ADULT_MALE'
 export type AacUserSetupStep =
   | 'PROFILE_COMPLETED'
   | 'GRID_COMPLETED'
@@ -102,6 +102,8 @@ export interface Sentence {
   useCount: number
   lastUsedAt: string | null
   createdAt: string
+  /** 보호자 카드 편집에서 사용하는 선택적 이미지. 백엔드가 지원하면 그대로 동기화한다. */
+  imageUrl?: string | null
 }
 
 /**
@@ -115,6 +117,8 @@ export interface UserPreferences {
   voiceRate: number
   voicePitch: number
   autoSpeak: boolean
+  /** 보호자 설계서 SCR-SET-002. 서버 계약 미지원 시 Mock/로컬 설정으로 유지한다. */
+  languageLevel?: 1 | 2 | 3 | 4
 }
 
 export type Tone = '기본' | '친근하게' | '정중하게' | '간단하게'
