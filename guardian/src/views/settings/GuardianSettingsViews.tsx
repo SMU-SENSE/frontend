@@ -188,7 +188,6 @@ export function CategoryEditorPage() {
   return (
     <main className="gp-category-page">
       <section className="gp-category-maker">
-        <Link href="/settings" className="gp-voice-back" aria-label="환경 설정으로"><ArrowLeft /></Link>
         <div className="gp-category-preview"><span>{icon}</span><strong>{name || '카테고리 이름'}</strong></div>
         <h3>아이콘</h3>
         <div className="gp-icon-palette">{CATEGORY_ICONS.map((value) => <button type="button" key={value} className={icon === value ? 'is-selected' : ''} onClick={() => setIcon(value)}>{value}</button>)}</div>
@@ -256,8 +255,6 @@ export function VoiceSettingsPage() {
   const voiceOptions: Array<{ value: BackendVoiceType; label: string }> = [
     { value: 'CHILD_MALE', label: '남성 아동' },
     { value: 'CHILD_FEMALE', label: '여성 아동' },
-    { value: 'ADULT_FEMALE', label: '성인 여성' },
-    { value: 'ADULT_MALE', label: '성인 남성' },
   ]
 
   function saveRate(next: number) {
@@ -290,12 +287,11 @@ export function VoiceSettingsPage() {
   if (users.error) return <ErrorState message={users.error.message} onRetry={() => users.refetch()} />
   if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
 
-  const currentVoice = user.voiceType ?? 'CHILD_MALE'
+  const currentVoice: BackendVoiceType = user.voiceType === 'CHILD_FEMALE' ? 'CHILD_FEMALE' : 'CHILD_MALE'
   const currentLabel = voiceOptions.find((option) => option.value === currentVoice)?.label ?? '남성 아동'
 
   return (
     <main className="gp-voice-page">
-      <Link href="/settings" className="gp-voice-back" aria-label="환경 설정으로"><ArrowLeft /></Link>
       <div className="gp-progress"><i /><i /><i /><i className="off" /></div>
       <h1>음성 설정</h1><p>사용자에게 맞게 목소리를 고르세요</p>
       <div className="gp-voice-options">
