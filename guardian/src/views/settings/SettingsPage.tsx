@@ -11,7 +11,6 @@ import {
   ChevronUp,
   Clock3,
   Info,
-  LogOut,
   Plus,
   Trash2,
   TriangleAlert,
@@ -265,7 +264,7 @@ export default function SettingsPage() {
       <section className="gp-card gp-account-card">
         <h2>계정</h2>
         <div className="gp-account-actions">
-          <button type="button" onClick={() => void handleLogout()}><LogOut size={23} style={{ verticalAlign: 'middle', marginRight: 10 }} />로그아웃</button>
+          <button type="button" onClick={() => void handleLogout()}><X size={23} style={{ verticalAlign: 'middle', marginRight: 10 }} />로그아웃</button>
           <button type="button" className="danger" onClick={() => void handleWithdraw()}><TriangleAlert size={23} style={{ verticalAlign: 'middle', marginRight: 10 }} />회원탈퇴</button>
         </div>
       </section>
