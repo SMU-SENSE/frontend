@@ -1,7 +1,11 @@
 import type {
+  AacUserResponse,
   AiRecommendationRequest,
   AuthSession,
+  BackendGridSize,
+  BackendVoiceType,
   Category,
+  OnboardingSummaryResponse,
   RoutineRecommendation,
   Sentence,
   TransformRequest,
@@ -16,6 +20,7 @@ const STORAGE_KEY = 'malmoa-mock-db'
 interface MockDatabase {
   user: User
   password: string
+  aacUsers: AacUserResponse[]
   categories: Category[]
   sentences: Sentence[]
   preferences: UserPreferences
@@ -39,6 +44,24 @@ const seed: MockDatabase = {
     joinedAt: '2026-03-11T08:37:15.000Z',
   },
   password: 'Malmoa!123',
+  aacUsers: [
+    {
+      id: 1,
+      name: '민준',
+      mode: 'AAC',
+      gridSize: 'GRID_4X4',
+      active: true,
+      birthDate: '2015-05-12',
+      emergencyContact: '010-0000-0000',
+      notes: null,
+      profileImageUrl: null,
+      voiceType: 'CHILD_MALE',
+      speechRate: 1,
+      setupStep: 'CONFIRMED',
+      createdAt: '2026-09-01T00:00:00.000Z',
+      updatedAt: '2026-09-01T00:00:00.000Z',
+    },
+  ],
   categories: [
     { id: 'category-daily', name: '일상', color: '#56a276', order: 0, sentenceCount: 3 },
     { id: 'category-feeling', name: '감정', color: '#f0b65d', order: 1, sentenceCount: 2 },
@@ -108,6 +131,7 @@ const seed: MockDatabase = {
     voiceRate: 1,
     voicePitch: 1,
     autoSpeak: true,
+    languageLevel: 2,
   },
 }
 
@@ -190,6 +214,100 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
 
   if (path === '/api/v1/auth/oauth/google' && method === 'GET') {
     return ok({ redirectUrl: 'https://accounts.google.com/o/oauth2/v2/auth' }) as T
+  }
+
+  // ── 보호자가 관리하는 AAC 사용자 ────────────────────────────────────────
+  if (path === '/api/v1/me/aac-users' && method === 'GET') return ok(db.aacUsers) as T
+
+  if (path === '/api/v1/me/aac-users' && method === 'POST') {
+    const nextId = Math.max(0, ...db.aacUsers.map((item) => item.id)) + 1
+    const user: AacUserResponse = {
+      id: nextId,
+      name: String(body.name ?? '사용자'),
+      mode: 'AAC',
+      gridSize: 'GRID_4X4',
+      active: db.aacUsers.length === 0,
+      birthDate: String(body.birthDate ?? ''),
+      emergencyContact: String(body.emergencyContact ?? ''),
+      notes: body.notes ? String(body.notes) : null,
+      profileImageUrl: body.profileImageUrl ? String(body.profileImageUrl) : null,
+      voiceType: 'CHILD_MALE',
+      speechRate: 1,
+      setupStep: 'PROFILE_COMPLETED',
+      createdAt: now(),
+      updatedAt: now(),
+    }
+    db.aacUsers.push(user)
+    writeDb(db)
+    return ok(user) as T
+  }
+
+  const gridMatch = path.match(/^\/api\/v1\/me\/aac-users\/(\d+)\/onboarding\/grid$/)
+  if (gridMatch && method === 'PATCH') {
+    const user = db.aacUsers.find((item) => item.id === Number(gridMatch[1]))
+    if (!user) fail(404, 'AAC 사용자를 찾을 수 없습니다.')
+    user.gridSize = String(body.gridSize ?? user.gridSize) as BackendGridSize
+    user.setupStep = 'GRID_COMPLETED'
+    user.updatedAt = now()
+    writeDb(db)
+    return ok(user) as T
+  }
+
+  const voiceMatch = path.match(/^\/api\/v1\/me\/aac-users\/(\d+)\/voice-settings$/)
+  if (voiceMatch && method === 'PATCH') {
+    const user = db.aacUsers.find((item) => item.id === Number(voiceMatch[1]))
+    if (!user) fail(404, 'AAC 사용자를 찾을 수 없습니다.')
+    user.voiceType = String(body.voiceType ?? user.voiceType ?? 'CHILD_MALE') as BackendVoiceType
+    user.speechRate = Number(body.speechRate ?? user.speechRate ?? 1)
+    user.setupStep = 'VOICE_COMPLETED'
+    user.updatedAt = now()
+    writeDb(db)
+    return ok(user) as T
+  }
+
+  const summaryMatch = path.match(/^\/api\/v1\/me\/aac-users\/(\d+)\/onboarding-summary$/)
+  if (summaryMatch && method === 'GET') {
+    const user = db.aacUsers.find((item) => item.id === Number(summaryMatch[1]))
+    if (!user) fail(404, 'AAC 사용자를 찾을 수 없습니다.')
+    const summary: OnboardingSummaryResponse = {
+      userId: user.id,
+      name: user.name,
+      profileImageUrl: user.profileImageUrl,
+      birthDate: user.birthDate,
+      relationshipType: 'PARENT',
+      relationshipDetail: null,
+      emergencyContact: user.emergencyContact,
+      notes: user.notes,
+      gridSize: user.gridSize,
+      voiceType: user.voiceType ?? 'CHILD_MALE',
+      speechRate: user.speechRate ?? 1,
+      setupStep: user.setupStep,
+    }
+    return ok(summary) as T
+  }
+
+  const confirmMatch = path.match(/^\/api\/v1\/me\/aac-users\/(\d+)\/onboarding\/confirm$/)
+  if (confirmMatch && method === 'POST') {
+    const user = db.aacUsers.find((item) => item.id === Number(confirmMatch[1]))
+    if (!user) fail(404, 'AAC 사용자를 찾을 수 없습니다.')
+    user.setupStep = 'CONFIRMED'
+    user.updatedAt = now()
+    writeDb(db)
+    const summary: OnboardingSummaryResponse = {
+      userId: user.id,
+      name: user.name,
+      profileImageUrl: user.profileImageUrl,
+      birthDate: user.birthDate,
+      relationshipType: 'PARENT',
+      relationshipDetail: null,
+      emergencyContact: user.emergencyContact,
+      notes: user.notes,
+      gridSize: user.gridSize,
+      voiceType: user.voiceType ?? 'CHILD_MALE',
+      speechRate: user.speechRate ?? 1,
+      setupStep: user.setupStep,
+    }
+    return ok(summary) as T
   }
 
   // ── 프로필 및 사용자 환경 설정 ─────────────────────────────────────────
