@@ -66,4 +66,9 @@ export const authApi = {
     await apiRequest<void>('/api/v1/auth/logout', { method: 'POST' })
     resetCsrfToken()
   },
+
+  deleteAccount: async () => {
+    await apiRequest<void>('/api/v1/auth/me', { method: 'DELETE' })
+    resetCsrfToken()
+  },
 }
