@@ -169,8 +169,9 @@ function mockPairing(userId: number, refresh = false): PairingResponse {
 
 function defaultRoutines(): LiveRoutine[] {
   return [
-    { id: 'school', title: '등교 준비', message: '등교 준비 — 학교 상징 우선', timeOfDay: '08:00:00', daysOfWeek: ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'], timezone: 'Asia/Seoul', enabled: true },
+    { id: 'school', title: '등교 준비', message: '등교 준비 — 학교 상징 우선', timeOfDay: '08:00:00', daysOfWeek: ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'], timezone: 'Asia/Seoul', enabled: true },
     { id: 'medicine', title: '점심 약', message: '점심 약 복용 알림 팝업', timeOfDay: '12:30:00', daysOfWeek: ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'], timezone: 'Asia/Seoul', enabled: true },
+    { id: 'sleep', title: '취침 루틴', message: '취침 루틴 — 양치, 약, 졸려요', timeOfDay: '21:00:00', daysOfWeek: ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'], timezone: 'Asia/Seoul', enabled: false },
   ]
 }
 
