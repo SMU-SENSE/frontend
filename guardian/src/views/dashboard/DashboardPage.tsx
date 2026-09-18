@@ -18,6 +18,7 @@ import { aacUserApi } from '../../api/aacUsers'
 import { apiConfig } from '../../api/client'
 import { guardianLiveApi, type LiveId } from '../../api/guardianLive'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
+import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { useToast } from '../../components/ui/ToastProvider'
 import type { Sentence } from '../../types/models'
 
@@ -146,6 +147,7 @@ export default function DashboardPage() {
       <header className="gp-home__header">
         <Link href="/" className="gp-wordmark">Mal<span>Moa</span></Link>
         <div className="gp-home__actions">
+          <NotificationBell />
           <Link href="/settings" className="gp-head-btn"><Settings size={18} /> 설정</Link>
           <button type="button" className={editMode ? 'gp-edit-toggle is-on' : 'gp-edit-toggle'} onClick={() => setEditMode((value) => !value)}><SlidersHorizontal size={18} /> 보호자 편집 모드 <b>{editMode ? 'ON' : 'OFF'}</b></button>
           <span className={hasEmergency ? 'gp-status is-alert' : 'gp-status'}><i />{hasEmergency ? '긴급' : '안정'}</span>
