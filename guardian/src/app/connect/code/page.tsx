@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
-import { RefreshCw, Smartphone, Trash2 } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { aacUserApi } from '../../../api/aacUsers'
 import { guardianLiveApi, type PairingResponse } from '../../../api/guardianLive'
@@ -21,12 +21,6 @@ export default function InviteCodeConnectionPage() {
     enabled: Boolean(user),
     staleTime: Infinity,
   })
-  const devices = useQuery({
-    queryKey: ['paired-devices', user?.id],
-    queryFn: () => guardianLiveApi.devices(user!.id),
-    enabled: Boolean(user),
-    refetchInterval: 5000,
-  })
   const [seconds, setSeconds] = useState(0)
 
   useEffect(() => {
@@ -43,15 +37,6 @@ export default function InviteCodeConnectionPage() {
     onSuccess: (value) => {
       queryClient.setQueryData<PairingResponse>(['device-pairing', user?.id], value)
       showToast('새 초대 코드를 발급했습니다.')
-    },
-    onError: (error) => showToast(error.message, 'error'),
-  })
-
-  const revoke = useMutation({
-    mutationFn: (deviceId: number) => guardianLiveApi.revokeDevice(user!.id, deviceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paired-devices', user?.id] })
-      showToast('기기 연결을 해제했습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
@@ -93,16 +78,6 @@ export default function InviteCodeConnectionPage() {
 
       <Link className="connection-switch" href="/connect/qr">QR로 연결</Link>
 
-      <section className="connection-devices">
-        <h2>연결된 사용자 기기</h2>
-        {devices.isLoading ? <p>기기 목록을 확인하는 중입니다.</p> : devices.data?.length ? devices.data.map((device) => (
-          <article key={device.id}>
-            <Smartphone size={20} />
-            <div><strong>{device.deviceName || '사용자 기기'}</strong><small>{device.deviceType} · {device.status}{device.lastSeenAt ? ` · 최근 연결 ${new Date(device.lastSeenAt).toLocaleString('ko-KR')}` : ''}</small></div>
-            <button type="button" aria-label="기기 연결 해제" disabled={revoke.isPending} onClick={() => window.confirm('이 사용자 기기의 연결을 해제할까요?') && revoke.mutate(device.id)}><Trash2 size={18} /></button>
-          </article>
-        )) : <p>아직 연결된 기기가 없습니다. 위 코드를 사용자 앱에 입력해 주세요.</p>}
-      </section>
     </ConnectionShell>
   )
 }
