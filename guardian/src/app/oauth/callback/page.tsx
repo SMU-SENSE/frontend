@@ -13,7 +13,7 @@ import {
   type VoiceType,
 } from '../../../lib/onboardingDraft'
 import { useAuthStore } from '../../../stores/authStore'
-import type { BackendGridSize } from '../../../types/models'
+import type { BackendGridSize, BackendVoiceType } from '../../../types/models'
 
 const gridFromBackend: Record<BackendGridSize, GridSize> = {
   GRID_2X2: '2x2',
@@ -21,8 +21,8 @@ const gridFromBackend: Record<BackendGridSize, GridSize> = {
   GRID_4X4: '4x4',
 }
 
-const voiceFromBackend = (voiceType: 'CHILD_MALE' | 'CHILD_FEMALE' | null): VoiceType =>
-  voiceType === 'CHILD_FEMALE' ? 'female-child' : 'male-child'
+const voiceFromBackend = (voiceType: BackendVoiceType | null): VoiceType =>
+  voiceType === 'CHILD_FEMALE' || voiceType === 'ADULT_FEMALE' ? 'female-child' : 'male-child'
 
 export default function OAuthCallbackPage() {
   const router = useRouter()
