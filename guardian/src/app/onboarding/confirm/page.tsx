@@ -111,35 +111,41 @@ export default function ConfirmOnboardingPage() {
   const rate = summary?.speechRate ?? draft.speechRate ?? 1
   const initial = name.trim().slice(0, 1) || '사'
   const profileImage = summary?.profileImageUrl || draft.profileImageDataUrl || ''
-
-  const rows = [
-    { label: '이름', value: name, href: '/users/new' },
-    { label: '목소리', value: `${voice} · ${rate.toFixed(1)}×`, href: '/users/setup/voice' },
-    { label: '화면 격자', value: grid, href: '/users/setup/grid' },
-    { label: '나와의 관계', value: relation, href: '/users/new' },
-  ]
+  const birthDateRaw = summary?.birthDate ?? draft.birthDate ?? ''
+  const birthDate = birthDateRaw ? birthDateRaw.replaceAll('-', '.') : '-'
 
   return (
-    <OnboardingLayout step={4} title="가입정보 확인" subtitle="설정한 내용을 확인한 뒤 시작해요">
-      <div className="confirm-profile">
-        <div className={`confirm-avatar ${profileImage ? 'confirm-avatar--image' : ''}`} aria-hidden="true">
-          {profileImage ? <img src={profileImage} alt="" /> : initial}
-        </div>
-        <strong>{name}</strong>
-      </div>
+    <OnboardingLayout
+      step={4}
+      title="가입정보 확인"
+      subtitle="입력하신 정보를 확인해주세요. 수정이 필요한 경우 이전 단계로 돌아가 수정할 수 있어요."
+    >
+      <div className="confirm-reference">
+        <section className="confirm-reference__section">
+          <h2>사용자 정보</h2>
+          <div className="confirm-reference__card confirm-reference__user">
+            <div className={`confirm-reference__avatar ${profileImage ? 'has-image' : ''}`} aria-hidden="true">
+              {profileImage ? <img src={profileImage} alt="" /> : initial}
+            </div>
+            <div className="confirm-reference__user-grid">
+              <div><span>이름</span><strong>{name}</strong></div>
+              <div><span>생년월일</span><strong>{birthDate}</strong></div>
+              <div><span>관계</span><strong>{relation}</strong></div>
+            </div>
+          </div>
+        </section>
 
-      <div className="confirm-box">
-        {rows.map((row) => (
-          <button key={row.label} type="button" className="confirm-row" onClick={() => router.push(row.href)}>
-            <span>{row.label}</span>
-            <strong>{row.value}</strong>
-            <span className="confirm-row__chevron" aria-hidden="true">›</span>
-          </button>
-        ))}
+        <section className="confirm-reference__section">
+          <h2>설정 정보</h2>
+          <div className="confirm-reference__card confirm-reference__settings">
+            <div><span>화면 격자</span><strong>{grid.replace('크게 ', '').replace('보통 ', '').replace('작게 ', '')}</strong></div>
+            <div><span>TTS 음성</span><strong>{voice} ({rate.toFixed(1)}×)</strong></div>
+          </div>
+        </section>
       </div>
 
       <Button fullWidth size="lg" disabled={loading} loading={submitting} onClick={start}>
-        {loading ? '정보 확인 중' : '시작하기'}
+        {loading ? '정보 확인 중' : '확인하고 홈으로 이동'}
       </Button>
     </OnboardingLayout>
   )
