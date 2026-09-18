@@ -20,17 +20,22 @@ import '../styles/guardian-product.css'
 import '../styles/guardian-onboarding.css'
 import '../styles/guardian-product-refine.css'
 import { Providers } from './providers'
+import { PwaRegistration } from '../components/PwaRegistration'
 
 export const metadata: Metadata = {
-  title: '말모아',
-  description: 'AAC 보완대체의사소통 서비스',
+  title: '말모아 보호자 M+',
+  description: 'AAC 보완대체의사소통 보호자 서비스',
+  applicationName: 'MalMoa 보호자',
+  manifest: '/manifest.webmanifest',
+  icons: { icon: '/malmoa-guardian.svg', apple: '/malmoa-guardian.svg' },
+  appleWebApp: { capable: true, title: 'MalMoa 보호자', statusBarStyle: 'default' },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
       <body>
-        <Providers>{children}</Providers>
+        <Providers><PwaRegistration />{children}</Providers>
       </body>
     </html>
   )
