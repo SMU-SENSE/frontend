@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import qrcode from '../../../lib/vendor/qrcode.mjs'
 import { aacUserApi } from '../../../api/aacUsers'
 import { guardianLiveApi, type PairingResponse } from '../../../api/guardianLive'
 import { ConnectionShell } from '../../../components/connect/ConnectionShell'
@@ -54,7 +55,12 @@ export default function QrConnectionPage() {
 
   const expired = seconds <= 0
   const payload = pairing.data.qrPayload
-  const qrImage = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=12&data=${encodeURIComponent(payload)}`
+  const qrImage = useMemo(() => {
+    const code = qrcode(0, 'M')
+    code.addData(payload, 'Byte')
+    code.make()
+    return code.createDataURL(8, 4)
+  }, [payload])
 
   return (
     <ConnectionShell title="QR로 연결" subtitle="사용자 기기에서 스캔하면 바로 연결돼요">
