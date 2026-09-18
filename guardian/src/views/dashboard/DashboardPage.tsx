@@ -73,7 +73,7 @@ export default function DashboardPage() {
   }, [activeUser, queryClient])
 
   const favoriteMutation = useMutation({
-    mutationFn: ({ id, favorite }: { id: LiveId; favorite: boolean }) => guardianLiveApi.setFavorite(activeUser!.id, id, favorite),
+    mutationFn: async ({ id, favorite }: { id: LiveId; favorite: boolean }) => { await guardianLiveApi.setFavorite(activeUser!.id, id, favorite) },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] }),
     onError: (error) => showToast(error.message, 'error'),
   })
