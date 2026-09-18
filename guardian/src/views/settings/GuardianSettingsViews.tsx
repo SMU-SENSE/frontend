@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   ChevronLeft,
   GripVertical,
   MapPin,
@@ -287,7 +286,7 @@ export function VoiceSettingsPage() {
   if (users.error) return <ErrorState message={users.error.message} onRetry={() => users.refetch()} />
   if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
 
-  const currentVoice: BackendVoiceType = user.voiceType === 'CHILD_FEMALE' ? 'CHILD_FEMALE' : 'CHILD_MALE'
+  const currentVoice: BackendVoiceType = user.voiceType === 'CHILD_FEMALE' || user.voiceType === 'ADULT_FEMALE' ? 'CHILD_FEMALE' : 'CHILD_MALE'
   const currentLabel = voiceOptions.find((option) => option.value === currentVoice)?.label ?? '남성 아동'
 
   return (
