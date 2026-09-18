@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 
-import { deviceService } from '@/services/QRService';
+import { deviceService } from '@/services/loginService';
 import { storage } from '@/lib/storage';
 
 const CODE_LENGTH = 6;

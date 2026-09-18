@@ -6,7 +6,8 @@ html, body {
   height: 100dvh;
   overflow: hidden;
 }
-.container{
+
+.container {
   margin: 0;
   width: 100%;
   height: 100vh;
@@ -15,28 +16,33 @@ html, body {
   flex-direction: column;
   overflow: hidden;
 }
+
 .content-cover {
   display: flex;
   flex: 1;
   width: 100%;
+  min-height: 0; /* 없으면 아래쪽이 잘림 */
   overflow: hidden;
   box-sizing: border-box;
 }
-.home-header{
+
+.home-header {
   flex-shrink: 0;
-  background-color : #FFFFFF;
+  background-color: #FFFFFF;
   display: flex;
   align-items: center;
   width: 100%;
   height: 64px;
 }
-.logo{
+
+.logo {
   padding: 10px;
   width: 140px;
   height: 33px;
   object-fit: contain;
 }
-.header-design{
+
+.header-design {
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -47,53 +53,110 @@ html, body {
   margin: 0px;
   border-radius: 9999px;
 }
-.main{
+
+.main {
   display: flex;
   flex-direction: row;
-  overflow: hidden;
   flex: 1;
+  min-width: 0;
+  min-height: 0; /* 없으면 아래쪽이 잘림 */
+  overflow: hidden;
 }
-.leftbar{
-  text-decoration: none;
-  flex-direction: column;
-  align-items: center; 
-  overflow-y: auto;
+
+/* ───────────── 왼쪽 카테고리 바 ───────────── */
+
+.leftbar {
   display: flex;
-  padding: 8px 16px;
-  background-color : #FFFFFF;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   width: 96px;
-  height: 100%;
-  gap: 12px;
-}
-/*MoveButton*/
-.leftbar-design{
-  text-decoration: none;
-  flex-direction: column;
-  align-items: center; 
-  justify-content: center;
-  display: flex;
-  padding: 8px 16px;
-  width: 72px;
-  height: 72px;
-  background-color: #F0F0F4;
-  font-size: 20px;
-  font-weight: bold;
-  border-radius: 16px;
-  margin-bottom: 12px;
-  border: none;
-  background: none;           
+  flex-shrink: 0;
+  min-height: 0;
+  padding: 10px 8px;
+  background-color: #FFFFFF;
+  overflow-y: auto;
   box-sizing: border-box;
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: clamp(0.8rem, 2.5vw, 1.2rem);
 }
+
+/* MoveButton
+ * --cat-color 는 MoveButton 이 넣어주는 카테고리 색.
+ * 평소엔 그 색을 그대로, 지금 보고 있는 카테고리면 진하게.
+ */
+.leftbar-design {
+  --cat-color: #F0F0F4;
+
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 76px;
+  height: 76px;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  background-color: var(--cat-color);
+  color: #4A5568;
+  font-size: 13px;
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  /* 글자가 길면 줄바꿈되게 (nowrap 이면 삐져나감) */
+  white-space: normal;
+  word-break: keep-all;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.leftbar-design span {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leftbar-design:hover {
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+/* 지금 보고 있는 카테고리 — 같은 색을 진하게.
+ * 진한 색은 MoveButton 이 미리 계산해서 --cat-active 로 넘겨줌.
+ */
+.leftbar-design[data-active='true'] {
+  background-color: var(--cat-active, var(--cat-color));
+  border-color: var(--cat-active-border, var(--cat-active, var(--cat-color)));
+  color: #1F2937;
+}
+
+/* ───────────── 가운데 / 오른쪽 ───────────── */
+
 .main-content {
   flex: 1;
   min-width: 0;
-  min-height: 0; 
+  min-height: 0;
   overflow-y: auto;
   background-color: #F5F6F9;
 }
+
+.rightbar {
+  display: flex; /* 안의 AISentence 가 높이를 꽉 채우도록 */
+  width: clamp(280px, 30vw, 557px);
+  flex-shrink: 0;
+  min-height: 0;
+  background-color: #FFFFFF;
+  box-sizing: border-box;
+}
+
+.rightbar > * {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ───────────── 아래 자주 쓰는 말 ───────────── */
+
 .bottom {
   flex-shrink: 0;
   height: 80px;
@@ -102,9 +165,11 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  width: 100%; 
+  width: 100%;
   flex-direction: row;
+  overflow-x: auto;
 }
+
 .bottom-design {
   display: flex;
   align-items: center;
@@ -120,12 +185,9 @@ html, body {
   transition: background-color 0.1s ease, color 0.1s ease;
 }
 
-.rightbar {
-  width: clamp(280px, 30vw, 557px);
-  flex-shrink: 0;
-  min-height: 0;
-}
-.error{
+/* ───────────── 에러 화면 ───────────── */
+
+.error {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -136,6 +198,7 @@ html, body {
   text-align: center;
   box-sizing: border-box;
 }
+
 .error-icon-box {
   width: 64px;
   height: 64px;
@@ -146,17 +209,20 @@ html, body {
   margin-bottom: 24px;
   color: #FFFFFF;
 }
+
 .error-title {
   font-size: 24px;
   font-weight: bold;
   color: #1F2937;
   margin-bottom: 8px;
 }
+
 .error-desc {
   font-size: 15px;
   color: #6B7280;
   margin-bottom: 32px;
 }
+
 .error-button {
   background-color: #149E69;
   color: #ffffff;
@@ -167,6 +233,7 @@ html, body {
   text-decoration: none;
   box-shadow: 0 4px 6px rgba(20, 158, 105, 0.2);
 }
+
 .error2-button {
   background-color: #FFFFFF;
   border-color: #6B7280;
@@ -178,6 +245,9 @@ html, body {
   text-decoration: none;
   box-shadow: 0 4px 6px rgba(20, 158, 105, 0.2);
 }
+
+/* ───────────── 로그인 ───────────── */
+
 .login {
   display: flex;
   flex-direction: column;
@@ -188,22 +258,26 @@ html, body {
   padding: 20px;
   text-align: center;
 }
+
 .login-logo {
   width: 80px;
   height: 80px;
   margin-bottom: 24px;
 }
+
 .login-welcome {
   font-size: 26px;
   font-weight: bold;
   color: #06054F;
   margin-bottom: 8px;
 }
+
 .login-connect {
-  color: #7a7a8c; 
+  color: #7a7a8c;
   font-size: 15px;
   margin-bottom: 40px;
 }
+
 .login-button {
   display: flex;
   flex-direction: column;
@@ -211,6 +285,7 @@ html, body {
   width: 100%;
   max-width: 360px;
 }
+
 .login-code {
   padding: 16px;
   border-radius: 12px;
@@ -222,6 +297,7 @@ html, body {
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(20, 158, 105, 0.2);
 }
+
 .login-QR {
   padding: 16px;
   border-radius: 12px;
@@ -232,11 +308,15 @@ html, body {
   border: 1px solid #dcdce6;
   cursor: pointer;
 }
+
 .login-bottom {
   color: #9c9ba8;
   font-size: 13px;
   margin-top: 60px;
 }
+
+/* ───────────── 코드 / QR 연결 ───────────── */
+
 .codeQR {
   display: flex;
   flex-direction: column;
@@ -248,7 +328,8 @@ html, body {
   text-align: center;
   position: relative;
 }
-/*뒤로가기 버튼*/
+
+/* 뒤로가기 버튼 */
 .back {
   position: absolute;
   top: 30px;
@@ -262,32 +343,36 @@ html, body {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex : items-center gap-1
 }
+
 .back-button {
   background-color: #E6F7F1;
   padding: 4px;
   border-radius: 50%;
 }
-/*코드 입력*/
+
+/* 코드 입력 */
 .code-title {
   font-size: 24px;
   font-weight: bold;
   color: #06054F;
   margin-bottom: 8px;
 }
-/*6자리 코드를 입력하세요*/
+
+/* 6자리 코드를 입력하세요 */
 .code-sub {
   color: #7a7a8c;
   font-size: 14px;
   margin-bottom: 32px;
 }
-/*입력*/
+
+/* 입력 */
 .code-button {
   display: flex;
   gap: 10px;
   margin-bottom: 32px;
 }
+
 /* 6자리 입력 칸 */
 .code-input {
   width: 50px;
@@ -301,7 +386,8 @@ html, body {
   color: #1a1a2e;
   outline: none;
 }
-/*연결하기*/
+
+/* 연결하기 */
 .code-main {
   width: 100%;
   max-width: 360px;
@@ -316,7 +402,8 @@ html, body {
   box-shadow: 0 4px 12px rgba(20, 158, 105, 0.2);
   margin-bottom: 20px;
 }
-/*QR로 스캔*/
+
+/* QR로 스캔 */
 .code-QR {
   background: none;
   border: none;
@@ -326,11 +413,13 @@ html, body {
   text-decoration: underline;
   cursor: pointer;
 }
+
 .QR-bottom {
   color: #9c9ba8;
   font-size: 13px;
   margin-bottom: 24px;
 }
+
 .QR-scan {
   width: 280px;
   height: 280px;
@@ -344,4 +433,11 @@ html, body {
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leftbar-design,
+  .bottom-design {
+    transition: none;
+  }
 }

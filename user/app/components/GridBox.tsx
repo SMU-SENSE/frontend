@@ -1,6 +1,24 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import type { ElementType } from 'react';
+import {
+  Sparkles,
+  Clock,
+  Star,
+  Siren,
+  User,
+  Utensils,
+  Building,
+  PersonStanding,
+  UserRoundArrowLeft,
+  Heart,
+  Plus,
+  MessageCircle,
+  Languages,
+  Shapes,
+} from 'lucide-react';
 import { symbolService, SymbolCard } from '@/services/symbolService';
 import { MockWord } from '../mock/mockdata';
 import { apiClient } from '@/lib/apiClient';
@@ -34,68 +52,194 @@ const getAacUserId = (): number => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 };
 
-/** 카테고리별 색.
- *  한글 이름, 영어 키, 라우트 경로(/food-word) 어느 쪽으로 와도 찾게 해둠 */
-const CATEGORY_COLORS: Record<string, string> = {
-  음식: '#F3CC6B',
-  food: '#F3CC6B',
+/* ───────────── 카테고리 목록 (한 곳에서 관리) ─────────────
+ * key   : 데이터의 category 값 (mockdata / 백엔드와 같아야 함)
+ * name  : 화면에 보이는 이름
+ * href  : 주소
+ * color : 카드 색
+ * icon  : 왼쪽 메뉴 아이콘 (lucide-react)
+ *
+ * layout.tsx 의 왼쪽 메뉴도 이 목록을 가져다 씀.
+ * 카테고리를 추가할 땐 여기 한 줄만 넣으면 메뉴와 색이 같이 따라옴.
+ * 나중에 GET /api/v1/categories 로 바꿀 자리이기도 함.
+ * ------------------------------------------------------ */
 
-  감정: '#7ECFE6',
-  emotion: '#7ECFE6',
+export interface CategoryInfo {
+  key: string;
+  name: string;
+  href: string;
+  color: string;
+  icon: ElementType;
+}
 
-  사람: '#F9BE93',
-  person: '#F9BE93',
+/** 목록에 없는 카테고리가 생겼을 때 쓸 기본 아이콘 */
+const DEFAULT_ICON: ElementType = Shapes;
 
-  장소: '#A9C7F0',
-  place: '#A9C7F0',
-
-  '인사/사회어': '#9EE3C0',
-  인사: '#9EE3C0',
-  hello: '#9EE3C0',
-  social: '#9EE3C0',
-
-  시간: '#C9B7F0',
-  time: '#C9B7F0',
-
-  신체: '#F5AEC8',
-  body: '#F5AEC8',
-
-  행동: '#9EE3C0',
-  action: '#9EE3C0',
-
-  문법: '#B4C4B8',
-  grammar: '#B4C4B8',
-
-  대화: '#8F89F2',
-  talk: '#8F89F2',
-
-  설명: '#C9B7F0',
-  description: '#C9B7F0',
-
-  긴급어: '#F3A0A0',
-  emergency: '#F3A0A0',
-
-  추천: '#7ECFE6',
-  recommend: '#7ECFE6',
-
-  최근: '#CBD3DE',
-  recent: '#CBD3DE',
-
-  즐겨찾기: '#F3CC6B',
-  favorite: '#F3CC6B',
+/* 보호자 앱에서 아이콘을 고르면 서버는 "Utensils" 같은 이름(문자열)을 보냄.
+ * 그림 자체는 보낼 수 없으므로, 이름 → 실제 아이콘으로 바꿔주는 표가 필요함.
+ * 보호자 앱에서 고를 수 있는 아이콘을 여기에 등록해두면 됨. */
+const ICON_BY_NAME: Record<string, ElementType> = {
+  Sparkles,
+  Clock,
+  Star,
+  Siren,
+  User,
+  Utensils,
+  Building,
+  PersonStanding,
+  UserRoundArrowLeft,
+  Heart,
+  Plus,
+  MessageCircle,
+  Languages,
+  Shapes,
 };
+
+/** "utensils", "UTENSILS" 처럼 와도 찾게 해줌 */
+const findIcon = (name: unknown): ElementType | null => {
+  if (typeof name !== 'string' || !name) return null;
+
+  if (ICON_BY_NAME[name]) return ICON_BY_NAME[name];
+
+  const lower = name.toLowerCase();
+  const matched = Object.keys(ICON_BY_NAME).find(
+    (key) => key.toLowerCase() === lower
+  );
+
+  return matched ? ICON_BY_NAME[matched] : null;
+};
+
+export const CATEGORIES: CategoryInfo[] = [
+  { key: 'recommend',    name: '추천',        href: '/home',           color: '#E6F7F1', icon: Sparkles },
+  { key: 'recent',       name: '최근',        href: '/recent',         color: '#F0F0F4', icon: Clock },
+  { key: 'favorite',     name: '즐겨찾기',     href: '/favorite',       color: '#FFFBEC', icon: Star },
+  { key: 'red',          name: '긴급어',      href: '/red',             color: '#FFF0F0', icon: Siren },
+  { key: 'person',       name: '사람',        href: '/person',          color: '#FFF5EE', icon: User },
+  { key: 'food',         name: '음식',        href: '/food',           color: '#FFFBEC', icon: Utensils },
+  { key: 'time',         name: '장소',        href: '/time',           color: '#FFFBEC', icon: Building },
+  { key: 'body',         name: '신체',        href: '/body',           color: '#FFFBEC', icon: PersonStanding },
+  { key: 'action',       name: '행동',        href: '/action',         color: '#EDFBF5', icon: UserRoundArrowLeft },
+  { key: 'emotion',      name: '감정',        href: '/emotion',        color: '#EDF8FD', icon: Heart },
+  { key: 'description',  name: '설명',        href: '/description',    color: '#EDF8FD', icon: Plus },
+  { key: 'conversation', name: '대화',        href: '/conversation',   color: '#F0F1FF', icon: MessageCircle },
+  { key: 'grammar',      name: '문법',        href: '/grammar',        color: '#F5F6F5', icon: Languages },
+];
+
+/** key 로 카테고리를 빠르게 찾기 위한 표 */
+const CATEGORY_BY_KEY: Record<string, CategoryInfo> = Object.fromEntries(
+  CATEGORIES.map((item) => [item.key, item])
+);
+
+/** 주소(/food)로 카테고리를 찾기 위한 표 */
+const CATEGORY_BY_HREF: Record<string, CategoryInfo> = Object.fromEntries(
+  CATEGORIES.map((item) => [item.href, item])
+);
+
+/** 화면 이름(음식)으로도 찾을 수 있게 */
+const CATEGORY_BY_NAME: Record<string, CategoryInfo> = Object.fromEntries(
+  CATEGORIES.map((item) => [item.name, item])
+);
 
 /** 목록에 없는 카테고리일 때 쓸 색들 */
 const FALLBACK_PALETTE = [
-  '#7ECFE6',
-  '#F3CC6B',
-  '#9EE3C0',
-  '#8F89F2',
-  '#F9BE93',
-  '#F3A0A0',
-  '#A9C7F0',
-  '#C9B7F0',
+  '#EDF8FD',
+  '#FFFBEC',
+  '#EDFBF5',
+  '#F0F1FF',
+  '#FFF5EE',
+  '#FFF0F0',
+  '#EEF4FF',
+  '#F7F1FF',
 ];
+
+/** 이름이 같으면 항상 같은 색이 나오도록 글자를 숫자로 바꿈 */
+const hashToIndex = (value: string): number => {
+  let sum = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    sum += value.charCodeAt(i);
+  }
+  return sum % FALLBACK_PALETTE.length;
+};
+
+/** '/food', 'FOOD', ' 음식 ' 같은 값을 비교하기 좋게 다듬음 */
+const normalize = (value: string): string =>
+  value.trim().toLowerCase().replace(/^\//, '').replace(/-word$/, '');
+
+/* ───────────── 카테고리를 백엔드에서 받아오기 ─────────────
+ * 서버 응답이 오기 전에는 위 CATEGORIES 를 쓰고,
+ * 응답이 오면 그걸로 갈아끼움. 실패하면 위 목록 그대로 사용.
+ *
+ * 보호자 앱에서 카테고리를 추가하면 색과 아이콘도 같이 정하는데,
+ * 색은 그대로 받아 쓰고 아이콘은 이름(문자열)을 받아서 표에서 찾음.
+ * ------------------------------------------------------ */
+
+/** 서버가 준 카테고리 한 개를 화면에서 쓰는 모양으로 바꿈 */
+const toCategoryInfo = (item: any): CategoryInfo | null => {
+  // 서버가 key 를 뭐라고 부를지 몰라서 흔한 이름을 모두 확인
+  const key = item?.key ?? item?.code ?? item?.categoryKey ?? item?.slug ?? '';
+  const name = item?.name ?? item?.title ?? item?.categoryName ?? key;
+
+  if (!key) return null;
+
+  // 이미 아는 카테고리면 주소와 색을 그대로 씀
+  const known = CATEGORY_BY_KEY[key];
+
+  return {
+    key,
+    name,
+    // 보호자 앱에서 정한 색
+    color:
+      item?.color ??
+      item?.colorCode ??
+      item?.bgColor ??
+      known?.color ??
+      FALLBACK_PALETTE[hashToIndex(key)],
+    // 서버가 주소를 줄 리는 없으니 규칙으로 만듦
+    href: known?.href ?? `/${key}`,
+    // 보호자 앱에서 고른 아이콘 이름을 실제 아이콘으로 바꿈
+    icon:
+      findIcon(item?.icon ?? item?.iconName ?? item?.iconKey) ??
+      known?.icon ??
+      DEFAULT_ICON,
+  };
+};
+
+/**
+ * 카테고리 목록을 돌려줌.
+ * layout.tsx 의 왼쪽 메뉴와 GridBox 의 카드 색이 이걸 씀.
+ */
+export function useCategories(): CategoryInfo[] {
+  const [categories, setCategories] = useState<CategoryInfo[]>(CATEGORIES);
+
+  useEffect(() => {
+    // 목 모드면 서버를 안 부르고 기본 목록 사용
+    if (USE_MOCK) return;
+
+    const fetchCategories = async () => {
+      try {
+        const res = await apiClient.get(API_ENDPOINTS.CATEGORIES.BASE);
+
+        // 응답 구조 방어 처리
+        const raw = Array.isArray(res)
+          ? res
+          : (res as any)?.data ?? (res as any)?.result ?? [];
+
+        const list = (raw as any[])
+          .map(toCategoryInfo)
+          .filter((item): item is CategoryInfo => item !== null);
+
+        // 빈 배열이 오면 기본 목록을 그대로 둠 (메뉴가 사라지지 않게)
+        if (list.length > 0) setCategories(list);
+      } catch (error) {
+        console.warn('카테고리 불러오기 실패, 기본 목록 사용:', error);
+      }
+    };
+
+    void fetchCategories();
+  }, []);
+
+  return categories;
+}
 
 /* ───────────── 서버/목 데이터에서 값 꺼내기 ─────────────
  * 백엔드 필드 이름이 확정 전이라, 흔히 쓰는 이름을 전부 확인함.
@@ -125,37 +269,92 @@ const getCategoryName = (item: any): string =>
 const getImageUrl = (item: any): string | undefined =>
   item?.imageUrl ?? item?.image ?? item?.imgUrl ?? item?.icon ?? undefined;
 
-/** '/food-word', 'FOOD', ' 음식 ' 같은 값을 비교하기 좋게 다듬음 */
-const normalize = (value: string): string =>
-  value.trim().toLowerCase().replace(/^\//, '').replace(/-word$/, '');
+/** 주소나 이름으로 들어와도 데이터의 category 값(key)으로 바꿔줌 */
+const toCategoryKey = (value: string): string => {
+  const found =
+    CATEGORY_BY_KEY[value] ??
+    CATEGORY_BY_NAME[value] ??
+    CATEGORY_BY_HREF[value] ??
+    CATEGORY_BY_KEY[normalize(value)];
 
-/** 이름이 같으면 항상 같은 색이 나오도록 글자를 숫자로 바꿈 */
-const hashToIndex = (value: string): number => {
-  let sum = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    sum += value.charCodeAt(i);
-  }
-  return sum % FALLBACK_PALETTE.length;
+  return found ? found.key : normalize(value);
 };
 
-/** 카드 색: 서버가 준 색 → 카테고리 색 → 이름 기준 색 */
-const getColor = (item: any): string => {
-  // 1) 서버가 직접 색을 내려줬으면 그대로
+/** 카드 색
+ *  1) 상징 자체에 색이 있으면 그 색
+ *  2) 카테고리 색 (보호자 앱에서 정한 색이 여기로 들어옴)
+ *  3) 둘 다 없으면 이름 기준 색
+ *
+ *  colorByKey 는 지금 화면이 쓰는 카테고리 목록에서 만든 표라서,
+ *  보호자 앱에서 색을 바꾸면 카드 색도 같이 바뀜.
+ */
+const getColor = (item: any, colorByKey: Record<string, string>): string => {
   if (item?.color) return item.color;
 
   const raw = getCategoryName(item);
   if (!raw) return FALLBACK_PALETTE[0];
 
-  // 2) 이름 그대로 찾기
-  if (CATEGORY_COLORS[raw]) return CATEGORY_COLORS[raw];
+  const key = toCategoryKey(raw);
+  if (colorByKey[key]) return colorByKey[key];
 
-  // 3) 다듬어서 다시 찾기 ('/food-word' → 'food')
-  const key = normalize(raw);
-  if (CATEGORY_COLORS[key]) return CATEGORY_COLORS[key];
-
-  // 4) 그래도 없으면 이름을 숫자로 바꿔서 색을 정함.
-  //    순서가 아니라 이름 기준이라, 같은 카테고리는 항상 같은 색이 됨.
   return FALLBACK_PALETTE[hashToIndex(key)];
+};
+
+/* ───────────── 색 계산 ─────────────
+ * 연한 색(#FFFBEC)에서 같은 계열의 진한 색을 만들어냄.
+ * CSS 의 hsl(from ...) 문법은 브라우저가 못 읽으면 흰색이 되어버려서
+ * 여기서 직접 계산함.
+ * ------------------------------------ */
+
+/** '#FFFBEC' → { h: 44, s: 100, l: 96 } */
+const hexToHsl = (hex: string): { h: number; s: number; l: number } | null => {
+  const clean = hex.replace('#', '').trim();
+
+  // 3자리(#FFF)도 6자리로 늘려서 처리
+  const full =
+    clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
+
+  if (full.length !== 6) return null;
+
+  const r = parseInt(full.slice(0, 2), 16) / 255;
+  const g = parseInt(full.slice(2, 4), 16) / 255;
+  const b = parseInt(full.slice(4, 6), 16) / 255;
+
+  if ([r, g, b].some((v) => Number.isNaN(v))) return null;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const diff = max - min;
+  const l = (max + min) / 2;
+
+  let h = 0;
+  let s = 0;
+
+  if (diff !== 0) {
+    s = diff / (1 - Math.abs(2 * l - 1));
+
+    if (max === r) h = ((g - b) / diff) % 6;
+    else if (max === g) h = (b - r) / diff + 2;
+    else h = (r - g) / diff + 4;
+
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+
+  return { h, s: s * 100, l: l * 100 };
+};
+
+/** 원래 색을 더 선명하고 어둡게 만듦 */
+const toStrongColor = (hex: string, saturate = 4, darken = 22): string => {
+  const hsl = hexToHsl(hex);
+
+  // 색을 못 읽으면 원래 색 그대로 (흰색으로 튀지 않게)
+  if (!hsl) return hex;
+
+  const s = Math.min(100, hsl.s * saturate);
+  const l = Math.max(0, hsl.l - darken);
+
+  return `hsl(${Math.round(hsl.h)} ${Math.round(s)}% ${Math.round(l)}%)`;
 };
 
 /* ───────────── 카드 한 장 (이 파일 안에서만 씀) ───────────── */
@@ -185,7 +384,15 @@ function Card({
       aria-pressed={selected}
       className={`${styles.card} ${selected ? styles.selected : ''}`}
       style={
-        color ? ({ '--card-color': color } as React.CSSProperties) : undefined
+        color
+          ? ({
+              // 평소 색
+              '--card-color': color,
+              // 골랐을 때 색 — 미리 계산해서 넘김
+              '--card-active': toStrongColor(color),
+              '--card-active-border': toStrongColor(color, 4, 30),
+            } as React.CSSProperties)
+          : undefined
       }
     >
       <span className={styles.imgBox}>
@@ -198,7 +405,7 @@ function Card({
 
 /* ───────────── 화면 아래 자주 쓰는 말 버튼 ─────────────
  * layout.tsx 에서 이렇게 가져다 쓰면 됨:
- * import GridBox, { SoundButton } from '../components/GridBox';
+ * import { SoundButton } from '../components/GridBox';
  * ------------------------------------------------------ */
 
 export function SoundButton({
@@ -222,8 +429,8 @@ export function SoundButton({
 /* ───────────── 이 컴포넌트가 밖에서 받는 값 ───────────── */
 
 interface GridBoxProps {
-  /** 지금 보고 있는 카테고리 이름 */
-  categoryName: string;
+  /** 지금 보고 있는 카테고리. 안 넘기면 주소(/food)로 알아냄 */
+  categoryName?: string;
   /** 직접 넘기고 싶을 때만. 안 넘기면 공용 보관함을 씀 */
   onSelectWord?: (word: SelectedSymbol) => void;
   selectedWords?: string[];
@@ -236,17 +443,29 @@ interface GridBoxProps {
 /* ───────────── 컴포넌트 본체 ───────────── */
 
 export default function GridBox({
-  categoryName,
+  categoryName: categoryNameProp,
   onSelectWord,
   selectedWords,
   isSelectionFull,
   maxSelectCount = 8,
   gridSize: gridSizeProp,
 }: GridBoxProps) {
+  // 주소로도 카테고리를 알아낼 수 있게 함 (/food → food)
+  const pathname = usePathname();
+
+  // props 로 받은 게 있으면 그걸, 없으면 주소로 판단
+  const categoryName = toCategoryKey(categoryNameProp ?? pathname ?? '');
+
+  // 카테고리 목록(보호자 앱에서 정한 색 포함)으로 색 표를 만듦
+  const categories = useCategories();
+  const colorByKey = useMemo(
+    () => Object.fromEntries(categories.map((item) => [item.key, item.color])),
+    [categories]
+  );
+
   const [symbols, setSymbols] = useState<SymbolCard[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string>('');
-  const [page, setPage] = useState<number>(0);
   const [gridSizeFromServer, setGridSizeFromServer] =
     useState<GridSize>(DEFAULT_GRID_SIZE);
 
@@ -372,27 +591,13 @@ export default function GridBox({
   /* 화면에 그릴 목록 계산 --------------------------------- */
   const symbolList = useMemo(() => {
     const filtered = symbols.filter(
-      (item: any) => getCategoryName(item) === categoryName
+      (item: any) => toCategoryKey(getCategoryName(item)) === categoryName
     );
 
     // 카테고리 이름이 안 맞아서 하나도 안 걸리면 전체를 보여줌.
     // (백엔드 필드가 확정되기 전까지 화면이 비지 않게 하는 안전장치)
     return filtered.length > 0 ? filtered : symbols;
   }, [symbols, categoryName]);
-
-  // 한 페이지에 들어가는 카드 수 = 격자 크기의 제곱
-  const perPage = gridSize * gridSize;
-  const totalPage = Math.max(1, Math.ceil(symbolList.length / perPage));
-  const safePage = Math.min(page, totalPage - 1);
-  const pageItems = symbolList.slice(
-    safePage * perPage,
-    safePage * perPage + perPage
-  );
-
-  // 카테고리나 격자 크기가 바뀌면 1페이지로
-  useEffect(() => {
-    setPage(0);
-  }, [categoryName, gridSize]);
 
   /* 화면 그리기 ------------------------------------------- */
 
@@ -417,10 +622,11 @@ export default function GridBox({
           표시할 카드가 없습니다 (카테고리: {categoryName})
         </p>
       ) : (
+        // 카드가 많으면 페이지를 넘기지 않고 이 안에서 아래로 스크롤됨
         <div className={styles.grid}>
-          {pageItems.map((item: any, index: number) => {
+          {symbolList.map((item: any, index: number) => {
             const wordText = getWordText(item);
-            const color = getColor(item);
+            const color = getColor(item, colorByKey);
             const isSelected = pickedWords.includes(wordText);
 
             return (
@@ -444,32 +650,6 @@ export default function GridBox({
               />
             );
           })}
-        </div>
-      )}
-
-      {totalPage > 1 && (
-        <div className={styles.pager}>
-          <button
-            type="button"
-            className={styles.pageButton}
-            onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-            disabled={safePage === 0}
-          >
-            이전
-          </button>
-
-          <span className={styles.pageInfo}>
-            {safePage + 1} / {totalPage}
-          </span>
-
-          <button
-            type="button"
-            className={styles.pageButton}
-            onClick={() => setPage((prev) => Math.min(totalPage - 1, prev + 1))}
-            disabled={safePage >= totalPage - 1}
-          >
-            다음
-          </button>
         </div>
       )}
     </div>

@@ -438,7 +438,7 @@ export default function AISentence({
               fill="currentColor"
             />
           </svg>
-          AI 변환
+          문장 추천
         </button>
 
         <button

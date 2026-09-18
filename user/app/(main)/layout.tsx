@@ -1,46 +1,41 @@
 'use client';
 
 import Link from "next/link";
-import { Home, Settings, Sparkles, 
-  Utensils, User, Smile, Building, Hand, Clock, PersonStanding } from 'lucide-react';
+import { Home, Settings } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 import MoveButton from '../components/MoveButton';
 // WordsProvider: 고른 단어를 앱 전체가 같이 보게 해주는 보관함
+// useCategories: 카테고리 목록 (이름, 주소, 색, 아이콘이 다 들어있음)
 import AISentence, { WordsProvider } from '../components/AISentence';
-import SoundButton from '../components/cardStyle';
+import { useCategories, SoundButton } from '../components/GridBox';
+
+/** 아래 자주 쓰는 말 */
+const QUICK_WORDS = ['네', '아니요', '배고파요'];
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  // 단어 상태는 이제 WordsProvider 가 관리하므로 여기서 만들지 않음
-
-  const [leftbar] = useState([
-    { name: '음식', href: '/food-word', icon: Utensils },
-    { name: '감정', href: '/emotion-word', icon: Smile },
-    { name: '사람', href: '/person-word', icon: User },
-    { name: '장소', href: '/place-word', icon: Building },
-    { name: '인사/사회어', href: '/hello-word', icon: Hand },
-    { name: '시간', href: '/time-word', icon: Clock },
-    { name: '신체', href: '/body-word', icon: PersonStanding },
-  ]);
-
-  const [bottom] = useState([
-    { text: "네", label: "네" },
-    { text: "아니요", label: "아니요" },
-    { text: "배고파요", label: "배고파요" }
-  ]);
-
   const pathname = usePathname();
+
+  // 백엔드에서 카테고리를 받아옴.
+  // 응답 전 / 실패 시에는 GridBox 의 기본 목록이 그대로 나옴.
+  const categories = useCategories();
+
+  // 첫 번째(추천)는 홈이라 따로 그리고, 나머지는 MoveButton 으로 그림
+  const [home, ...rest] = categories;
+
+  // 목록이 비어 있을 때를 대비
+  const homeHref = home?.href ?? '/home';
+  const HomeIcon = home?.icon;
 
   return (
     // ★ 여기서 전체를 감싸야 안쪽 어디서든 고른 단어를 같이 볼 수 있음
     <WordsProvider>
       <header className="home-header">
         <img src='/logo.svg' alt="말모아로고" className="logo" />
-        
-        <Link 
-          href="/home" 
-          className="header-design" 
-          style={{ 
+
+        <Link
+          href={homeHref}
+          className="header-design"
+          style={{
             backgroundColor: pathname !== '/setting' ? '#E6F8F1' : 'transparent',
             transform: pathname === '/setting' ? 'scale(0.95)' : 'scale(1)',
             color: pathname !== '/setting' ? '#149E69' : '#9C9BA8'
@@ -48,55 +43,50 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         >
           <Home size={33} /> 홈
         </Link>
-        <Link 
-          href="/setting" 
-          className="header-design"
-          style={{ 
-            backgroundColor: pathname === '/setting' ? '#E6F8F1' : 'transparent',
-            transform: pathname === '/setting' ? 'scale(0.95)' : 'scale(1)',
-            color: pathname === '/setting' ? '#149E69' : '#9C9BA8'
-          }}
-        >
-          <Settings size={33} /> 설정
-        </Link>
       </header>
 
-      {pathname !== '/setting' && (
-        <div className="content-cover">
-          <div className="main">
-            <aside className="leftbar">
-              <Link 
-                href="/home" 
-                className="leftbar-design"
-                style={{
-                  backgroundColor: pathname === '/home' ? '#E6F8F1' : '#F0F0F4',
-                  color: pathname === '/home' ? '#149E69' : '#9C9BA8'
-                }}
-              >
-                <Sparkles size={32} /> 추천
-              </Link>
-              {leftbar.map((item) => (
-                <MoveButton key={item.name} text={item.name} icon={item.icon} href={item.href}/>
-              ))}
-            </aside>
-            <main className="main-content">
-              {children}
-            </main>
-          </div> 
-          <aside className="rightbar">
-            {/* props 없이 둬도 보관함에서 알아서 가져옴 */}
-            <AISentence />
-          </aside>
-        </div>
-      )}
+      <div className="content-cover">
+        <div className="main">
+          <aside className="leftbar">
+            {/* 추천 = 홈 */}
+            <Link
+              href={homeHref}
+              className="leftbar-design"
+              data-active={pathname === homeHref ? 'true' : 'false'}
+              style={{ '--cat-color': home?.color ?? '#E6F7F1' } as React.CSSProperties}
+            >
+              {HomeIcon && <HomeIcon size={28} />}
+              <span>{home?.name ?? '추천'}</span>
+            </Link>
 
-      {pathname !== '/setting' && (
-        <div className="bottom">
-          {bottom.map((item) => (
-            <SoundButton key={item.text} text={item.text} variant="bottom" />
-          ))}
+            {/* 나머지 카테고리 — 아이콘까지 목록에서 그대로 가져옴 */}
+            {rest.map((item) => (
+              <MoveButton
+                key={item.key}
+                text={item.name}
+                icon={item.icon}
+                href={item.href}
+                color={item.color}
+              />
+            ))}
+          </aside>
+
+          <main className="main-content">
+            {children}
+          </main>
         </div>
-      )}
+
+        <aside className="rightbar">
+          {/* props 없이 둬도 보관함에서 알아서 가져옴 */}
+          <AISentence />
+        </aside>
+      </div>
+
+      <div className="bottom">
+        {QUICK_WORDS.map((text) => (
+          <SoundButton key={text} text={text} variant="bottom" />
+        ))}
+      </div>
     </WordsProvider>
   );
 }

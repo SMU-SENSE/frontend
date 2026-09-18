@@ -7,7 +7,7 @@ import { useState, useRef, useEffect } from 'react';
 interface cardStyleProps {
   text: string;
   imageUrl?: string;
-  variant?: 'bottom' | 'main';
+  variant?: 'bottom' | 'home';
   style?: React.CSSProperties;
   color?: string;
   selected?: boolean;
@@ -18,7 +18,7 @@ interface cardStyleProps {
 export default function SoundButton({
   text,
   imageUrl,
-  variant = 'main',
+  variant = 'home',
   style,
   onClick,
 }: cardStyleProps) {
@@ -33,7 +33,7 @@ export default function SoundButton({
   }, []);
 
   const handleClick = () => {
-    if (variant !== 'main' && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    if (variant !== 'home' && typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ko-KR';
@@ -56,9 +56,9 @@ export default function SoundButton({
     switch (variant) {
       case 'bottom':
         return 'bottom-design';
-      case 'main':
+      case 'home':
       default:
-        return 'main-design';
+        return 'home-design';
     }
   };
 
@@ -72,7 +72,7 @@ export default function SoundButton({
       style={{
         backgroundColor: isActive
           ? '#FFF8DC'
-          : variant === 'main'
+          : variant === 'home'
             ? '#D9D9D9'
             : '#F0F0F4',
         transform: isActive ? 'scale(0.95)' : 'scale(1)',
@@ -80,7 +80,7 @@ export default function SoundButton({
         ...style,
       }}
     >
-      {imageUrl && variant === 'main' && (
+      {imageUrl && variant === 'home' && (
         <img src={imageUrl} alt={text} className="image" />
       )}
       <span className="font-bold">{text}</span>
