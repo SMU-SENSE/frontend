@@ -122,6 +122,28 @@ function writeLocal(key: string, value: unknown) {
   if (typeof window !== 'undefined') window.localStorage.setItem(key, JSON.stringify(value))
 }
 
+function categoryToLive(item: Category): LiveBoardCategory {
+  return {
+    id: item.id,
+    name: item.name,
+    color: item.color,
+    displayOrder: item.order,
+  }
+}
+
+function sentenceToLive(item: Sentence, displayOrder = 0): LiveBoardCard {
+  return {
+    id: item.id,
+    categoryId: item.categoryId ?? 'uncategorized',
+    text: item.content,
+    imageUrl: item.imageUrl ?? null,
+    ttsText: item.content,
+    emergency: item.categoryName === '긴급어',
+    favorite: item.favorite,
+    displayOrder,
+  }
+}
+
 async function mockBoard(userId: number): Promise<LiveBoard> {
   const [categories, sentences] = await Promise.all([
     apiRequest<Category[]>('/api/v1/categories'),
@@ -228,16 +250,16 @@ export const guardianLiveApi = {
     return apiRequest<void>(`/api/v1/me/aac-users/${userId}/devices/${deviceId}`, { method: 'DELETE' })
   },
 
-  createCategory(userId: number, input: { name: string; color: string; displayOrder: number }) {
+  async createCategory(userId: number, input: { name: string; color: string; displayOrder: number }): Promise<LiveBoardCategory> {
     if (apiConfig.useMockApi) {
-      return apiRequest<Category>('/api/v1/categories', { method: 'POST', body: { name: input.name, color: input.color } })
+      return categoryToLive(await apiRequest<Category>('/api/v1/categories', { method: 'POST', body: { name: input.name, color: input.color } }))
     }
     return apiRequest<LiveBoardCategory>(`/api/v1/me/aac-users/${userId}/board/categories`, { method: 'POST', body: input })
   },
 
-  updateCategory(userId: number, categoryId: LiveId, input: Partial<{ name: string; color: string; displayOrder: number }>) {
+  async updateCategory(userId: number, categoryId: LiveId, input: Partial<{ name: string; color: string; displayOrder: number }>): Promise<LiveBoardCategory> {
     if (apiConfig.useMockApi) {
-      return apiRequest<Category>(`/api/v1/categories/${categoryId}`, { method: 'PATCH', body: { name: input.name, color: input.color, order: input.displayOrder } })
+      return categoryToLive(await apiRequest<Category>(`/api/v1/categories/${categoryId}`, { method: 'PATCH', body: { name: input.name, color: input.color, order: input.displayOrder } }))
     }
     return apiRequest<LiveBoardCategory>(`/api/v1/me/aac-users/${userId}/board/categories/${categoryId}`, { method: 'PATCH', body: input })
   },
@@ -248,30 +270,31 @@ export const guardianLiveApi = {
       : apiRequest<void>(`/api/v1/me/aac-users/${userId}/board/categories/${categoryId}`, { method: 'DELETE' })
   },
 
-  createCard(userId: number, input: { categoryId: LiveId; text: string; imageUrl?: string | null; ttsText?: string | null; emergency?: boolean; displayOrder: number }) {
+  async createCard(userId: number, input: { categoryId: LiveId; text: string; imageUrl?: string | null; ttsText?: string | null; emergency?: boolean; displayOrder: number }): Promise<LiveBoardCard> {
     if (apiConfig.useMockApi) {
-      return apiRequest<Sentence>('/api/v1/sentences', {
+      return sentenceToLive(await apiRequest<Sentence>('/api/v1/sentences', {
         method: 'POST',
         body: { content: input.text, categoryId: String(input.categoryId), favorite: false, imageUrl: input.imageUrl ?? null },
-      })
+      }), input.displayOrder)
     }
     return apiRequest<LiveBoardCard>(`/api/v1/me/aac-users/${userId}/board/cards`, { method: 'POST', body: input })
   },
 
-  updateCard(userId: number, cardId: LiveId, input: Partial<{ categoryId: LiveId; text: string; imageUrl: string | null; ttsText: string | null; emergency: boolean; displayOrder: number }>) {
+  async updateCard(userId: number, cardId: LiveId, input: Partial<{ categoryId: LiveId; text: string; imageUrl: string | null; ttsText: string | null; emergency: boolean; displayOrder: number }>): Promise<LiveBoardCard> {
     if (apiConfig.useMockApi) {
-      return apiRequest<Sentence>(`/api/v1/sentences/${cardId}`, {
+      return sentenceToLive(await apiRequest<Sentence>(`/api/v1/sentences/${cardId}`, {
         method: 'PATCH',
         body: { content: input.text, categoryId: input.categoryId ? String(input.categoryId) : undefined, imageUrl: input.imageUrl },
-      })
+      }), input.displayOrder ?? 0)
     }
     return apiRequest<LiveBoardCard>(`/api/v1/me/aac-users/${userId}/board/cards/${cardId}`, { method: 'PATCH', body: input })
   },
 
-  setFavorite(userId: number, cardId: LiveId, favorite: boolean) {
-    return apiConfig.useMockApi
-      ? apiRequest<Sentence>(`/api/v1/sentences/${cardId}/favorite`, { method: 'PATCH', body: { favorite } })
-      : apiRequest<LiveBoardCard>(`/api/v1/me/aac-users/${userId}/board/cards/${cardId}/favorite`, { method: 'PATCH', body: { favorite } })
+  async setFavorite(userId: number, cardId: LiveId, favorite: boolean): Promise<LiveBoardCard> {
+    if (apiConfig.useMockApi) {
+      return sentenceToLive(await apiRequest<Sentence>(`/api/v1/sentences/${cardId}/favorite`, { method: 'PATCH', body: { favorite } }))
+    }
+    return apiRequest<LiveBoardCard>(`/api/v1/me/aac-users/${userId}/board/cards/${cardId}/favorite`, { method: 'PATCH', body: { favorite } })
   },
 
   deleteCard(userId: number, cardId: LiveId) {
