@@ -63,66 +63,31 @@ const seed: MockDatabase = {
     },
   ],
   categories: [
-    { id: 'category-daily', name: '일상', color: '#56a276', order: 0, sentenceCount: 3 },
-    { id: 'category-feeling', name: '감정', color: '#f0b65d', order: 1, sentenceCount: 2 },
-    { id: 'category-request', name: '요청', color: '#7d79c9', order: 2, sentenceCount: 2 },
+    { id: 'category-emergency', name: '긴급어', color: '#F07478', order: 0, sentenceCount: 2 },
+    { id: 'category-person', name: '사람', color: '#F4C8A8', order: 1, sentenceCount: 2 },
+    { id: 'category-food-body', name: '음식·장소·신체', color: '#F6D991', order: 2, sentenceCount: 4 },
+    { id: 'category-action', name: '행동', color: '#A9DDBB', order: 3, sentenceCount: 2 },
+    { id: 'category-feeling', name: '감정·설명', color: '#B9D2F3', order: 4, sentenceCount: 2 },
+    { id: 'category-talk', name: '대화', color: '#E3C4EF', order: 5, sentenceCount: 2 },
+    { id: 'category-grammar', name: '문법', color: '#BFD5C8', order: 6, sentenceCount: 2 },
   ],
   sentences: [
-    {
-      id: 'sentence-1',
-      content: '안녕하세요',
-      categoryId: 'category-daily',
-      categoryName: '일상',
-      favorite: true,
-      source: 'manual',
-      useCount: 18,
-      lastUsedAt: '2026-07-30T08:30:00.000Z',
-      createdAt: '2026-07-01T09:00:00.000Z',
-    },
-    {
-      id: 'sentence-2',
-      content: '물 한 잔 주세요',
-      categoryId: 'category-request',
-      categoryName: '요청',
-      favorite: true,
-      source: 'manual',
-      useCount: 12,
-      lastUsedAt: '2026-07-30T07:40:00.000Z',
-      createdAt: '2026-07-01T09:10:00.000Z',
-    },
-    {
-      id: 'sentence-3',
-      content: '잠시 쉬고 싶어요',
-      categoryId: 'category-feeling',
-      categoryName: '감정',
-      favorite: false,
-      source: 'manual',
-      useCount: 8,
-      lastUsedAt: '2026-07-29T12:10:00.000Z',
-      createdAt: '2026-07-03T03:20:00.000Z',
-    },
-    {
-      id: 'sentence-4',
-      content: '도와주세요',
-      categoryId: 'category-request',
-      categoryName: '요청',
-      favorite: true,
-      source: 'manual',
-      useCount: 21,
-      lastUsedAt: '2026-07-28T13:10:00.000Z',
-      createdAt: '2026-07-04T07:20:00.000Z',
-    },
-    {
-      id: 'sentence-5',
-      content: '오늘 기분이 좋아요',
-      categoryId: 'category-feeling',
-      categoryName: '감정',
-      favorite: false,
-      source: 'manual',
-      useCount: 4,
-      lastUsedAt: null,
-      createdAt: '2026-07-08T10:00:00.000Z',
-    },
+    { id:'sentence-1',content:'도와주세요',categoryId:'category-emergency',categoryName:'긴급어',favorite:true,source:'manual',useCount:15,lastUsedAt:'2026-09-16T05:15:00.000Z',createdAt:'2026-09-01T09:00:00.000Z' },
+    { id:'sentence-2',content:'아파요',categoryId:'category-emergency',categoryName:'긴급어',favorite:true,source:'manual',useCount:9,lastUsedAt:'2026-09-16T03:20:00.000Z',createdAt:'2026-09-01T09:01:00.000Z' },
+    { id:'sentence-3',content:'엄마',categoryId:'category-person',categoryName:'사람',favorite:true,source:'manual',useCount:24,lastUsedAt:'2026-09-17T08:10:00.000Z',createdAt:'2026-09-01T09:02:00.000Z' },
+    { id:'sentence-4',content:'선생님',categoryId:'category-person',categoryName:'사람',favorite:false,source:'manual',useCount:8,lastUsedAt:'2026-09-15T09:10:00.000Z',createdAt:'2026-09-01T09:03:00.000Z' },
+    { id:'sentence-5',content:'물',categoryId:'category-food-body',categoryName:'음식·장소·신체',favorite:true,source:'manual',useCount:42,lastUsedAt:'2026-09-17T07:40:00.000Z',createdAt:'2026-09-01T09:04:00.000Z' },
+    { id:'sentence-6',content:'밥',categoryId:'category-food-body',categoryName:'음식·장소·신체',favorite:false,source:'manual',useCount:18,lastUsedAt:'2026-09-17T03:40:00.000Z',createdAt:'2026-09-01T09:05:00.000Z' },
+    { id:'sentence-7',content:'화장실',categoryId:'category-food-body',categoryName:'음식·장소·신체',favorite:true,source:'manual',useCount:17,lastUsedAt:'2026-09-17T01:40:00.000Z',createdAt:'2026-09-01T09:06:00.000Z' },
+    { id:'sentence-8',content:'학교',categoryId:'category-food-body',categoryName:'음식·장소·신체',favorite:false,source:'manual',useCount:10,lastUsedAt:'2026-09-16T23:40:00.000Z',createdAt:'2026-09-01T09:07:00.000Z' },
+    { id:'sentence-9',content:'가고 싶어요',categoryId:'category-action',categoryName:'행동',favorite:false,source:'manual',useCount:13,lastUsedAt:'2026-09-16T08:20:00.000Z',createdAt:'2026-09-01T09:08:00.000Z' },
+    { id:'sentence-10',content:'쉬고 싶어요',categoryId:'category-action',categoryName:'행동',favorite:false,source:'manual',useCount:11,lastUsedAt:'2026-09-16T06:20:00.000Z',createdAt:'2026-09-01T09:09:00.000Z' },
+    { id:'sentence-11',content:'짜증나요',categoryId:'category-feeling',categoryName:'감정·설명',favorite:false,source:'manual',useCount:12,lastUsedAt:'2026-09-16T05:16:00.000Z',createdAt:'2026-09-01T09:10:00.000Z' },
+    { id:'sentence-12',content:'좋아요',categoryId:'category-feeling',categoryName:'감정·설명',favorite:true,source:'manual',useCount:22,lastUsedAt:'2026-09-17T04:30:00.000Z',createdAt:'2026-09-01T09:11:00.000Z' },
+    { id:'sentence-13',content:'안녕하세요',categoryId:'category-talk',categoryName:'대화',favorite:false,source:'manual',useCount:16,lastUsedAt:'2026-09-17T00:30:00.000Z',createdAt:'2026-09-01T09:12:00.000Z' },
+    { id:'sentence-14',content:'고마워요',categoryId:'category-talk',categoryName:'대화',favorite:false,source:'manual',useCount:7,lastUsedAt:'2026-09-15T04:30:00.000Z',createdAt:'2026-09-01T09:13:00.000Z' },
+    { id:'sentence-15',content:'주세요',categoryId:'category-grammar',categoryName:'문법',favorite:false,source:'manual',useCount:26,lastUsedAt:'2026-09-17T07:41:00.000Z',createdAt:'2026-09-01T09:14:00.000Z' },
+    { id:'sentence-16',content:'싫어요',categoryId:'category-grammar',categoryName:'문법',favorite:false,source:'manual',useCount:14,lastUsedAt:'2026-09-16T05:17:00.000Z',createdAt:'2026-09-01T09:15:00.000Z' },
   ],
   preferences: {
     gridColumns: 4,
@@ -146,7 +111,15 @@ function readDb(): MockDatabase {
   }
 
   try {
-    return JSON.parse(raw) as MockDatabase
+    const parsed = JSON.parse(raw) as MockDatabase
+    let changed = false
+    if (!Array.isArray(parsed.aacUsers)) { parsed.aacUsers = clone(seed.aacUsers); changed = true }
+    if (!parsed.preferences) { parsed.preferences = clone(seed.preferences); changed = true }
+    if (!parsed.preferences.languageLevel) { parsed.preferences.languageLevel = 2; changed = true }
+    if (!Array.isArray(parsed.categories) || parsed.categories.length === 0) { parsed.categories = clone(seed.categories); changed = true }
+    if (!Array.isArray(parsed.sentences) || parsed.sentences.length === 0) { parsed.sentences = clone(seed.sentences); changed = true }
+    if (changed) writeDb(parsed)
+    return parsed
   } catch {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(seed))
     return clone(seed)
