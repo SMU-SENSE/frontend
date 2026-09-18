@@ -10,8 +10,10 @@ export type SentenceListType = 'all' | 'favorite' | 'recent'
 export const sentencesApi = {
   list: (type: SentenceListType = 'all') =>
     apiRequest<Sentence[]>(`/api/v1/sentences?type=${type}`),
-  create: (input: { content: string; categoryId: string | null; favorite?: boolean }) =>
+  create: (input: { content: string; categoryId: string | null; favorite?: boolean; imageUrl?: string | null }) =>
     apiRequest<Sentence>('/api/v1/sentences', { method: 'POST', body: input }),
+  update: (sentenceId: string, input: { content?: string; categoryId?: string | null; imageUrl?: string | null }) =>
+    apiRequest<Sentence>(`/api/v1/sentences/${sentenceId}`, { method: 'PATCH', body: input }),
   remove: (sentenceId: string) =>
     apiRequest<{ deleted: boolean }>(`/api/v1/sentences/${sentenceId}`, { method: 'DELETE' }),
   setFavorite: (sentenceId: string, favorite: boolean) =>
@@ -28,6 +30,10 @@ export const categoriesApi = {
   list: () => apiRequest<Category[]>('/api/v1/categories'),
   create: (input: { name: string; color: string }) =>
     apiRequest<Category>('/api/v1/categories', { method: 'POST', body: input }),
+  update: (categoryId: string, input: { name?: string; color?: string; order?: number }) =>
+    apiRequest<Category>(`/api/v1/categories/${categoryId}`, { method: 'PATCH', body: input }),
+  reorder: (orderedIds: string[]) =>
+    apiRequest<Category[]>('/api/v1/categories/reorder', { method: 'PATCH', body: { orderedIds } }),
   remove: (categoryId: string) =>
     apiRequest<{ deleted: boolean }>(`/api/v1/categories/${categoryId}`, {
       method: 'DELETE',
