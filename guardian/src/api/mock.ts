@@ -189,6 +189,13 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
     return ok({ redirectUrl: 'https://accounts.google.com/o/oauth2/v2/auth' }) as T
   }
 
+  if (path === '/api/v1/auth/logout' && method === 'POST') return undefined as T
+
+  if (path === '/api/v1/auth/me' && method === 'DELETE') {
+    localStorage.removeItem(STORAGE_KEY)
+    return undefined as T
+  }
+
   // ── 보호자가 관리하는 AAC 사용자 ────────────────────────────────────────
   if (path === '/api/v1/me/aac-users' && method === 'GET') return ok(db.aacUsers) as T
 
