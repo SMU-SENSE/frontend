@@ -61,6 +61,9 @@ export interface AacUserResponse {
   voiceType: BackendVoiceType | null
   speechRate: number | null
   setupStep: AacUserSetupStep
+  sentenceLevel?: 1 | 2 | 3 | 4
+  status?: 'STABLE' | 'EMERGENCY'
+  boardVersion?: number
   createdAt: string
   updatedAt: string
 }
