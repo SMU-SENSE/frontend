@@ -116,8 +116,9 @@ function readDb(): MockDatabase {
     if (!Array.isArray(parsed.aacUsers)) { parsed.aacUsers = clone(seed.aacUsers); changed = true }
     if (!parsed.preferences) { parsed.preferences = clone(seed.preferences); changed = true }
     if (!parsed.preferences.languageLevel) { parsed.preferences.languageLevel = 2; changed = true }
-    if (!Array.isArray(parsed.categories) || parsed.categories.length === 0) { parsed.categories = clone(seed.categories); changed = true }
-    if (!Array.isArray(parsed.sentences) || parsed.sentences.length === 0) { parsed.sentences = clone(seed.sentences); changed = true }
+    const legacyCategories = Array.isArray(parsed.categories) && parsed.categories.length <= 3 && parsed.categories.some((item) => item.id === 'category-daily' || item.id === 'category-request')
+    if (!Array.isArray(parsed.categories) || parsed.categories.length === 0 || legacyCategories) { parsed.categories = clone(seed.categories); changed = true }
+    if (!Array.isArray(parsed.sentences) || parsed.sentences.length === 0 || legacyCategories) { parsed.sentences = clone(seed.sentences); changed = true }
     if (changed) writeDb(parsed)
     return parsed
   } catch {
