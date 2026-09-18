@@ -225,6 +225,12 @@ export default function SettingsPage() {
               disabled={voiceMutation.isPending}
               onClick={() => voiceMutation.mutate({ userId: user.id, voiceType: 'ADULT_FEMALE', speechRate: user.speechRate ?? 1 })}
             >성인 여성</button>
+            <button
+              type="button"
+              className={user.voiceType === 'ADULT_MALE' ? 'gp-choice is-selected' : 'gp-choice'}
+              disabled={voiceMutation.isPending}
+              onClick={() => voiceMutation.mutate({ userId: user.id, voiceType: 'ADULT_MALE', speechRate: user.speechRate ?? 1 })}
+            >성인 남성</button>
           </div>
         </section>
       </div>
