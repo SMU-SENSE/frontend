@@ -15,6 +15,7 @@ export const defaultPreferences: UserPreferences = {
   voiceRate: 1,
   voicePitch: 1,
   autoSpeak: true,
+  languageLevel: 2,
 }
 
 /**
