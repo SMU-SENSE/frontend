@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
 import { authApi } from '../../api/auth'
 import { guardianLiveApi, type LiveRoutine } from '../../api/guardianLive'
@@ -46,12 +46,6 @@ type RoutineDraft = {
   sentence: string
   days: number[]
 }
-
-const DEFAULT_ROUTINES: Routine[] = [
-  { id: 'school', time: '08:00', repeat: '매일', sentence: '등교 준비 — 학교 상징 우선', enabled: true },
-  { id: 'medicine', time: '12:30', repeat: '매일', sentence: '점심 약 복용 알림 팝업', enabled: true },
-  { id: 'sleep', time: '21:00', repeat: '매일', sentence: '취침 루틴 — 양치, 약, 졸려요', enabled: false },
-]
 
 export default function SettingsPage() {
   const router = useRouter()
