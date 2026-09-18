@@ -71,11 +71,10 @@ export default function InviteCodeConnectionPage() {
   const code = pairing.data.inviteCode
 
   return (
-    <ConnectionShell title="사용자 기기 연결">
-      <div className="connection-reference-title"><h2>초대 코드</h2><p>사용자 기기에서 아래 코드를 입력해주세요.</p></div>
+    <ConnectionShell title="초대 코드" subtitle="사용자 기기에 코드를 알려주세요">
       <div className="connection-card connection-card--code">
-        <div className={`invite-code invite-code--single ${expired ? 'invite-code--expired' : ''}`} aria-label={`초대 코드 ${code}`}>
-          <strong>{code.slice(0, 3)} {code.slice(3)}</strong>
+        <div className={`invite-code ${expired ? 'invite-code--expired' : ''}`} aria-label={`초대 코드 ${code}`}>
+          {code.split('').map((digit, index) => <span key={`${digit}-${index}`}>{digit}</span>)}
           {expired ? (
             <div className="connection-expired connection-expired--code">
               <strong>만료되었습니다</strong>
@@ -83,12 +82,16 @@ export default function InviteCodeConnectionPage() {
             </div>
           ) : null}
         </div>
-        <div className="connection-valid-time">유효 시간 <strong>{time}</strong></div>
-        <button type="button" className="connection-refresh-button" disabled={refresh.isPending} onClick={() => refresh.mutate()}><RefreshCw size={17} /> 새로고침</button>
-        <p className="connection-refresh-note">새로고침 시 기존 초대 코드는 폐기돼요.</p>
+        {!expired ? (
+          <div className="connection-timer">
+            <span>남은 시간 {time}</span>
+            <span aria-hidden="true">·</span>
+            <button type="button" disabled={refresh.isPending} onClick={() => refresh.mutate()}><RefreshCw size={16} /> 새로고침</button>
+          </div>
+        ) : null}
       </div>
 
-      <Link className="connection-switch" href="/connect/qr">QR 코드로 연결하기</Link>
+      <Link className="connection-switch" href="/connect/qr">QR로 연결</Link>
 
       <section className="connection-devices">
         <h2>연결된 사용자 기기</h2>
