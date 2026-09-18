@@ -105,9 +105,10 @@
 
 /* Keep invite-code mode on the same 480px content system. */
 .connection-card--code {
-  width: 480px;
+  width: 400px;
   max-width: 100%;
-  padding: 28px 24px 20px;
+  justify-self: center;
+  padding: 28px 36px 20px;
 }
 
 @media (max-width: 560px) {
