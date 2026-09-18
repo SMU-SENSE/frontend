@@ -181,16 +181,30 @@ export const guardianLiveApi = {
       : apiRequest<LiveBoard>(`/api/v1/me/aac-users/${userId}/board`)
   },
 
-  issuePairing(userId: number): Promise<PairingResponse> {
-    return apiConfig.useMockApi
-      ? Promise.resolve(mockPairing(userId, false))
-      : apiRequest<PairingResponse>(`/api/v1/me/aac-users/${userId}/device-pairings`, { method: 'POST' })
+  async issuePairing(userId: number): Promise<PairingResponse> {
+    const cacheKey = `malmoa-pairing-secret-${userId}`
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = window.sessionStorage.getItem(cacheKey)
+        if (raw) {
+          const cached = JSON.parse(raw) as PairingResponse
+          if (new Date(cached.expiresAt).getTime() > Date.now()) return cached
+        }
+      } catch {}
+    }
+    const issued = apiConfig.useMockApi
+      ? mockPairing(userId, false)
+      : await apiRequest<PairingResponse>(`/api/v1/me/aac-users/${userId}/device-pairings`, { method: 'POST' })
+    if (typeof window !== 'undefined') window.sessionStorage.setItem(cacheKey, JSON.stringify(issued))
+    return issued
   },
 
-  refreshPairing(userId: number): Promise<PairingResponse> {
-    return apiConfig.useMockApi
-      ? Promise.resolve(mockPairing(userId, true))
-      : apiRequest<PairingResponse>(`/api/v1/me/aac-users/${userId}/device-pairings/refresh`, { method: 'POST' })
+  async refreshPairing(userId: number): Promise<PairingResponse> {
+    const refreshed = apiConfig.useMockApi
+      ? mockPairing(userId, true)
+      : await apiRequest<PairingResponse>(`/api/v1/me/aac-users/${userId}/device-pairings/refresh`, { method: 'POST' })
+    if (typeof window !== 'undefined') window.sessionStorage.setItem(`malmoa-pairing-secret-${userId}`, JSON.stringify(refreshed))
+    return refreshed
   },
 
   currentPairing(userId: number): Promise<CurrentPairingResponse> {
