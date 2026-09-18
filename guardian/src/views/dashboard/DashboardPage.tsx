@@ -258,12 +258,10 @@ function NewCardModal({ userId, categories, onClose }: { userId: number; categor
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '')
   const mutation = useMutation({
     mutationFn: () => guardianLiveApi.createCard(userId, {
-      content: undefined as never,
       categoryId: /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId,
       text: content.trim(),
-      favorite: undefined as never,
       displayOrder: 999,
-    } as never),
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guardian-board', userId] })
       showToast('새 카드가 추가되었습니다.')
