@@ -1776,3 +1776,14 @@ body::after{
     padding:24px 20px;
   }
 }
+
+
+/* Guardian spec requires four TTS choices in the environment settings summary. */
+.gp-choice-row--voice{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+@media(max-width:900px){
+  .gp-choice-row--voice{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
