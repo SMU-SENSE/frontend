@@ -114,12 +114,6 @@ export default function VoiceOnboardingPage() {
     setRate((current) => Math.min(1.3, Math.max(0.7, Number((current + delta).toFixed(1)))))
   }
 
-  const skip = () => {
-    setVoiceType('male-child')
-    setRate(1)
-    void saveAndContinue('male-child', 1)
-  }
-
   const progress = Math.round(((rate - 0.7) / 0.6) * 100)
 
   return (
