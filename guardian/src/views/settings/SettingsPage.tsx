@@ -34,6 +34,7 @@ type Routine = {
   repeat: '매일' | '요일'
   sentence: string
   enabled: boolean
+  days?: number[]
 }
 
 type RoutineDraft = {
@@ -42,6 +43,7 @@ type RoutineDraft = {
   hour: number
   minute: number
   sentence: string
+  days: number[]
 }
 
 const DEFAULT_ROUTINES: Routine[] = [
@@ -108,6 +110,13 @@ export default function SettingsPage() {
   function persistRoutines(next: Routine[]) {
     setRoutines(next)
     window.localStorage.setItem(ROUTINE_STORAGE_KEY, JSON.stringify(next))
+    // 사용자 AAC 앱이 같은 origin에서 열려 있을 때 즉시 갱신할 수 있도록 변경 신호를 보낸다.
+    try {
+      const channel = new BroadcastChannel('malmoa-routines')
+      channel.postMessage({ type: 'routines-updated', routines: next })
+      channel.close()
+    } catch {}
+    window.dispatchEvent(new StorageEvent('storage', { key: ROUTINE_STORAGE_KEY, newValue: JSON.stringify(next) }))
   }
 
   async function handleLogout() {
@@ -186,7 +195,7 @@ export default function SettingsPage() {
             <div className="gp-routine-row" key={routine.id}>
               <Clock3 className="gp-routine-clock" size={31} />
               <div className="gp-routine-copy">
-                <strong>{routine.time}</strong><span className="gp-repeat">{routine.repeat}</span>
+                <strong>{routine.time}</strong><span className="gp-repeat">{routine.repeat === '요일' && routine.days?.length ? ['일','월','화','수','목','금','토'].filter((_, index) => routine.days?.includes(index)).join('·') : routine.repeat}</span>
                 <p>{routine.sentence}</p>
               </div>
               <button
@@ -221,11 +230,11 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <nav aria-label="세부 설정" style={{ display: 'none' }}>
-        <Link href="/settings/language">문장 이해 수준 설정</Link>
-        <Link href="/settings/categories">카테고리 편집</Link>
-        <Link href="/settings/location">장소 관리</Link>
-        <Link href="/settings/voice">TTS 음성 설정</Link>
+      <nav className="gp-detail-settings" aria-label="세부 설정">
+        <Link href="/settings/language"><span>🧠</span><div><strong>문장 이해 수준</strong><small>AI 추천 문장 길이 설정</small></div><ChevronRight size={22} /></Link>
+        <Link href="/settings/categories"><span>🗂️</span><div><strong>카테고리 편집</strong><small>아이콘·색상·순서 관리</small></div><ChevronRight size={22} /></Link>
+        <Link href="/settings/location"><span>📍</span><div><strong>장소 관리</strong><small>GPS·안심존·시간 조건</small></div><ChevronRight size={22} /></Link>
+        <Link href="/settings/voice"><span>🔊</span><div><strong>TTS 상세 설정</strong><small>음성 종류·속도·미리듣기</small></div><ChevronRight size={22} /></Link>
       </nav>
 
       <button type="button" className="gp-help" aria-label="도움말">?</button>
@@ -235,7 +244,7 @@ export default function SettingsPage() {
 }
 
 function RoutineModal({ onClose, onSave }: { onClose: () => void; onSave: (routine: Routine) => void }) {
-  const [draft, setDraft] = useState<RoutineDraft>({ repeat: '매일', ampm: '오전', hour: 9, minute: 0, sentence: '' })
+  const [draft, setDraft] = useState<RoutineDraft>({ repeat: '매일', ampm: '오전', hour: 9, minute: 0, sentence: '', days: [1, 2, 3, 4, 5] })
   const canSave = draft.sentence.trim().length > 0
 
   function bump(field: 'hour' | 'minute', delta: number) {
@@ -259,6 +268,7 @@ function RoutineModal({ onClose, onSave }: { onClose: () => void; onSave: (routi
       repeat: draft.repeat,
       sentence: draft.sentence.trim(),
       enabled: true,
+      days: draft.repeat === '요일' ? draft.days : undefined,
     })
   }
 
@@ -275,6 +285,7 @@ function RoutineModal({ onClose, onSave }: { onClose: () => void; onSave: (routi
             <button type="button" className={draft.repeat === '매일' ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, repeat: '매일' })}>매일</button>
             <button type="button" className={draft.repeat === '요일' ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, repeat: '요일' })}>요일</button>
           </div>
+          {draft.repeat === '요일' ? <div className="gp-weekdays">{['일','월','화','수','목','금','토'].map((label, index) => <button key={label} type="button" className={draft.days.includes(index) ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, days: draft.days.includes(index) ? draft.days.filter((day) => day !== index) : [...draft.days, index].sort() })}>{label}</button>)}</div> : null}
           <div className="gp-time-section">
             <span className="gp-field-title">시간</span>
             <div className="gp-time-picker">
