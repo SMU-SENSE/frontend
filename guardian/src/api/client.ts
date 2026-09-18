@@ -134,6 +134,9 @@ async function requestReal<T>(path: string, options: RequestOptions, retryCsrf =
   }
 
   if (response.status === 204) return undefined as T
+  if ((response.headers.get('content-type') ?? '').includes('application/pdf')) {
+    return (await response.blob()) as T
+  }
 
   const payload = (await response.json()) as T | ApiEnvelope<T>
   if (
