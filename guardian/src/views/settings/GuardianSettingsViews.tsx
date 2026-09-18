@@ -335,7 +335,10 @@ export function VoiceSettingsPage() {
 export function LocationManagerPage() {
   const { showToast } = useToast()
   const [places, setPlaces] = useState<Place[]>([])
-  const [draft, setDraft] = useState<Omit<Place, 'id'>>({ name: '', type: '학교', address: '', start: '08:00', end: '15:00' })
+  const [draft, setDraft] = useState<Omit<Place, 'id'>>({ name: '', type: '학교', address: '', start: '08:00', end: '15:00', radius: 500 })
+  const [position, setPosition] = useState<{ latitude: number; longitude: number; accuracy: number; updatedAt: number } | null>(null)
+  const [tracking, setTracking] = useState(false)
+  const [geoError, setGeoError] = useState('')
 
   useEffect(() => {
     const raw = window.localStorage.getItem('malmoa-guardian-places')
@@ -344,16 +347,93 @@ export function LocationManagerPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!tracking || !navigator.geolocation) return
+    const id = navigator.geolocation.watchPosition(
+      (value) => {
+        setGeoError('')
+        setPosition({
+          latitude: value.coords.latitude,
+          longitude: value.coords.longitude,
+          accuracy: value.coords.accuracy,
+          updatedAt: Date.now(),
+        })
+      },
+      (error) => setGeoError(error.message || '현재 위치를 가져오지 못했습니다.'),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
+    )
+    return () => navigator.geolocation.clearWatch(id)
+  }, [tracking])
+
   function persist(next: Place[]) {
     setPlaces(next)
     window.localStorage.setItem('malmoa-guardian-places', JSON.stringify(next))
   }
 
+  function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number) {
+    const R = 6371000
+    const toRad = (value: number) => value * Math.PI / 180
+    const dLat = toRad(bLat - aLat)
+    const dLng = toRad(bLng - aLng)
+    const q = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2
+    return 2 * R * Math.asin(Math.sqrt(q))
+  }
+
+  const zoneStates = places
+    .filter((place) => typeof place.latitude === 'number' && typeof place.longitude === 'number' && position)
+    .map((place) => ({
+      place,
+      distance: distanceMeters(position!.latitude, position!.longitude, place.latitude!, place.longitude!),
+    }))
+  const inside = zoneStates.find(({ place, distance }) => distance <= (place.radius ?? 500))
+  const nearest = [...zoneStates].sort((x, y) => x.distance - y.distance)[0]
+
+  useEffect(() => {
+    if (!tracking || !position || !places.some((place) => typeof place.latitude === 'number')) return
+    if (inside) return
+    const now = Date.now()
+    const last = Number(window.localStorage.getItem('malmoa-last-safezone-alert') || 0)
+    if (now - last < 5 * 60 * 1000) return
+    window.localStorage.setItem('malmoa-last-safezone-alert', String(now))
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('말모아 안심존 알림', { body: '사용자가 등록된 안심존 밖에 있습니다.' })
+    }
+  }, [inside, places, position, tracking])
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) return showToast('이 기기에서는 위치 기능을 사용할 수 없습니다.', 'error')
+    navigator.geolocation.getCurrentPosition(
+      (value) => {
+        const next = {
+          latitude: value.coords.latitude,
+          longitude: value.coords.longitude,
+          accuracy: value.coords.accuracy,
+          updatedAt: Date.now(),
+        }
+        setPosition(next)
+        setDraft((current) => ({ ...current, latitude: next.latitude, longitude: next.longitude }))
+        showToast('현재 위치를 장소 핀으로 지정했습니다.')
+      },
+      (error) => {
+        setGeoError(error.message)
+        showToast('현재 위치를 가져오지 못했습니다.', 'error')
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    )
+  }
+
+  async function allowNotifications() {
+    if (!('Notification' in window)) return showToast('이 브라우저에서는 알림을 지원하지 않습니다.', 'error')
+    const permission = await Notification.requestPermission()
+    showToast(permission === 'granted' ? '안심존 알림을 허용했습니다.' : '알림 권한이 허용되지 않았습니다.', permission === 'granted' ? 'success' : 'error')
+  }
+
   function addPlace() {
-    if (!draft.name.trim() || !draft.address.trim()) return
+    if (!draft.name.trim()) return showToast('장소 이름을 입력해 주세요.', 'error')
+    if (!draft.address.trim() && typeof draft.latitude !== 'number') return showToast('주소를 입력하거나 현재 위치를 지정해 주세요.', 'error')
     persist([...places, { id: crypto.randomUUID(), ...draft, name: draft.name.trim(), address: draft.address.trim() }])
-    setDraft({ name: '', type: '학교', address: '', start: '08:00', end: '15:00' })
-    showToast('장소가 저장되었습니다.')
+    setDraft({ name: '', type: '학교', address: '', start: '08:00', end: '15:00', radius: 500 })
+    showToast('장소와 안심존 설정이 저장되었습니다.')
   }
 
   return (
@@ -363,20 +443,41 @@ export function LocationManagerPage() {
         <section className="gp-place-card">
           <h2>자주 가는 장소</h2><p>장소와 시간 조건을 등록하면 관련 상징을 우선 노출할 수 있어요.</p>
           <div className="gp-place-list">
-            {places.map((place) => <article className="gp-place" key={place.id}><MapPin /><div><strong>{place.name}</strong><span>{place.type} · {place.start}~{place.end}</span><small>{place.address}</small></div><button type="button" aria-label="장소 삭제" onClick={() => persist(places.filter((item) => item.id !== place.id))}><Trash2 size={18} /></button></article>)}
+            {places.map((place) => {
+              const state = zoneStates.find((item) => item.place.id === place.id)
+              return <article className="gp-place" key={place.id}><MapPin /><div><strong>{place.name}</strong><span>{place.type} · {place.start}~{place.end} · 안심존 {place.radius ?? 500}m</span><small>{place.address || (place.latitude ? `위도 ${place.latitude.toFixed(5)}, 경도 ${place.longitude?.toFixed(5)}` : '위치 미지정')}{state ? ` · 현재 ${Math.round(state.distance)}m` : ''}</small></div><button type="button" aria-label="장소 삭제" onClick={() => persist(places.filter((item) => item.id !== place.id))}><Trash2 size={18} /></button></article>
+            })}
           </div>
           <div className="gp-place-form">
             <input placeholder="장소 이름" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
             <select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as Place['type'] })}>{(['집', '학교', '병원', '치료실'] as const).map((value) => <option key={value}>{value}</option>)}</select>
-            <input placeholder="주소 검색" value={draft.address} onChange={(event) => setDraft({ ...draft, address: event.target.value })} />
+            <input placeholder="주소 검색 또는 직접 입력" value={draft.address} onChange={(event) => setDraft({ ...draft, address: event.target.value })} />
+            <button type="button" className="gp-location-secondary" onClick={useCurrentLocation}><MapPin size={17} /> 현재 위치를 지도 핀으로 지정</button>
             <div className="gp-place-time"><input type="time" value={draft.start} onChange={(event) => setDraft({ ...draft, start: event.target.value })} /><input type="time" value={draft.end} onChange={(event) => setDraft({ ...draft, end: event.target.value })} /></div>
+            <label className="gp-radius-field"><span>안심존 반경</span><select value={draft.radius ?? 500} onChange={(event) => setDraft({ ...draft, radius: Number(event.target.value) })}><option value={100}>100m</option><option value={300}>300m</option><option value={500}>500m</option><option value={1000}>1km</option></select></label>
             <button type="button" className="gp-primary" onClick={addPlace}><Save size={17} style={{ verticalAlign: 'middle', marginRight: 7 }} />장소 저장</button>
           </div>
         </section>
         <section className="gp-map-card">
-          <h2>실시간 위치</h2><p>사용자의 현재 위치와 이동 경로를 확인합니다.</p>
-          <div className="gp-map-placeholder"><div><MapPin size={48} /><strong>Map API 연동 영역</strong><span>GPS 좌표 수신 후 현재 위치 핀과 이동 경로가 표시됩니다.</span></div></div>
-          <div className="gp-map-status"><i />실시간 GPS 연결 대기 · 안전구역 이탈 알림 연동 예정</div>
+          <h2>실시간 위치</h2><p>사용자의 현재 위치와 안심존 상태를 확인합니다.</p>
+          <div className="gp-map-placeholder">
+            <div className="gp-live-location">
+              <MapPin size={48} />
+              <strong>{position ? '실시간 GPS 수신 중' : 'Map API / GPS 뷰어'}</strong>
+              {position ? <>
+                <span>위도 {position.latitude.toFixed(6)}</span>
+                <span>경도 {position.longitude.toFixed(6)}</span>
+                <span>정확도 ±{Math.round(position.accuracy)}m</span>
+                <span>{inside ? `${inside.place.name} 안심존 안에 있습니다.` : nearest ? `가장 가까운 장소: ${nearest.place.name} · ${Math.round(nearest.distance)}m` : '등록된 좌표형 장소가 없습니다.'}</span>
+              </> : <span>위치 권한을 허용하면 현재 위치 핀과 안심존 상태가 여기에 표시됩니다.</span>}
+            </div>
+          </div>
+          {geoError ? <div className="gp-map-error">{geoError}</div> : null}
+          <div className={inside ? 'gp-map-status is-safe' : 'gp-map-status'}><i />{tracking ? (inside ? `${inside.place.name} 안심존 · 정상` : '실시간 GPS 추적 중 · 안심존 밖') : '실시간 GPS 연결 대기'}</div>
+          <div className="gp-location-actions">
+            <button type="button" className={tracking ? 'gp-primary is-on' : 'gp-primary'} onClick={() => setTracking((value) => !value)}>{tracking ? '실시간 추적 중지' : '실시간 추적 시작'}</button>
+            <button type="button" className="gp-location-secondary" onClick={allowNotifications}>안심존 알림 허용</button>
+          </div>
         </section>
       </div>
     </main>
