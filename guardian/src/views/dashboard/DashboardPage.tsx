@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const [newCardOpen, setNewCardOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [phraseIds, setPhraseIds] = useState<string[]>([])
+  const [recentIds, setRecentIds] = useState<string[]>([])
   const [customizations, setCustomizations] = useState<Record<string, CardCustomization>>({})
   const [onboardingStep, setOnboardingStep] = useState(0)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -90,7 +91,11 @@ export default function DashboardPage() {
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: LiveId; input: { content?: string; imageUrl?: string | null } }) =>
       guardianLiveApi.updateCard(activeUser!.id, id, { text: input.content, imageUrl: input.imageUrl }),
-    onSuccess: () => {
+    onSuccess: (_result, variables) => {
+      if (apiConfig.useMockApi) persistCustomization(String(variables.id), {
+        text: variables.input.content,
+        imageUrl: variables.input.imageUrl ?? '',
+      })
       queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] })
       setEditing(null)
       showToast('상징 카드가 저장되었습니다.')
@@ -125,7 +130,7 @@ export default function DashboardPage() {
   const visible = categoryId === 'all' || categoryId === 'recommend'
     ? sentenceItems
     : categoryId === 'recent'
-      ? sentenceItems.slice(0, 12)
+      ? recentIds.map((id) => sentenceItems.find((item) => item.id === id)).filter((item): item is Sentence => Boolean(item))
       : categoryId === 'favorite'
         ? sentenceItems.filter((item) => item.favorite)
         : sentenceItems.filter((item) => item.categoryId === categoryId)
@@ -160,6 +165,7 @@ export default function DashboardPage() {
       }
       return [...current, id]
     })
+    setRecentIds((current) => [id, ...current.filter((item) => item !== id)].slice(0, 12))
   }
 
   function speakText(text: string) {
@@ -204,7 +210,7 @@ export default function DashboardPage() {
       <div className="gp-live">
         <aside className="gp-categories" aria-label="AAC 카테고리">
           <button type="button" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
-          <button type="button" className={categoryId === 'recent' ? 'is-active' : ''} onClick={() => setCategoryId('recent')}><span>↺</span><b>최근</b></button>
+          <button type="button" title="이 화면에서 최근 선택한 상징" className={categoryId === 'recent' ? 'is-active' : ''} onClick={() => setCategoryId('recent')}><span>↺</span><b>최근</b></button>
           <button type="button" className={categoryId === 'favorite' ? 'is-active' : ''} onClick={() => setCategoryId('favorite')}><span>★</span><b>즐겨찾기</b></button>
           {categoryItems.map((category, index) => <button type="button" key={category.id} className={categoryId === category.id ? 'is-active' : ''} onClick={() => setCategoryId(category.id)}><span>{CARD_EMOJI[index % CARD_EMOJI.length]}</span><b>{category.name}</b></button>)}
         </aside>
@@ -212,7 +218,7 @@ export default function DashboardPage() {
         <section className="gp-board" aria-label="사용자 AAC 라이브 판">
           <div className="gp-board-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(130px, 1fr))` }}>
             {visible.length === 0 ? <div className="gp-empty">이 카테고리에 표시할 카드가 아직 없어요.</div> : visible.map((sentence, index) => {
-              const customized = customizations[sentence.id]
+              const customized = apiConfig.useMockApi ? customizations[sentence.id] : undefined
               const selected = selectedId === sentence.id
               const displayText = customized?.text || sentence.content
               const displayImage = customized?.imageUrl || sentence.imageUrl || ''
@@ -261,7 +267,7 @@ export default function DashboardPage() {
           </div>
           <div className="gp-composer__actions">
             <button type="button" className="is-reset" onClick={() => setPhraseIds([])}><RotateCcw size={18} />초기화</button>
-            <button type="button" className="is-ai" onClick={() => phraseItems.length ? showToast('선택한 상징을 기준으로 AI 문장 후보를 생성할 수 있어요.') : showToast('먼저 상징을 선택해 주세요.', 'error')}><WandSparkles size={18} />AI 변환</button>
+            <button type="button" className="is-ai" onClick={() => showToast(phraseItems.length ? 'AI 문장 변환은 아직 연결되지 않았어요.' : '먼저 상징을 선택해 주세요.', 'error')}><WandSparkles size={18} />AI 변환</button>
             <button type="button" className="is-speak" onClick={speakPhrase}><Volume2 size={18} />말하기</button>
           </div>
         </aside>
@@ -271,13 +277,12 @@ export default function DashboardPage() {
         {['네', '아니요', '잠깐만요', '몰라요', '뭐예요'].map((text) => <button type="button" key={text} onClick={() => speakText(text)}>{text}</button>)}
       </div>
 
-      {editing ? <CardEditor sentence={editing} customization={customizations[editing.id]} onClose={() => setEditing(null)} onUploadImage={(file) => guardianLiveApi.uploadImage(activeUser.id, file).then((result) => result.url)} onSave={(next) => {
-        persistCustomization(editing.id, next)
+      {editing ? <CardEditor sentence={editing} customization={apiConfig.useMockApi ? customizations[editing.id] : undefined} saving={updateMutation.isPending} onClose={() => setEditing(null)} onUploadImage={(file) => guardianLiveApi.uploadImage(activeUser.id, file).then((result) => result.url)} onSave={(next) => {
         updateMutation.mutate({
           id: editing.id,
           input: {
             content: next.text?.trim() || editing.content,
-            imageUrl: next.imageUrl ?? editing.imageUrl ?? null,
+            imageUrl: next.imageUrl === '' ? null : next.imageUrl ?? editing.imageUrl ?? null,
           },
         })
       }} onFavorite={() => favoriteMutation.mutate({ id: editing.id, favorite: !editing.favorite })} onDelete={() => { if (window.confirm('상징 카드를 삭제하시겠습니까?')) removeMutation.mutate(editing.id) }} /> : null}
@@ -287,7 +292,8 @@ export default function DashboardPage() {
   )
 }
 
-function CardEditor({ sentence, customization, onClose, onUploadImage, onSave, onFavorite, onDelete }: { sentence: Sentence; customization?: CardCustomization; onClose: () => void; onUploadImage: (file: File) => Promise<string>; onSave: (next: CardCustomization) => void; onFavorite: () => void; onDelete: () => void }) {
+function CardEditor({ sentence, customization, saving, onClose, onUploadImage, onSave, onFavorite, onDelete }: { sentence: Sentence; customization?: CardCustomization; saving: boolean; onClose: () => void; onUploadImage: (file: File) => Promise<string>; onSave: (next: CardCustomization) => void; onFavorite: () => void; onDelete: () => void }) {
+  const { showToast } = useToast()
   const [text, setText] = useState(customization?.text ?? sentence.content)
   const [imageUrl, setImageUrl] = useState(customization?.imageUrl ?? sentence.imageUrl ?? '')
   const [uploading, setUploading] = useState(false)
@@ -296,6 +302,8 @@ function CardEditor({ sentence, customization, onClose, onUploadImage, onSave, o
     setUploading(true)
     try {
       setImageUrl(await onUploadImage(file))
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '이미지를 업로드하지 못했습니다.', 'error')
     } finally {
       setUploading(false)
     }
@@ -307,12 +315,12 @@ function CardEditor({ sentence, customization, onClose, onUploadImage, onSave, o
         <h2>상징 카드 편집</h2>
         <label>카드 텍스트<input value={text} onChange={(event) => setText(event.target.value)} /></label>
         <label>이미지 변경
-          {imageUrl ? <img src={imageUrl} alt="선택한 상징 미리보기" className="gp-card-image-preview" /> : null}
+          {imageUrl ? <img src={imageUrl.startsWith('/api/') ? `${apiConfig.baseUrl}${imageUrl}` : imageUrl} alt="선택한 상징 미리보기" className="gp-card-image-preview" /> : null}
           <span className="gp-head-btn" style={{ justifyContent: 'center' }}><ImagePlus size={18} /> {uploading ? '업로드 중…' : '이미지 선택'}<input hidden disabled={uploading} type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} /></span>
           {imageUrl ? <button type="button" className="gp-image-remove" onClick={() => setImageUrl('')}>이미지 제거</button> : null}
         </label>
         <button type="button" className="gp-head-btn" style={{ width: '100%', justifyContent: 'center' }} onClick={onFavorite}><Star size={18} />{sentence.favorite ? '즐겨찾기 해제' : '즐겨찾기 등록'}</button>
-        <div className="gp-edit-modal__actions"><button type="button" className="danger" onClick={onDelete}><Trash2 size={17} /> 삭제</button><button type="button" className="primary" onClick={() => onSave({ text: text.trim() || sentence.content, imageUrl: imageUrl || undefined })}>저장</button></div>
+        <div className="gp-edit-modal__actions"><button type="button" className="danger" onClick={onDelete}><Trash2 size={17} /> 삭제</button><button type="button" className="primary" disabled={uploading || saving} onClick={() => onSave({ text: text.trim() || sentence.content, imageUrl })}>{saving ? '저장 중…' : '저장'}</button></div>
       </section>
     </div>
   )
