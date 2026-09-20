@@ -87,14 +87,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (apiConfig.useMockApi || !activeUser) return
-    const source = new EventSource(`${apiConfig.baseUrl}/api/v1/me/aac-users/${activeUser.id}/events`, { withCredentials: true })
-    const refresh = () => queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser.id] })
-    ;['BOARD_UPDATED', 'SETTINGS_UPDATED', 'STATUS_UPDATED', 'CARD_USED', 'ROUTINE_TRIGGERED', 'ALERT'].forEach((eventName) => source.addEventListener(eventName, refresh))
+    const userId = activeUser.id
+    const source = new EventSource(`${apiConfig.baseUrl}/api/v1/me/aac-users/${userId}/events`, { withCredentials: true })
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['guardian-board', userId] })
+    const cardUsed = (event: Event) => {
+      refresh()
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data) as { cardId?: number | string }
+        if (payload.cardId === undefined || payload.cardId === null) return
+        const id = String(payload.cardId)
+        setRecentIds((current) => [id, ...current.filter((item) => item !== id)].slice(0, 12))
+      } catch {
+        // Invalid SSE payload must not interrupt the live board subscription.
+      }
+    }
+    ;['BOARD_UPDATED', 'SETTINGS_UPDATED', 'STATUS_UPDATED'].forEach((eventName) => source.addEventListener(eventName, refresh))
+    source.addEventListener('CARD_USED', cardUsed)
     source.onerror = () => {
-      // EventSource 자체가 자동 재연결하므로 화면을 오류 페이지로 보내지 않는다.
+      // EventSource automatically reconnects; polling also refreshes the board.
     }
     return () => source.close()
-  }, [activeUser, queryClient])
+  }, [activeUser?.id, queryClient])
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ id, favorite }: { id: LiveId; favorite: boolean }) => { await guardianLiveApi.setFavorite(activeUser!.id, id, favorite) },
@@ -263,8 +276,8 @@ export default function DashboardPage() {
 
       <div className="gp-live">
         <aside className="gp-categories" aria-label="AAC 카테고리">
-          <button type="button" title="즐겨찾기와 이 화면에서 최근 선택한 상징을 보여줍니다" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
-          <button type="button" title="이 화면에서 최근 선택한 상징" className={categoryId === 'recent' ? 'is-active' : ''} onClick={() => setCategoryId('recent')}><span>↺</span><b>최근</b></button>
+          <button type="button" title="즐겨찾기와 이 화면에서 선택했거나 사용자 기기에서 사용한 상징을 보여줍니다" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
+          <button type="button" title="이 화면에서 선택했거나 사용자 기기에서 사용한 상징(접속 중 수신 기록)" className={categoryId === 'recent' ? 'is-active' : ''} onClick={() => setCategoryId('recent')}><span>↺</span><b>최근</b></button>
           <button type="button" className={categoryId === 'favorite' ? 'is-active' : ''} onClick={() => setCategoryId('favorite')}><span>★</span><b>즐겨찾기</b></button>
           {categoryItems.map((category, index) => <button type="button" key={category.id} className={categoryId === category.id ? 'is-active' : ''} onClick={() => setCategoryId(category.id)}><span>{categoryIcons[category.id] || DEFAULT_CATEGORY_ICONS[category.name] || CARD_EMOJI[index % CARD_EMOJI.length]}</span><b>{category.name}</b></button>)}
         </aside>
