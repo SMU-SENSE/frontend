@@ -1787,3 +1787,30 @@ body::after{
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
 }
+
+
+/* AAC home (03 홈): light pastel tiles, filled selection and visible drag focus. */
+.gp-symbol{
+  background:color-mix(in srgb,var(--card-color,#d9d9df) 12%,#fff);
+  cursor:pointer;
+  transition:background-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+.gp-symbol[aria-pressed="true"]{
+  background:color-mix(in srgb,var(--card-color,#d9d9df) 68%,#fff);
+}
+.gp-symbol:focus-visible{
+  outline:3px solid #149e69;
+  outline-offset:2px;
+}
+.gp-symbol[draggable="true"]{
+  cursor:grab;
+}
+.gp-symbol[draggable="true"]:active{
+  cursor:grabbing;
+}
+.gp-symbol__visual{
+  overflow:hidden;
+}
+@media(prefers-reduced-motion:reduce){
+  .gp-symbol{transition:none}
+}
