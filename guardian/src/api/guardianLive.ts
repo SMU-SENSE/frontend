@@ -190,14 +190,6 @@ function mockPairing(userId: number, refresh = false): PairingResponse {
   return next
 }
 
-function defaultRoutines(): LiveRoutine[] {
-  return [
-    { id: 'school', title: '등교 준비', message: '등교 준비 — 학교 상징 우선', timeOfDay: '08:00:00', daysOfWeek: ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'], timezone: 'Asia/Seoul', enabled: true },
-    { id: 'medicine', title: '점심 약', message: '점심 약 복용 알림 팝업', timeOfDay: '12:30:00', daysOfWeek: ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'], timezone: 'Asia/Seoul', enabled: true },
-    { id: 'sleep', title: '취침 루틴', message: '취침 루틴 — 양치, 약, 졸려요', timeOfDay: '21:00:00', daysOfWeek: ['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY'], timezone: 'Asia/Seoul', enabled: false },
-  ]
-}
-
 export const guardianLiveApi = {
   board(userId: number): Promise<LiveBoard> {
     return apiConfig.useMockApi
@@ -329,7 +321,7 @@ export const guardianLiveApi = {
 
   routines(userId: number): Promise<LiveRoutine[]> {
     if (apiConfig.useMockApi) {
-      const current = readLocal<LiveRoutine[]>(routineKey(userId), defaultRoutines())
+      const current = readLocal<LiveRoutine[]>(routineKey(userId), [])
       return Promise.resolve(current)
     }
     return apiRequest<LiveRoutine[]>(`/api/v1/me/aac-users/${userId}/routines`)
@@ -338,7 +330,7 @@ export const guardianLiveApi = {
   createRoutine(userId: number, input: Omit<LiveRoutine, 'id'>) {
     if (apiConfig.useMockApi) {
       const next: LiveRoutine = { ...input, id: crypto.randomUUID() }
-      const list = readLocal<LiveRoutine[]>(routineKey(userId), defaultRoutines())
+      const list = readLocal<LiveRoutine[]>(routineKey(userId), [])
       writeLocal(routineKey(userId), [...list, next])
       return Promise.resolve(next)
     }
@@ -347,7 +339,7 @@ export const guardianLiveApi = {
 
   updateRoutine(userId: number, routineId: LiveId, input: Omit<LiveRoutine, 'id'>) {
     if (apiConfig.useMockApi) {
-      const list = readLocal<LiveRoutine[]>(routineKey(userId), defaultRoutines())
+      const list = readLocal<LiveRoutine[]>(routineKey(userId), [])
       const next = list.map((item) => String(item.id) === String(routineId) ? { ...input, id: routineId } : item)
       writeLocal(routineKey(userId), next)
       return Promise.resolve(next.find((item) => String(item.id) === String(routineId))!)
@@ -357,7 +349,7 @@ export const guardianLiveApi = {
 
   deleteRoutine(userId: number, routineId: LiveId) {
     if (apiConfig.useMockApi) {
-      const list = readLocal<LiveRoutine[]>(routineKey(userId), defaultRoutines()).filter((item) => String(item.id) !== String(routineId))
+      const list = readLocal<LiveRoutine[]>(routineKey(userId), []).filter((item) => String(item.id) !== String(routineId))
       writeLocal(routineKey(userId), list)
       return Promise.resolve()
     }
