@@ -392,6 +392,7 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
       lastUsedAt: null,
       createdAt: now(),
       imageUrl: body.imageUrl ? String(body.imageUrl) : null,
+      displayOrder: Number.isFinite(Number(body.displayOrder)) ? Number(body.displayOrder) : db.sentences.length,
     }
     db.sentences.unshift(sentence)
     if (category) category.sentenceCount += 1
@@ -425,6 +426,11 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
     if (!sentence) fail(404, '상징 카드를 찾을 수 없습니다.')
     if (body.content !== undefined) sentence.content = String(body.content).trim() || sentence.content
     if (body.imageUrl !== undefined) sentence.imageUrl = body.imageUrl ? String(body.imageUrl) : null
+    if (body.displayOrder !== undefined) {
+      const order = Number(body.displayOrder)
+      if (!Number.isInteger(order) || order < 0) fail(400, '카드 순서가 올바르지 않습니다.')
+      sentence.displayOrder = order
+    }
     writeDb(db)
     return ok(sentence) as T
   }
