@@ -339,6 +339,15 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
   }
 
   const categoryMatch = path.match(/^\/api\/v1\/categories\/([^/]+)$/)
+  if (categoryMatch && method === 'PATCH') {
+    const category = db.categories.find((item) => item.id === categoryMatch[1])
+    if (!category) fail(404, '카테고리를 찾을 수 없습니다.')
+    if (body.name !== undefined) category.name = String(body.name).trim() || category.name
+    if (body.color !== undefined) category.color = String(body.color)
+    if (body.order !== undefined) category.order = Number(body.order)
+    writeDb(db)
+    return ok(category) as T
+  }
   if (categoryMatch && method === 'DELETE') {
     const categoryId = categoryMatch[1]
     db.categories = db.categories.filter((category) => category.id !== categoryId)
