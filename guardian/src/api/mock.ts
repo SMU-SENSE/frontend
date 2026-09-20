@@ -407,6 +407,14 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
   }
 
   const sentenceMatch = path.match(/^\/api\/v1\/sentences\/([^/]+)$/)
+  if (sentenceMatch && method === 'PATCH') {
+    const sentence = db.sentences.find((item) => item.id === sentenceMatch[1])
+    if (!sentence) fail(404, '상징 카드를 찾을 수 없습니다.')
+    if (body.content !== undefined) sentence.content = String(body.content).trim() || sentence.content
+    if (body.imageUrl !== undefined) sentence.imageUrl = body.imageUrl ? String(body.imageUrl) : null
+    writeDb(db)
+    return ok(sentence) as T
+  }
   if (sentenceMatch && method === 'DELETE') {
     db.sentences = db.sentences.filter((sentence) => sentence.id !== sentenceMatch[1])
     writeDb(db)
