@@ -397,7 +397,7 @@ function NewCardModal({ userId, categories, nextOrder, onClose }: { userId: numb
   const [uploading, setUploading] = useState(false)
   const mutation = useMutation({
     mutationFn: () => guardianLiveApi.createCard(userId, {
-      categoryId: /^\\d+$/.test(categoryId) ? Number(categoryId) : categoryId,
+      categoryId: /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId,
       text: content.trim(),
       imageUrl: imageUrl || null,
       displayOrder: nextOrder,
