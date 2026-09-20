@@ -272,7 +272,9 @@ export function VoiceSettingsPage() {
   function saveRate(next: number) {
     const clamped = Math.max(.7, Math.min(1.3, Number(next.toFixed(1))))
     setRate(clamped)
-    if (user?.voiceType) mutation.mutate({ voiceType: user.voiceType, speechRate: clamped })
+    if (user && !mutation.isPending && clamped !== user.speechRate) {
+      mutation.mutate({ voiceType: user.voiceType ?? 'CHILD_MALE', speechRate: clamped })
+    }
   }
 
   function preview() {
@@ -319,9 +321,9 @@ export function VoiceSettingsPage() {
       </div>
       <div className="gp-speed-title"><strong>음성 속도</strong><b>{rate.toFixed(1)}×</b></div>
       <div className="gp-speed-control">
-        <span>🐢</span><button type="button" onClick={() => saveRate(rate - .1)}>−</button>
-        <input type="range" min="0.7" max="1.3" step="0.1" value={rate} onChange={(event) => setRate(Number(event.target.value))} onPointerUp={() => mutation.mutate({ voiceType: currentVoice, speechRate: rate })} />
-        <button type="button" onClick={() => saveRate(rate + .1)}>＋</button><span>🐰</span>
+        <span>🐢</span><button type="button" disabled={mutation.isPending} onClick={() => saveRate(rate - .1)}>−</button>
+        <input type="range" aria-label="음성 속도" min="0.7" max="1.3" step="0.1" value={rate} disabled={mutation.isPending} onChange={(event) => setRate(Number(event.currentTarget.value))} onPointerUp={(event) => saveRate(Number(event.currentTarget.value))} onKeyUp={(event) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) saveRate(Number(event.currentTarget.value)) }} onBlur={(event) => saveRate(Number(event.currentTarget.value))} />
+        <button type="button" disabled={mutation.isPending} onClick={() => saveRate(rate + .1)}>＋</button><span>🐰</span>
       </div>
       <div className="gp-speed-scale"><span>0.7×</span><span>1.3×</span></div>
       <button type="button" className="gp-preview" onClick={preview}><span><Play size={20} fill="currentColor" /></span><div><strong>미리듣기</strong><small>{currentLabel} · {rate.toFixed(1)}×</small></div></button>
