@@ -234,6 +234,18 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
     return ok(user) as T
   }
 
+  const sentenceLevelMatch = path.match(/^\/api\/v1\/me\/aac-users\/(\d+)\/sentence-level$/)
+  if (sentenceLevelMatch && method === 'PATCH') {
+    const user = db.aacUsers.find((item) => item.id === Number(sentenceLevelMatch[1]))
+    if (!user) fail(404, 'AAC 사용자를 찾을 수 없습니다.')
+    const level = Number(body.level)
+    if (![1, 2, 3, 4].includes(level)) fail(400, '문장 이해 수준은 1~4 사이여야 합니다.')
+    user.sentenceLevel = level as 1 | 2 | 3 | 4
+    user.updatedAt = now()
+    writeDb(db)
+    return ok(user) as T
+  }
+
   const voiceMatch = path.match(/^\/api\/v1\/me\/aac-users\/(\d+)\/voice-settings$/)
   if (voiceMatch && method === 'PATCH') {
     const user = db.aacUsers.find((item) => item.id === Number(voiceMatch[1]))
