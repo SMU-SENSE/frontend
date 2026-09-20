@@ -241,6 +241,7 @@ export default function SettingsPage() {
           <button type="button" className="gp-add-button" onClick={() => setRoutineModalOpen(true)}><Plus size={19} /> 추가</button>
         </div>
         <div className="gp-routine-list">
+          {routines.length === 0 ? <p className="gp-empty">등록된 루틴이 없어요. ‘추가’를 눌러 필요한 알림을 직접 설정해 주세요.</p> : null}
           {routines.map((routine) => (
             <div className="gp-routine-row" key={routine.id}>
               <Clock3 className="gp-routine-clock" size={31} />
