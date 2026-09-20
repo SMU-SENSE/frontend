@@ -531,6 +531,7 @@ export function GuardianReportPage() {
   const { showToast } = useToast()
   const users = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
   const user = users.data?.find((item) => item.active) ?? users.data?.[0] ?? null
+  const validCustomRange = period !== 'custom' || Boolean(startDate && endDate && startDate <= endDate)
 
   const range = useMemo(() => {
     const now = new Date()
@@ -548,7 +549,7 @@ export function GuardianReportPage() {
   const report = useQuery({
     queryKey: ['guardian-report', user?.id, range.from, range.to],
     queryFn: () => guardianLiveApi.report(user!.id, range.from, range.to),
-    enabled: Boolean(user) && (period !== 'custom' || Boolean(startDate && endDate)),
+    enabled: Boolean(user) && validCustomRange,
   })
 
   const exportPdf = useMutation({
@@ -586,9 +587,10 @@ export function GuardianReportPage() {
           <button type="button" className={period === 'month' ? 'is-selected' : ''} onClick={() => setPeriod('month')}>월간</button>
           <button type="button" className={period === 'custom' ? 'is-selected' : ''} onClick={() => setPeriod('custom')}>일자 지정</button>
         </div>
-        <button type="button" className="gp-export" disabled={!data || exportPdf.isPending} onClick={() => exportPdf.mutate()}>{exportPdf.isPending ? 'PDF 생성 중…' : 'PDF 리포트 내보내기'}</button>
+        <button type="button" className="gp-export" disabled={!data || !validCustomRange || exportPdf.isPending} onClick={() => exportPdf.mutate()}>{exportPdf.isPending ? 'PDF 생성 중…' : 'PDF 리포트 내보내기'}</button>
       </div>
       {period === 'custom' ? <div className="gp-report-dates"><label>시작일<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label><span>—</span><label>종료일<input type="date" min={startDate || undefined} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label></div> : null}
+      {!validCustomRange && period === 'custom' ? <p role="alert">{startDate && endDate && startDate > endDate ? '종료일은 시작일보다 빠를 수 없습니다.' : '시작일과 종료일을 모두 선택해 주세요.'}</p> : null}
       {!data ? <section className="gp-report-card"><p>조회 기간을 선택해 주세요.</p></section> : <div className="gp-report-grid">
         <section className="gp-report-card">
           <h2>단어 사용 패턴 분석</h2><p>서버에 기록된 실제 AAC 카드 사용 데이터를 분석합니다.</p>
