@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
   const reorderMutation = useMutation({
     mutationFn: async ({ fromId, toId }: { fromId: string; toId: string }) => {
-      if (!activeUser || !board.data || apiConfig.useMockApi) throw new Error('카드 순서 변경은 연결된 사용자 판에서 사용할 수 있어요.')
+      if (!activeUser || !board.data) throw new Error('연결된 사용자 판이 없습니다.')
       const cards = [...board.data.cards].sort((a, b) => a.displayOrder - b.displayOrder)
       const fromIndex = cards.findIndex((item) => String(item.id) === fromId)
       const toIndex = cards.findIndex((item) => String(item.id) === toId)
@@ -118,7 +118,7 @@ export default function DashboardPage() {
         }
       }
     },
-    onSuccess: () => showToast('카드 순서가 사용자 판에 저장되었습니다.'),
+    onSuccess: () => showToast(apiConfig.useMockApi ? '시연용 카드 순서가 이 브라우저에 저장되었습니다.' : '카드 순서가 사용자 판에 저장되었습니다.'),
     onError: (error) => showToast(error.message, 'error'),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] }),
   })
@@ -257,7 +257,7 @@ export default function DashboardPage() {
                   aria-label={`${displayText} 상징`}
                   aria-pressed={editMode ? selected : phraseIds.includes(sentence.id)}
                   className="gp-symbol"
-                  draggable={editMode && !apiConfig.useMockApi && !reorderMutation.isPending}
+                  draggable={editMode && !reorderMutation.isPending}
                   style={{ '--card-color': CARD_COLORS[index % CARD_COLORS.length], outline: selected ? '3px solid #149E69' : undefined } as React.CSSProperties}
                   onClick={() => {
                     if (pressTriggered.current) {
