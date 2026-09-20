@@ -244,7 +244,7 @@ export default function DashboardPage() {
         </aside>
 
         <section className="gp-board" aria-label="사용자 AAC 라이브 판">
-          <div className="gp-board-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(130px, 1fr))` }}>
+          <div className={`gp-board-grid gp-board-grid--${columns}`} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
             {visible.length === 0 ? <div className="gp-empty">{categoryId === 'recommend' ? '즐겨찾기를 등록하거나 상징을 선택하면 이곳에 표시돼요.' : '이 카테고리에 표시할 카드가 아직 없어요.'}</div> : visible.map((sentence, index) => {
               const selected = selectedId === sentence.id
               const displayText = sentence.content
