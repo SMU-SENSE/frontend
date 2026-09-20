@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell, Check, LoaderCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
+import { apiConfig } from '../../api/client'
 import { type GuardianNotification, notificationsApi } from '../../api/notifications'
 import styles from './NotificationBell.module.css'
 
@@ -15,6 +16,7 @@ function formatCreatedAt(value: string) {
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
+  const [readError, setReadError] = useState('')
   const rootRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
   const users = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
@@ -29,13 +31,23 @@ export function NotificationBell() {
     refetchOnWindowFocus: true,
   })
 
+  useEffect(() => {
+    if (!user || apiConfig.useMockApi) return
+    const source = new EventSource(`${apiConfig.baseUrl}/api/v1/me/aac-users/${user.id}/events`, { withCredentials: true })
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['guardian-notifications', user.id] })
+    source.addEventListener('ALERT', refresh)
+    return () => source.close()
+  }, [user?.id, queryClient])
+
   const markRead = useMutation({
     mutationFn: (id: number) => notificationsApi.markRead(user!.id, id),
     onSuccess: (_, id) => {
+      setReadError('')
       queryClient.setQueryData<GuardianNotification[]>(queryKey, (current) =>
         current?.map((notification) => notification.id === id ? { ...notification, read: true } : notification),
       )
     },
+    onError: () => setReadError('알림을 읽음 처리하지 못했습니다. 다시 시도해 주세요.'),
   })
 
   useEffect(() => {
@@ -67,6 +79,7 @@ export function NotificationBell() {
       {open ? (
         <section className={styles.panel} role="dialog" aria-label="보호자 알림">
           <div className={styles.header}><div><strong>알림</strong><span>{unreadCount > 0 ? `읽지 않은 알림 ${unreadCount}개` : '새 알림이 없어요'}</span></div></div>
+          {readError ? <div className={styles.state} role="alert">{readError}</div> : null}
           {users.isLoading || notifications.isLoading ? (
             <div className={styles.state}><LoaderCircle className={styles.spinner} size={20} aria-hidden />알림을 불러오는 중이에요</div>
           ) : users.isError || notifications.isError ? (
@@ -74,11 +87,11 @@ export function NotificationBell() {
           ) : !user ? (
             <div className={styles.state}>연결된 AAC 사용자가 없어요</div>
           ) : items.length === 0 ? (
-            <div className={styles.state}>아직 받은 알림이 없어요</div>
+            <div className={styles.state}>{apiConfig.useMockApi ? '시연 모드에서는 실제 긴급·안심존 알림을 수신하지 않아요.' : '아직 받은 알림이 없어요'}</div>
           ) : (
             <div className={styles.list}>
               {items.map((notification) => (
-                <button type="button" className={`${styles.item} ${notification.read ? styles.read : styles.unread}`} key={notification.id} disabled={markRead.isPending && markRead.variables === notification.id} onClick={() => { if (!notification.read) markRead.mutate(notification.id) }}>
+                <button type="button" className={`${styles.item} ${notification.read ? styles.read : styles.unread}`} key={notification.id} disabled={markRead.isPending && markRead.variables === notification.id} onClick={() => { if (!notification.read) { setReadError(''); markRead.mutate(notification.id) } }}>
                   <span className={styles.itemIcon} aria-hidden>{notification.read ? <Check size={15} /> : <Bell size={15} />}</span>
                   <span className={styles.itemBody}><strong>{notification.aacUserName}</strong><span>{notification.message}</span><time dateTime={notification.createdAt}>{formatCreatedAt(notification.createdAt)}</time></span>
                 </button>
