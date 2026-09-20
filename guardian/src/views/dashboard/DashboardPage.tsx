@@ -30,6 +30,7 @@ type CardCustomization = { text?: string; imageUrl?: string }
 const ONBOARDING_KEY = 'malmoa-guardian-onboarding-completed'
 const CARD_COLORS = ['#F4C8A8', '#A9DDBB', '#B9D2F3', '#E3C4EF', '#F6D991', '#BFD5C8', '#F2B8BE']
 const CARD_EMOJI = ['💬', '👤', '🍚', '🏠', '🙌', '😊', '🔗']
+const DEFAULT_CATEGORY_ICONS: Record<string, string> = { 긴급어: '🆘', 사람: '👩', '음식·장소·신체': '🍱', 행동: '🙌', '감정·설명': '😊', 대화: '💬', 문법: '🔗' }
 
 export default function DashboardPage() {
   const queryClient = useQueryClient()
@@ -49,6 +50,7 @@ export default function DashboardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [phraseIds, setPhraseIds] = useState<string[]>([])
   const [recentIds, setRecentIds] = useState<string[]>([])
+  const [categoryIcons, setCategoryIcons] = useState<Record<string, string>>({})
   const [onboardingStep, setOnboardingStep] = useState(0)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pressTriggered = useRef(false)
@@ -58,6 +60,30 @@ export default function DashboardPage() {
   useEffect(() => {
     if (window.localStorage.getItem(ONBOARDING_KEY) !== '1') setOnboardingStep(1)
   }, [])
+
+  useEffect(() => {
+    if (!activeUser) return
+    const key = `malmoa-category-icons-${activeUser.id}`
+    try {
+      const scoped = window.localStorage.getItem(key)
+      const legacy = scoped ? null : window.localStorage.getItem('malmoa-category-icons')
+      const raw = scoped ?? legacy
+      setCategoryIcons(raw ? JSON.parse(raw) as Record<string, string> : {})
+      if (legacy) {
+        window.localStorage.setItem(key, legacy)
+        window.localStorage.removeItem('malmoa-category-icons')
+      }
+    } catch {
+      setCategoryIcons({})
+    }
+    setCategoryId('all')
+    setSelectedId(null)
+    setPhraseIds([])
+    setRecentIds([])
+    setEditing(null)
+    setNewCardOpen(false)
+    setEditMode(false)
+  }, [activeUser?.id])
 
   useEffect(() => {
     if (apiConfig.useMockApi || !activeUser) return
@@ -240,7 +266,7 @@ export default function DashboardPage() {
           <button type="button" title="즐겨찾기와 이 화면에서 최근 선택한 상징을 보여줍니다" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
           <button type="button" title="이 화면에서 최근 선택한 상징" className={categoryId === 'recent' ? 'is-active' : ''} onClick={() => setCategoryId('recent')}><span>↺</span><b>최근</b></button>
           <button type="button" className={categoryId === 'favorite' ? 'is-active' : ''} onClick={() => setCategoryId('favorite')}><span>★</span><b>즐겨찾기</b></button>
-          {categoryItems.map((category, index) => <button type="button" key={category.id} className={categoryId === category.id ? 'is-active' : ''} onClick={() => setCategoryId(category.id)}><span>{CARD_EMOJI[index % CARD_EMOJI.length]}</span><b>{category.name}</b></button>)}
+          {categoryItems.map((category, index) => <button type="button" key={category.id} className={categoryId === category.id ? 'is-active' : ''} onClick={() => setCategoryId(category.id)}><span>{categoryIcons[category.id] || DEFAULT_CATEGORY_ICONS[category.name] || CARD_EMOJI[index % CARD_EMOJI.length]}</span><b>{category.name}</b></button>)}
         </aside>
 
         <section className="gp-board" aria-label="사용자 AAC 라이브 판">
@@ -249,6 +275,9 @@ export default function DashboardPage() {
               const selected = selectedId === sentence.id
               const displayText = sentence.content
               const displayImage = sentence.imageUrl || ''
+              const categoryIndex = categoryItems.findIndex((category) => category.id === sentence.categoryId)
+              const category = categoryItems[categoryIndex]
+              const symbolIcon = category ? (categoryIcons[category.id] || DEFAULT_CATEGORY_ICONS[category.name] || CARD_EMOJI[categoryIndex % CARD_EMOJI.length]) : '💬'
               return (
                 <div
                   key={sentence.id}
@@ -258,7 +287,7 @@ export default function DashboardPage() {
                   aria-pressed={editMode ? selected : phraseIds.includes(sentence.id)}
                   className="gp-symbol"
                   draggable={editMode && !reorderMutation.isPending}
-                  style={{ '--card-color': CARD_COLORS[index % CARD_COLORS.length], outline: selected ? '3px solid #149E69' : undefined } as React.CSSProperties}
+                  style={{ '--card-color': category?.color || CARD_COLORS[index % CARD_COLORS.length], outline: selected ? '3px solid #149E69' : undefined } as React.CSSProperties}
                   onClick={() => {
                     if (pressTriggered.current) {
                       pressTriggered.current = false
@@ -303,7 +332,7 @@ export default function DashboardPage() {
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => { event.stopPropagation(); favoriteMutation.mutate({ id: sentence.id, favorite: !sentence.favorite }) }}
                   >{sentence.favorite ? '★' : '☆'}</button>
-                  {displayImage ? <img src={displayImage.startsWith('/api/') ? `${apiConfig.baseUrl}${displayImage}` : displayImage} alt="" className="gp-symbol__visual" style={{ objectFit: 'cover' }} /> : <span className="gp-symbol__visual">{CARD_EMOJI[index % CARD_EMOJI.length]}</span>}
+                  {displayImage ? <img src={displayImage.startsWith('/api/') ? `${apiConfig.baseUrl}${displayImage}` : displayImage} alt="" className="gp-symbol__visual" style={{ objectFit: 'cover' }} /> : <span className="gp-symbol__visual">{symbolIcon}</span>}
                   <strong>{displayText}</strong>
                 </div>
               )
