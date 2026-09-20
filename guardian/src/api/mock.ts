@@ -118,7 +118,7 @@ function readDb(): MockDatabase {
     if (!parsed.preferences.languageLevel) { parsed.preferences.languageLevel = 2; changed = true }
     const legacyCategories = Array.isArray(parsed.categories) && parsed.categories.length <= 3 && parsed.categories.some((item) => item.id === 'category-daily' || item.id === 'category-request')
     if (!Array.isArray(parsed.categories) || parsed.categories.length === 0 || legacyCategories) { parsed.categories = clone(seed.categories); changed = true }
-    if (!Array.isArray(parsed.sentences) || parsed.sentences.length === 0 || legacyCategories) { parsed.sentences = clone(seed.sentences); changed = true }
+    if (!Array.isArray(parsed.sentences) || legacyCategories) { parsed.sentences = clone(seed.sentences); changed = true }
     if (changed) writeDb(parsed)
     return parsed
   } catch {
@@ -342,7 +342,10 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
   if (categoryMatch && method === 'PATCH') {
     const category = db.categories.find((item) => item.id === categoryMatch[1])
     if (!category) fail(404, '카테고리를 찾을 수 없습니다.')
-    if (body.name !== undefined) category.name = String(body.name).trim() || category.name
+    if (body.name !== undefined) {
+      category.name = String(body.name).trim() || category.name
+      db.sentences.forEach((sentence) => { if (sentence.categoryId === category.id) sentence.categoryName = category.name })
+    }
     if (body.color !== undefined) category.color = String(body.color)
     if (body.order !== undefined) category.order = Number(body.order)
     writeDb(db)
@@ -388,6 +391,7 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
       useCount: 0,
       lastUsedAt: null,
       createdAt: now(),
+      imageUrl: body.imageUrl ? String(body.imageUrl) : null,
     }
     db.sentences.unshift(sentence)
     if (category) category.sentenceCount += 1
