@@ -264,7 +264,7 @@ export default function SettingsPage() {
       <div className="gp-lower-grid">
         <Link className="gp-card gp-shortcut" href="/settings/report">
           <span className="gp-shortcut__icon"><BarChart3 size={31} /></span>
-          <div><strong>사용 기록 조회</strong><small>월별 / 일별 발화 기록 확인 및 삭제</small></div><ChevronRight size={28} />
+          <div><strong>사용 기록 조회</strong><small>기간별 발화 기록 및 PDF 내보내기</small></div><ChevronRight size={28} />
         </Link>
         <Link className="gp-card gp-shortcut" href="/settings/help">
           <span className="gp-shortcut__icon is-yellow"><Info size={31} /></span>
@@ -289,14 +289,14 @@ export default function SettingsPage() {
       </nav>
 
       <button type="button" className="gp-help" aria-label="도움말" onClick={() => window.alert('말모아 보호자 M+\n설정 · 카드 편집 · 사용자 연결 및 리포트 기능을 제공합니다.')}>?</button>
-      {routineModalOpen ? <RoutineModal onClose={() => setRoutineModalOpen(false)} onSave={(routine) => createRoutineMutation.mutate(routine)} /> : null}
+      {routineModalOpen ? <RoutineModal saving={createRoutineMutation.isPending} onClose={() => { if (!createRoutineMutation.isPending) setRoutineModalOpen(false) }} onSave={(routine) => createRoutineMutation.mutate(routine)} /> : null}
     </main>
   )
 }
 
-function RoutineModal({ onClose, onSave }: { onClose: () => void; onSave: (routine: Routine) => void }) {
+function RoutineModal({ saving, onClose, onSave }: { saving: boolean; onClose: () => void; onSave: (routine: Routine) => void }) {
   const [draft, setDraft] = useState<RoutineDraft>({ repeat: '매일', ampm: '오전', hour: 9, minute: 0, sentence: '', days: [1, 2, 3, 4, 5] })
-  const canSave = draft.sentence.trim().length > 0
+  const canSave = draft.sentence.trim().length > 0 && draft.sentence.trim().length <= 300 && (draft.repeat === '매일' || draft.days.length > 0)
 
   function bump(field: 'hour' | 'minute', delta: number) {
     setDraft((current) => {
@@ -309,7 +309,7 @@ function RoutineModal({ onClose, onSave }: { onClose: () => void; onSave: (routi
   }
 
   function submit() {
-    if (!canSave) return
+    if (!canSave || saving) return
     let hour = draft.hour
     if (draft.ampm === '오후' && hour < 12) hour += 12
     if (draft.ampm === '오전' && hour === 12) hour = 0
@@ -336,7 +336,7 @@ function RoutineModal({ onClose, onSave }: { onClose: () => void; onSave: (routi
             <button type="button" className={draft.repeat === '매일' ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, repeat: '매일' })}>매일</button>
             <button type="button" className={draft.repeat === '요일' ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, repeat: '요일' })}>요일</button>
           </div>
-          {draft.repeat === '요일' ? <div className="gp-weekdays">{['일','월','화','수','목','금','토'].map((label, index) => <button key={label} type="button" className={draft.days.includes(index) ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, days: draft.days.includes(index) ? draft.days.filter((day) => day !== index) : [...draft.days, index].sort() })}>{label}</button>)}</div> : null}
+          {draft.repeat === '요일' ? <><div className="gp-weekdays">{['일','월','화','수','목','금','토'].map((label, index) => <button key={label} type="button" className={draft.days.includes(index) ? 'is-selected' : ''} onClick={() => setDraft({ ...draft, days: draft.days.includes(index) ? draft.days.filter((day) => day !== index) : [...draft.days, index].sort() })}>{label}</button>)}</div>{draft.days.length === 0 ? <p role="alert">반복할 요일을 하나 이상 선택해 주세요.</p> : null}</> : null}
           <div className="gp-time-section">
             <span className="gp-field-title">시간</span>
             <div className="gp-time-picker">
@@ -352,11 +352,11 @@ function RoutineModal({ onClose, onSave }: { onClose: () => void; onSave: (routi
           </div>
           <div className="gp-sentence-field">
             <span className="gp-field-title">출력할 문장</span>
-            <input autoFocus={false} placeholder="예: 물과 약을 가져다주세요" value={draft.sentence} onChange={(event) => setDraft({ ...draft, sentence: event.target.value })} />
+            <input autoFocus={false} maxLength={300} placeholder="예: 물과 약을 가져다주세요" value={draft.sentence} onChange={(event) => setDraft({ ...draft, sentence: event.target.value })} />
           </div>
         </div>
         <footer className="gp-routine-modal__foot">
-          <button type="button" className="primary" disabled={!canSave} onClick={submit}><Check size={26} style={{ verticalAlign: 'middle', marginRight: 10 }} />저장</button>
+          <button type="button" className="primary" disabled={!canSave || saving} onClick={submit}><Check size={26} style={{ verticalAlign: 'middle', marginRight: 10 }} />{saving ? '저장 중…' : '저장'}</button>
           <button type="button" onClick={onClose}>취소</button>
         </footer>
       </section>
