@@ -406,17 +406,18 @@ export const guardianLiveApi = {
 
   report(userId: number, from: string, to: string): Promise<LiveReport> {
     if (apiConfig.useMockApi) {
-      return mockBoard(userId).then((board) => ({
+      // Demo data has no real event history; never invent usage counts or insights.
+      return Promise.resolve({
         aacUserId: userId,
         from,
         to,
-        totalCardActions: board.cards.length * 5,
-        emergencyCount: board.cards.filter((item) => item.emergency).length,
-        topCards: board.cards.slice(0, 5).map((item, index) => ({ id: item.id, name: item.text, count: 12 - index })),
-        categoryShares: board.categories.slice(0, 5).map((item, index) => ({ id: item.id, name: item.name, count: 5 - index, percent: 20 })),
+        totalCardActions: 0,
+        emergencyCount: 0,
+        topCards: [],
+        categoryShares: [],
         sensors: [],
-        insights: board.cards[0] ? [`가장 자주 사용한 카드는 '${board.cards[0].text}'입니다.`] : [],
-      }))
+        insights: [],
+      })
     }
     return apiRequest<LiveReport>(`/api/v1/me/aac-users/${userId}/report?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)
   },
