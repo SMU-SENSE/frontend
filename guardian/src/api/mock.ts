@@ -117,7 +117,7 @@ function readDb(): MockDatabase {
     if (!parsed.preferences) { parsed.preferences = clone(seed.preferences); changed = true }
     if (!parsed.preferences.languageLevel) { parsed.preferences.languageLevel = 2; changed = true }
     const legacyCategories = Array.isArray(parsed.categories) && parsed.categories.length <= 3 && parsed.categories.some((item) => item.id === 'category-daily' || item.id === 'category-request')
-    if (!Array.isArray(parsed.categories) || parsed.categories.length === 0 || legacyCategories) { parsed.categories = clone(seed.categories); changed = true }
+    if (!Array.isArray(parsed.categories) || legacyCategories) { parsed.categories = clone(seed.categories); changed = true }
     if (!Array.isArray(parsed.sentences) || legacyCategories) { parsed.sentences = clone(seed.sentences); changed = true }
     if (changed) writeDb(parsed)
     return parsed
