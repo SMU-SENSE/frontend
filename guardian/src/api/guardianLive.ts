@@ -1,5 +1,5 @@
 import { apiConfig, apiRawRequest, apiRequest } from './client'
-import type { BackendGridSize, Category, Sentence } from '../types/models'
+import type { AacUserResponse, BackendGridSize, Category, Sentence } from '../types/models'
 
 export type LiveId = string | number
 export type LiveStatus = 'STABLE' | 'EMERGENCY'
@@ -145,15 +145,17 @@ function sentenceToLive(item: Sentence, displayOrder = 0): LiveBoardCard {
 }
 
 async function mockBoard(userId: number): Promise<LiveBoard> {
-  const [categories, sentences] = await Promise.all([
+  const [categories, sentences, users] = await Promise.all([
     apiRequest<Category[]>('/api/v1/categories'),
     apiRequest<Sentence[]>('/api/v1/sentences?type=all'),
+    apiRequest<AacUserResponse[]>('/api/v1/me/aac-users'),
   ])
+  const user = users.find((item) => item.id === userId)
   return {
     aacUserId: userId,
     version: Date.now(),
-    gridSize: 'GRID_4X4',
-    status: 'STABLE',
+    gridSize: user?.gridSize ?? 'GRID_4X4',
+    status: user?.status ?? 'STABLE',
     categories: categories.map((item) => ({
       id: item.id,
       name: item.name,
@@ -304,7 +306,6 @@ export const guardianLiveApi = {
   },
 
   sentenceLevel(userId: number, level: 1 | 2 | 3 | 4) {
-    if (apiConfig.useMockApi) return Promise.resolve({ level })
     return apiRequest<unknown>(`/api/v1/me/aac-users/${userId}/sentence-level`, { method: 'PATCH', body: { level } })
   },
 
