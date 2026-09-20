@@ -586,7 +586,7 @@ export function GuardianReportPage() {
           <div className="gp-bars">{top.length ? top.map((item) => <div className="gp-bar-row" key={String(item.id)}><span>{item.name}</span><div className="gp-bar"><i style={{ width: `${Math.max(7, item.count / maxUse * 100)}%` }} /></div><b>{item.count}회</b></div>) : <p>아직 사용 기록이 없습니다.</p>}</div>
           <h3>카테고리별 발화 비중</h3>
           <div className="gp-donut-wrap"><div className="gp-donut" style={donutStyle} /><div>{categoryEntries.slice(0, 5).map((item, index) => <div className="gp-donut-legend" key={String(item.id)}><i style={{ background: colors[index] }} /><strong>{item.name}</strong><span>{item.percent.toFixed(1)}%</span></div>)}</div></div>
-          <div className="gp-insight"><strong>AI 발화 맥락 인사이트</strong><br />{insight}</div>
+          <div className="gp-insight"><strong>사용 기록 요약</strong><br />{insight}</div>
         </section>
         <section className="gp-report-card">
           <h2>심박 변동 및 표정 변화</h2><p>사용자 기기에서 서버로 전송된 센서 이벤트입니다.</p>
