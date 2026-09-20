@@ -114,10 +114,12 @@ export default function DashboardPage() {
       if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return
       const [moved] = cards.splice(fromIndex, 1)
       cards.splice(toIndex, 0, moved)
-      const start = Math.min(fromIndex, toIndex)
-      const end = Math.max(fromIndex, toIndex)
-      for (let index = start; index <= end; index += 1) {
-        await guardianLiveApi.updateCard(activeUser.id, cards[index].id, { displayOrder: index })
+      // Initial board orders may contain gaps or duplicate values. Normalize the
+      // whole board, not only the moved range, so every card keeps its place.
+      for (let index = 0; index < cards.length; index += 1) {
+        if (cards[index].displayOrder !== index) {
+          await guardianLiveApi.updateCard(activeUser.id, cards[index].id, { displayOrder: index })
+        }
       }
     },
     onSuccess: () => showToast('카드 순서가 사용자 판에 저장되었습니다.'),
