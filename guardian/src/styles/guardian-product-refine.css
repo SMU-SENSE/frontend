@@ -1814,3 +1814,19 @@ body::after{
 @media(prefers-reduced-motion:reduce){
   .gp-symbol{transition:none}
 }
+
+/* Keep the user's selected AAC grid size usable on narrow screens. */
+.gp-board-grid{min-width:0}
+.gp-symbol{min-width:0}
+.gp-symbol strong{max-width:100%;overflow-wrap:anywhere;text-align:center}
+@media(max-width:720px){
+  .gp-board-grid--4{gap:5px}
+  .gp-board-grid--4 .gp-symbol{min-height:96px;padding:19px 3px 7px;gap:5px;border-radius:12px}
+  .gp-board-grid--4 .gp-symbol__visual{width:min(40px,100%);height:40px;border-radius:10px;font-size:23px}
+  .gp-board-grid--4 .gp-symbol strong{font-size:11px;line-height:1.2}
+  .gp-board-grid--4 .gp-star{top:0!important;right:0!important;width:22px!important;height:22px!important;font-size:17px!important}
+  .gp-board-grid--3{gap:7px}
+  .gp-board-grid--3 .gp-symbol{min-height:112px;padding:17px 5px 9px}
+  .gp-board-grid--3 .gp-symbol__visual{width:min(52px,100%);height:52px}
+  .gp-board-grid--2 .gp-symbol__visual{width:min(72px,100%)}
+}
