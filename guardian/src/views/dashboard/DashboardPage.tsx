@@ -393,10 +393,13 @@ function NewCardModal({ userId, categories, nextOrder, onClose }: { userId: numb
   const { showToast } = useToast()
   const [content, setContent] = useState('')
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '')
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploading, setUploading] = useState(false)
   const mutation = useMutation({
     mutationFn: () => guardianLiveApi.createCard(userId, {
-      categoryId: /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId,
+      categoryId: /^\\d+$/.test(categoryId) ? Number(categoryId) : categoryId,
       text: content.trim(),
+      imageUrl: imageUrl || null,
       displayOrder: nextOrder,
     }),
     onSuccess: () => {
@@ -406,8 +409,46 @@ function NewCardModal({ userId, categories, nextOrder, onClose }: { userId: numb
     },
     onError: (error) => showToast(error.message, 'error'),
   })
+
+  async function uploadImage(file?: File) {
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      showToast('JPEG, PNG, WEBP 이미지를 5MB 이하로 선택해 주세요.', 'error')
+      return
+    }
+    setUploading(true)
+    try {
+      const result = await guardianLiveApi.uploadImage(userId, file)
+      setImageUrl(result.url)
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : '이미지를 업로드하지 못했습니다.', 'error')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   return (
-    <div className="gp-edit-modal-backdrop"><section className="gp-edit-modal" role="dialog" aria-modal="true"><button type="button" className="gp-modal-x" onClick={onClose}><X /></button><h2>신규 카드 추가</h2><label>카드 텍스트<input autoFocus placeholder="예: 물 주세요" value={content} onChange={(event) => setContent(event.target.value)} /></label><label>카테고리<select value={categoryId} onChange={(event) => setCategoryId(event.target.value)} style={{ height: 50, border: '1px solid #dedee5', borderRadius: 12, padding: '0 14px' }}>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><div className="gp-edit-modal__actions"><button type="button" onClick={onClose}>취소</button><button type="button" className="primary" disabled={!content.trim() || mutation.isPending} onClick={() => mutation.mutate()}>추가</button></div></section></div>
+    <div className="gp-edit-modal-backdrop">
+      <section className="gp-edit-modal" role="dialog" aria-modal="true" aria-label="신규 카드 추가">
+        <button type="button" className="gp-modal-x" onClick={onClose} aria-label="닫기"><X /></button>
+        <h2>신규 카드 추가</h2>
+        <label>카드 텍스트<input autoFocus maxLength={80} placeholder="예: 물 주세요" value={content} onChange={(event) => setContent(event.target.value)} /></label>
+        <label>카테고리
+          <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)} style={{ height: 50, border: '1px solid #dedee5', borderRadius: 12, padding: '0 14px' }}>
+            {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
+        <label>상징 이미지 (선택)
+          {imageUrl ? <img src={imageUrl.startsWith('/api/') ? apiConfig.baseUrl + imageUrl : imageUrl} alt="새 카드 이미지 미리보기" className="gp-card-image-preview" /> : null}
+          <span className="gp-head-btn" style={{ justifyContent: 'center' }}><ImagePlus size={18} />{uploading ? '업로드 중…' : '이미지 선택'}<input hidden type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading || mutation.isPending} onChange={(event) => void uploadImage(event.target.files?.[0])} /></span>
+          {imageUrl ? <button type="button" className="gp-image-remove" onClick={() => setImageUrl('')}>이미지 제거</button> : null}
+        </label>
+        <div className="gp-edit-modal__actions">
+          <button type="button" onClick={onClose}>취소</button>
+          <button type="button" className="primary" disabled={!content.trim() || !categoryId || uploading || mutation.isPending} onClick={() => mutation.mutate()}>{mutation.isPending ? '추가 중…' : '추가'}</button>
+        </div>
+      </section>
+    </div>
   )
 }
 
