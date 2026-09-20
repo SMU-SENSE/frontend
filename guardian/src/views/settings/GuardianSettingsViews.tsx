@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
 import { guardianLiveApi, type LivePlace } from '../../api/guardianLive'
+import { apiConfig } from '../../api/client'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { useToast } from '../../components/ui/ToastProvider'
 import type { BackendVoiceType } from '../../types/models'
@@ -381,7 +382,16 @@ export function LocationManagerPage() {
     return 2 * R * Math.asin(Math.sqrt(q))
   }
 
-  const zoneStates = position ? places
+  // A safe zone only applies during its configured hours, including overnight spans.
+  const nowTime = new Date().toTimeString().slice(0, 5)
+  const isActiveNow = (place: Place) => {
+    if (place.start === place.end) return true
+    return place.start < place.end
+      ? nowTime >= place.start && nowTime <= place.end
+      : nowTime >= place.start || nowTime <= place.end
+  }
+  const activePlaces = places.filter(isActiveNow)
+  const zoneStates = position ? activePlaces
     .filter((place) => typeof place.latitude === 'number' && typeof place.longitude === 'number')
     .map((place) => ({
       place,
@@ -408,7 +418,7 @@ export function LocationManagerPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guardian-places', user?.id] })
       setDraft({ name: '', type: '학교', address: '', start: '08:00', end: '15:00', radius: 500, latitude: undefined, longitude: undefined })
-      showToast('장소와 안심존 설정이 서버에 저장되었습니다.')
+      showToast(apiConfig.useMockApi ? '시연용 장소가 이 브라우저에 저장되었습니다.' : '장소와 안심존 설정이 서버에 저장되었습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
@@ -454,7 +464,7 @@ export function LocationManagerPage() {
       <ProductTitle title="장소 관리" />
       <div className="gp-location-grid">
         <section className="gp-place-card">
-          <h2>자주 가는 장소</h2><p>장소와 안심존을 서버에 저장하고 사용자 기기의 실제 위치와 비교합니다.</p>
+          <h2>자주 가는 장소</h2><p>{apiConfig.useMockApi ? '시연용 장소는 이 브라우저에만 저장되며 실제 사용자 GPS와 연동되지 않습니다.' : '장소와 안심존을 서버에 저장하고 사용자 기기의 실제 위치와 비교합니다.'}</p>
           <div className="gp-place-list">
             {places.map((place) => {
               const state = zoneStates.find((item) => item.place.id === place.id)
@@ -473,7 +483,7 @@ export function LocationManagerPage() {
           </div>
         </section>
         <section className="gp-map-card">
-          <h2>사용자 실시간 위치</h2><p>페어링된 사용자 기기가 서버로 전송한 최신 GPS 위치입니다.</p>
+          <h2>사용자 실시간 위치</h2><p>{apiConfig.useMockApi ? '시연 모드에서는 실제 사용자 위치를 수신하지 않습니다.' : '페어링된 사용자 기기가 서버로 전송한 최신 GPS 위치입니다.'}</p>
           <div className="gp-map-placeholder">
             <div className="gp-live-location">
               <MapPin size={48} />
@@ -482,14 +492,14 @@ export function LocationManagerPage() {
                 <span>위도 {position.latitude.toFixed(6)}</span>
                 <span>경도 {position.longitude.toFixed(6)}</span>
                 <span>정확도 ±{Math.round(position.accuracy)}m</span>
-                <span>{inside ? `${inside.place.name} 안심존 안에 있습니다.` : nearest ? `가장 가까운 장소: ${nearest.place.name} · ${Math.round(nearest.distance)}m` : '등록된 안심존이 없습니다.'}</span>
+                <span>{!locationIsRecent ? '마지막 수신 위치입니다. 현재 안심존 상태를 판단할 수 없습니다.' : inside ? `${inside.place.name} 안심존 안에 있습니다.` : nearest ? `가장 가까운 활성 장소: ${nearest.place.name} · ${Math.round(nearest.distance)}m` : places.length ? '현재 시간에 활성화된 안심존이 없습니다.' : '등록된 안심존이 없습니다.'}</span>
                 <span>수신 {new Date(position.updatedAt).toLocaleString('ko-KR')}</span>
-              </> : <span>사용자 PWA가 위치를 전송하면 자동으로 표시됩니다.</span>}
+              </> : <span>{apiConfig.useMockApi ? '시연 모드 · 실제 위치 데이터 없음' : '사용자 PWA가 위치를 전송하면 자동으로 표시됩니다.'}</span>}
             </div>
           </div>
           {geoError ? <div className="gp-map-error">{geoError}</div> : null}
           {latestQuery.error && tracking ? <div className="gp-map-error">위치 정보를 가져오지 못했습니다. 사용자 기기의 위치 공유 상태와 네트워크를 확인해 주세요.</div> : null}
-          <div className={tracking && locationIsRecent && inside ? 'gp-map-status is-safe' : 'gp-map-status'}><i />{!tracking ? '위치 자동 갱신 중지' : !position ? '사용자 GPS 수신 대기' : !locationIsRecent ? '최신 위치 수신 대기 · 마지막 위치 표시 중' : !places.length ? '위치 수신 중 · 등록된 안심존 없음' : inside ? `${inside.place.name} 안심존 · 정상` : '사용자 GPS 수신 중 · 등록된 안심존 밖'}</div>
+          <div className={tracking && locationIsRecent && inside ? 'gp-map-status is-safe' : 'gp-map-status'}><i />{!tracking ? '위치 자동 갱신 중지' : !position ? '사용자 GPS 수신 대기' : !locationIsRecent ? '최신 위치 수신 대기 · 마지막 위치 표시 중' : !places.length ? '위치 수신 중 · 등록된 안심존 없음' : !activePlaces.length ? '위치 수신 중 · 현재 활성 안심존 없음' : inside ? `${inside.place.name} 안심존 · 정상` : '사용자 GPS 수신 중 · 활성 안심존 밖'}</div>
           <div className="gp-location-actions">
             <button type="button" className={tracking ? 'gp-primary is-on' : 'gp-primary'} onClick={() => setTracking((value) => !value)}>{tracking ? '자동 갱신 중지' : '자동 갱신 시작'}</button>
             <button type="button" className="gp-location-secondary" onClick={allowNotifications}>안심존 알림 허용</button>
