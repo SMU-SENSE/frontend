@@ -423,6 +423,17 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
     const sentence = db.sentences.find((item) => item.id === sentenceMatch[1])
     if (!sentence) fail(404, '상징 카드를 찾을 수 없습니다.')
     if (body.content !== undefined) sentence.content = String(body.content).trim() || sentence.content
+    if (body.categoryId !== undefined && body.categoryId !== null) {
+      const target = db.categories.find((item) => item.id === String(body.categoryId))
+      if (!target) fail(404, '이동할 카테고리를 찾을 수 없습니다.')
+      if (sentence.categoryId !== target.id) {
+        const previous = db.categories.find((item) => item.id === sentence.categoryId)
+        if (previous) previous.sentenceCount = Math.max(0, previous.sentenceCount - 1)
+        target.sentenceCount += 1
+        sentence.categoryId = target.id
+        sentence.categoryName = target.name
+      }
+    }
     if (body.imageUrl !== undefined) sentence.imageUrl = body.imageUrl ? String(body.imageUrl) : null
     if (body.displayOrder !== undefined) {
       const order = Number(body.displayOrder)
@@ -433,7 +444,11 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
     return ok(sentence) as T
   }
   if (sentenceMatch && method === 'DELETE') {
-    db.sentences = db.sentences.filter((sentence) => sentence.id !== sentenceMatch[1])
+    const sentence = db.sentences.find((item) => item.id === sentenceMatch[1])
+    if (!sentence) fail(404, '상징 카드를 찾을 수 없습니다.')
+    const category = db.categories.find((item) => item.id === sentence.categoryId)
+    if (category) category.sentenceCount = Math.max(0, category.sentenceCount - 1)
+    db.sentences = db.sentences.filter((item) => item.id !== sentence.id)
     writeDb(db)
     return ok({ deleted: true }) as T
   }
