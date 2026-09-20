@@ -118,7 +118,7 @@ export default function DashboardPage() {
   })
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: LiveId; input: { content?: string; imageUrl?: string | null } }) =>
-      guardianLiveApi.updateCard(activeUser!.id, id, { text: input.content, imageUrl: input.imageUrl }),
+      guardianLiveApi.updateCard(activeUser!.id, id, { text: input.content, ttsText: input.content, imageUrl: input.imageUrl }),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] })
       setEditing(null)
