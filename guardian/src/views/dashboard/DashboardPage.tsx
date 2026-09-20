@@ -261,7 +261,7 @@ export default function DashboardPage() {
           <NotificationBell />
           <Link href="/settings" className="gp-head-btn"><Settings size={18} /> 설정</Link>
           <button type="button" className={editMode ? 'gp-edit-toggle is-on' : 'gp-edit-toggle'} onClick={() => setEditMode((value) => !value)}><SlidersHorizontal size={18} /> 보호자 편집 모드 <b>{editMode ? 'ON' : 'OFF'}</b></button>
-          <Link href="/connect" className={hasEmergency ? 'gp-status is-alert' : 'gp-status'} aria-label="사용자 연결 관리"><i />{hasEmergency ? '긴급' : '안정'}</Link>
+          <Link href="/connect" className={!apiConfig.useMockApi && hasEmergency ? 'gp-status is-alert' : 'gp-status'} aria-label={apiConfig.useMockApi ? '시연 모드 · 실제 사용자 상태가 아닙니다' : '사용자 연결 관리'}><i />{apiConfig.useMockApi ? '시연 모드' : hasEmergency ? '긴급' : '안정'}</Link>
         </div>
       </header>
 
