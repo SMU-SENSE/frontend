@@ -139,7 +139,7 @@ function sentenceToLive(item: Sentence, displayOrder = 0): LiveBoardCard {
     ttsText: item.content,
     emergency: item.categoryName === '긴급어',
     favorite: item.favorite,
-    displayOrder,
+    displayOrder: item.displayOrder ?? displayOrder,
   }
 }
 
@@ -169,7 +169,7 @@ async function mockBoard(userId: number): Promise<LiveBoard> {
       ttsText: item.content,
       emergency: item.categoryName === '긴급어',
       favorite: item.favorite,
-      displayOrder: index,
+      displayOrder: item.displayOrder ?? index,
     })),
   }
 }
@@ -275,7 +275,7 @@ export const guardianLiveApi = {
     if (apiConfig.useMockApi) {
       return sentenceToLive(await apiRequest<Sentence>('/api/v1/sentences', {
         method: 'POST',
-        body: { content: input.text, categoryId: String(input.categoryId), favorite: false, imageUrl: input.imageUrl ?? null },
+        body: { content: input.text, categoryId: String(input.categoryId), favorite: false, imageUrl: input.imageUrl ?? null, displayOrder: input.displayOrder },
       }), input.displayOrder)
     }
     return apiRequest<LiveBoardCard>(`/api/v1/me/aac-users/${userId}/board/cards`, { method: 'POST', body: input })
@@ -285,7 +285,7 @@ export const guardianLiveApi = {
     if (apiConfig.useMockApi) {
       return sentenceToLive(await apiRequest<Sentence>(`/api/v1/sentences/${cardId}`, {
         method: 'PATCH',
-        body: { content: input.text, categoryId: input.categoryId ? String(input.categoryId) : undefined, imageUrl: input.imageUrl },
+        body: { content: input.text, categoryId: input.categoryId ? String(input.categoryId) : undefined, imageUrl: input.imageUrl, displayOrder: input.displayOrder },
       }), input.displayOrder ?? 0)
     }
     return apiRequest<LiveBoardCard>(`/api/v1/me/aac-users/${userId}/board/cards/${cardId}`, { method: 'PATCH', body: input })
