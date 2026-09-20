@@ -117,11 +117,21 @@ export function CategoryEditorPage() {
   const [iconMap, setIconMap] = useState<Record<string, string>>({})
 
   useEffect(() => {
+    if (!user) return
+    const key = `malmoa-category-icons-${user.id}`
     try {
-      const rawIcons = window.localStorage.getItem('malmoa-category-icons')
-      if (rawIcons) setIconMap(JSON.parse(rawIcons) as Record<string, string>)
-    } catch {}
-  }, [])
+      const scoped = window.localStorage.getItem(key)
+      const legacy = scoped ? null : window.localStorage.getItem('malmoa-category-icons')
+      const raw = scoped ?? legacy
+      setIconMap(raw ? JSON.parse(raw) as Record<string, string> : {})
+      if (legacy) {
+        window.localStorage.setItem(key, legacy)
+        window.localStorage.removeItem('malmoa-category-icons')
+      }
+    } catch {
+      setIconMap({})
+    }
+  }, [user?.id])
 
   const items = useMemo(
     () => [...(board.data?.categories ?? [])]
@@ -141,7 +151,7 @@ export function CategoryEditorPage() {
       if (createdId) {
         const nextIcons = { ...iconMap, [createdId]: icon }
         setIconMap(nextIcons)
-        window.localStorage.setItem('malmoa-category-icons', JSON.stringify(nextIcons))
+        window.localStorage.setItem(`malmoa-category-icons-${user?.id}`, JSON.stringify(nextIcons))
       }
       setName('')
       setIcon('📁')
@@ -157,7 +167,7 @@ export function CategoryEditorPage() {
       const nextIcons = { ...iconMap }
       delete nextIcons[categoryId]
       setIconMap(nextIcons)
-      window.localStorage.setItem('malmoa-category-icons', JSON.stringify(nextIcons))
+      window.localStorage.setItem(`malmoa-category-icons-${user?.id}`, JSON.stringify(nextIcons))
       showToast('카테고리가 삭제되었습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
