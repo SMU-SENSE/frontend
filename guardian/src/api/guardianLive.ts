@@ -1,4 +1,4 @@
-import { apiConfig, apiRawRequest, apiRequest } from './client'
+import { ApiError, apiConfig, apiRawRequest, apiRequest } from './client'
 import type { AacUserResponse, BackendGridSize, Category, Sentence } from '../types/models'
 
 export type LiveId = string | number
@@ -106,7 +106,6 @@ export interface LiveReport {
 const pairingKey = (userId: number) => `malmoa-live-pairing-${userId}`
 const routineKey = (userId: number) => `malmoa-live-routines-${userId}`
 const placeKey = (userId: number) => `malmoa-live-places-${userId}`
-const latestLocationKey = (userId: number) => `malmoa-live-location-${userId}`
 
 function readLocal<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
@@ -389,20 +388,16 @@ export const guardianLiveApi = {
     return apiRequest<void>(`/api/v1/me/aac-users/${userId}/places/${placeId}`, { method: 'DELETE' })
   },
 
-  latestLocation(userId: number): Promise<LiveLocation> {
-    if (apiConfig.useMockApi) {
-      const fallback: LiveLocation = {
-        id: 'mock',
-        latitude: 37.5665,
-        longitude: 126.978,
-        accuracyMeters: 30,
-        recordedAt: new Date().toISOString(),
-        outsidePlaceIds: [],
-      }
-      const value = readLocal<LiveLocation>(latestLocationKey(userId), fallback)
-      return Promise.resolve(value)
+  async latestLocation(userId: number): Promise<LiveLocation | null> {
+    // A demo account has no paired device: never fabricate a live GPS position.
+    if (apiConfig.useMockApi) return null
+    try {
+      return await apiRequest<LiveLocation>(`/api/v1/me/aac-users/${userId}/locations/latest`)
+    } catch (error) {
+      // The backend returns 404 when no location sample has been received yet.
+      if (error instanceof ApiError && error.status === 404 && error.message.includes('위치 정보가 없습니다')) return null
+      throw error
     }
-    return apiRequest<LiveLocation>(`/api/v1/me/aac-users/${userId}/locations/latest`)
   },
 
   report(userId: number, from: string, to: string): Promise<LiveReport> {
