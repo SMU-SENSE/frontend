@@ -353,13 +353,11 @@ export async function mockRequest<T>(path: string, options: MockOptions = {}): P
   }
   if (categoryMatch && method === 'DELETE') {
     const categoryId = categoryMatch[1]
+    if (!db.categories.some((category) => category.id === categoryId)) fail(404, '카테고리를 찾을 수 없습니다.')
+    if (db.sentences.some((sentence) => sentence.categoryId === categoryId)) {
+      fail(409, '카테고리의 카드를 먼저 삭제하거나 이동해주세요.')
+    }
     db.categories = db.categories.filter((category) => category.id !== categoryId)
-    // 카테고리를 지워도 문장 자체는 보존하고 "미지정"으로 이동한다.
-    db.sentences = db.sentences.map((sentence) =>
-      sentence.categoryId === categoryId
-        ? { ...sentence, categoryId: null, categoryName: undefined }
-        : sentence,
-    )
     writeDb(db)
     return ok({ deleted: true }) as T
   }
