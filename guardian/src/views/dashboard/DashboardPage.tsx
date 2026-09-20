@@ -77,7 +77,12 @@ export default function DashboardPage() {
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ id, favorite }: { id: LiveId; favorite: boolean }) => { await guardianLiveApi.setFavorite(activeUser!.id, id, favorite) },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] }),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] })
+      setEditing((current) => current && String(current.id) === String(variables.id)
+        ? { ...current, favorite: variables.favorite }
+        : current)
+    },
     onError: (error) => showToast(error.message, 'error'),
   })
   const removeMutation = useMutation({
@@ -338,11 +343,12 @@ export default function DashboardPage() {
           id: editing.id,
           input: {
             content: next.text?.trim() || editing.content,
-            imageUrl: next.imageUrl === '' ? null : next.imageUrl ?? editing.imageUrl ?? null,
+            // The backend PATCH treats null as "unchanged"; an empty string clears the image.
+            imageUrl: next.imageUrl === '' ? '' : next.imageUrl ?? editing.imageUrl ?? '',
           },
         })
       }} onFavorite={() => favoriteMutation.mutate({ id: editing.id, favorite: !editing.favorite })} onDelete={() => { if (window.confirm('상징 카드를 삭제하시겠습니까?')) removeMutation.mutate(editing.id) }} /> : null}
-      {newCardOpen ? <NewCardModal userId={activeUser.id} categories={categoryItems} onClose={() => setNewCardOpen(false)} /> : null}
+      {newCardOpen ? <NewCardModal userId={activeUser.id} categories={categoryItems} nextOrder={Math.max(-1, ...board.data.cards.map((item) => item.displayOrder)) + 1} onClose={() => setNewCardOpen(false)} /> : null}
       {onboardingStep ? <Onboarding step={onboardingStep} onNext={() => onboardingStep === 1 ? setOnboardingStep(2) : closeOnboarding()} onSkip={closeOnboarding} /> : null}
     </main>
   )
@@ -382,7 +388,7 @@ function CardEditor({ sentence, customization, saving, onClose, onUploadImage, o
   )
 }
 
-function NewCardModal({ userId, categories, onClose }: { userId: number; categories: Array<{ id: string; name: string }>; onClose: () => void }) {
+function NewCardModal({ userId, categories, nextOrder, onClose }: { userId: number; categories: Array<{ id: string; name: string }>; nextOrder: number; onClose: () => void }) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const [content, setContent] = useState('')
@@ -391,7 +397,7 @@ function NewCardModal({ userId, categories, onClose }: { userId: number; categor
     mutationFn: () => guardianLiveApi.createCard(userId, {
       categoryId: /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId,
       text: content.trim(),
-      displayOrder: 999,
+      displayOrder: nextOrder,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guardian-board', userId] })
