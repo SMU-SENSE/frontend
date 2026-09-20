@@ -370,6 +370,7 @@ export function LocationManagerPage() {
     accuracy: latestQuery.data.accuracyMeters ?? 0,
     updatedAt: new Date(latestQuery.data.recordedAt).getTime(),
   } : null
+  const locationIsRecent = Boolean(position && Number.isFinite(position.updatedAt) && Date.now() - position.updatedAt < 5 * 60_000)
 
   function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number) {
     const R = 6371000
@@ -440,7 +441,7 @@ export function LocationManagerPage() {
   async function allowNotifications() {
     if (!('Notification' in window)) return showToast('이 브라우저에서는 알림을 지원하지 않습니다.', 'error')
     const permission = await Notification.requestPermission()
-    showToast(permission === 'granted' ? '안심존 알림을 허용했습니다.' : '알림 권한이 허용되지 않았습니다.', permission === 'granted' ? 'success' : 'error')
+    showToast(permission === 'granted' ? '브라우저 알림 권한을 허용했습니다. 실제 안심존 알림 수신에는 사용자 기기와 알림 연동이 필요합니다.' : '알림 권한이 허용되지 않았습니다.', permission === 'granted' ? 'success' : 'error')
   }
 
   if (users.isLoading || (user && placesQuery.isLoading)) return <PageLoader label="장소 설정을 불러오는 중입니다." />
@@ -476,7 +477,7 @@ export function LocationManagerPage() {
           <div className="gp-map-placeholder">
             <div className="gp-live-location">
               <MapPin size={48} />
-              <strong>{position ? '사용자 GPS 수신 중' : '사용자 위치 대기 중'}</strong>
+              <strong>{position ? locationIsRecent && tracking ? '사용자 GPS 수신 중' : '마지막 사용자 GPS 위치' : '사용자 위치 대기 중'}</strong>
               {position ? <>
                 <span>위도 {position.latitude.toFixed(6)}</span>
                 <span>경도 {position.longitude.toFixed(6)}</span>
@@ -487,8 +488,8 @@ export function LocationManagerPage() {
             </div>
           </div>
           {geoError ? <div className="gp-map-error">{geoError}</div> : null}
-          {latestQuery.error && tracking ? <div className="gp-map-error">아직 사용자 위치 기록이 없습니다.</div> : null}
-          <div className={inside ? 'gp-map-status is-safe' : 'gp-map-status'}><i />{tracking ? (inside ? `${inside.place.name} 안심존 · 정상` : position ? '실시간 GPS 추적 중 · 안심존 밖' : '사용자 GPS 수신 대기') : '실시간 GPS 자동 갱신 중지'}</div>
+          {latestQuery.error && tracking ? <div className="gp-map-error">위치 정보를 가져오지 못했습니다. 사용자 기기의 위치 공유 상태와 네트워크를 확인해 주세요.</div> : null}
+          <div className={tracking && locationIsRecent && inside ? 'gp-map-status is-safe' : 'gp-map-status'}><i />{!tracking ? '위치 자동 갱신 중지' : !position ? '사용자 GPS 수신 대기' : !locationIsRecent ? '최신 위치 수신 대기 · 마지막 위치 표시 중' : !places.length ? '위치 수신 중 · 등록된 안심존 없음' : inside ? `${inside.place.name} 안심존 · 정상` : '사용자 GPS 수신 중 · 등록된 안심존 밖'}</div>
           <div className="gp-location-actions">
             <button type="button" className={tracking ? 'gp-primary is-on' : 'gp-primary'} onClick={() => setTracking((value) => !value)}>{tracking ? '자동 갱신 중지' : '자동 갱신 시작'}</button>
             <button type="button" className="gp-location-secondary" onClick={allowNotifications}>안심존 알림 허용</button>
