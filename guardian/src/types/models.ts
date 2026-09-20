@@ -107,6 +107,8 @@ export interface Sentence {
   createdAt: string
   /** 보호자 카드 편집에서 사용하는 선택적 이미지. 백엔드가 지원하면 그대로 동기화한다. */
   imageUrl?: string | null
+  /** 시연용 AAC 판의 저장된 카드 순서. 이전 데이터는 배열 순서로 보정한다. */
+  displayOrder?: number
 }
 
 /**
