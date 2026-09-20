@@ -52,6 +52,7 @@ export default function DashboardPage() {
   const [onboardingStep, setOnboardingStep] = useState(0)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pressTriggered = useRef(false)
+  const pressStart = useRef<{ x: number; y: number } | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -146,8 +147,11 @@ export default function DashboardPage() {
       imageUrl: item.imageUrl,
     }))
   const columns = board.data.gridSize === 'GRID_2X2' ? 2 : board.data.gridSize === 'GRID_3X3' ? 3 : 4
-  const visible = categoryId === 'all' || categoryId === 'recommend'
+  const recommendedIds = [...new Set([...recentIds, ...sentenceItems.filter((item) => item.favorite).map((item) => item.id)])]
+  const visible = categoryId === 'all'
     ? sentenceItems
+    : categoryId === 'recommend'
+      ? recommendedIds.map((id) => sentenceItems.find((item) => item.id === id)).filter((item): item is Sentence => Boolean(item))
     : categoryId === 'recent'
       ? recentIds.map((id) => sentenceItems.find((item) => item.id === id)).filter((item): item is Sentence => Boolean(item))
       : categoryId === 'favorite'
@@ -158,8 +162,9 @@ export default function DashboardPage() {
     .filter((item): item is Sentence => Boolean(item))
   const hasEmergency = board.data.status === 'EMERGENCY'
 
-  function beginPress(sentence: Sentence) {
+  function beginPress(sentence: Sentence, x: number, y: number) {
     if (pressTimer.current) clearTimeout(pressTimer.current)
+    pressStart.current = { x, y }
     pressTriggered.current = false
     pressTimer.current = setTimeout(() => {
       pressTriggered.current = true
@@ -169,6 +174,10 @@ export default function DashboardPage() {
   function endPress() {
     if (pressTimer.current) clearTimeout(pressTimer.current)
     pressTimer.current = null
+    pressStart.current = null
+  }
+  function movePress(x: number, y: number) {
+    if (pressStart.current && Math.hypot(x - pressStart.current.x, y - pressStart.current.y) > 12) endPress()
   }
   function closeOnboarding() {
     window.localStorage.setItem(ONBOARDING_KEY, '1')
@@ -228,7 +237,7 @@ export default function DashboardPage() {
 
       <div className="gp-live">
         <aside className="gp-categories" aria-label="AAC 카테고리">
-          <button type="button" title="추천 기능 연결 전에는 전체 상징을 표시합니다" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
+          <button type="button" title="즐겨찾기와 이 화면에서 최근 선택한 상징을 보여줍니다" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
           <button type="button" title="이 화면에서 최근 선택한 상징" className={categoryId === 'recent' ? 'is-active' : ''} onClick={() => setCategoryId('recent')}><span>↺</span><b>최근</b></button>
           <button type="button" className={categoryId === 'favorite' ? 'is-active' : ''} onClick={() => setCategoryId('favorite')}><span>★</span><b>즐겨찾기</b></button>
           {categoryItems.map((category, index) => <button type="button" key={category.id} className={categoryId === category.id ? 'is-active' : ''} onClick={() => setCategoryId(category.id)}><span>{CARD_EMOJI[index % CARD_EMOJI.length]}</span><b>{category.name}</b></button>)}
@@ -236,7 +245,7 @@ export default function DashboardPage() {
 
         <section className="gp-board" aria-label="사용자 AAC 라이브 판">
           <div className="gp-board-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(130px, 1fr))` }}>
-            {visible.length === 0 ? <div className="gp-empty">이 카테고리에 표시할 카드가 아직 없어요.</div> : visible.map((sentence, index) => {
+            {visible.length === 0 ? <div className="gp-empty">{categoryId === 'recommend' ? '즐겨찾기를 등록하거나 상징을 선택하면 이곳에 표시돼요.' : '이 카테고리에 표시할 카드가 아직 없어요.'}</div> : visible.map((sentence, index) => {
               const selected = selectedId === sentence.id
               const displayText = sentence.content
               const displayImage = sentence.imageUrl || ''
@@ -259,12 +268,19 @@ export default function DashboardPage() {
                     else togglePhrase(sentence.id)
                   }}
                   onKeyDown={(event) => {
-                    if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return
+                    if (event.target !== event.currentTarget) return
+                    if (event.key === 'F2') {
+                      event.preventDefault()
+                      setEditing(sentence)
+                      return
+                    }
+                    if (event.key !== 'Enter' && event.key !== ' ') return
                     event.preventDefault()
                     if (editMode) setSelectedId((current) => current === sentence.id ? null : sentence.id)
                     else togglePhrase(sentence.id)
                   }}
-                  onPointerDown={(event) => { if (event.button === 0 && !reorderMutation.isPending) beginPress(sentence) }}
+                  onPointerDown={(event) => { if (event.button === 0 && !reorderMutation.isPending) beginPress(sentence, event.clientX, event.clientY) }}
+                  onPointerMove={(event) => movePress(event.clientX, event.clientY)}
                   onPointerUp={endPress}
                   onPointerCancel={endPress}
                   onPointerLeave={endPress}
