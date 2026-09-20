@@ -335,6 +335,11 @@ export function LocationManagerPage() {
   const users = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
   const user = users.data?.find((item) => item.active) ?? users.data?.[0] ?? null
   const [tracking, setTracking] = useState(true)
+  const [clock, setClock] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 15_000)
+    return () => window.clearInterval(timer)
+  }, [])
   const placesQuery = useQuery({
     queryKey: ['guardian-places', user?.id],
     queryFn: () => guardianLiveApi.places(user!.id),
@@ -381,7 +386,7 @@ export function LocationManagerPage() {
     accuracy: latestQuery.data.accuracyMeters,
     updatedAt: new Date(latestQuery.data.recordedAt).getTime(),
   } : null
-  const locationAge = position ? Date.now() - position.updatedAt : Infinity
+  const locationAge = position ? clock - position.updatedAt : Infinity
   const locationIsRecent = Boolean(position && Number.isFinite(position.updatedAt) && locationAge >= -60_000 && locationAge < 5 * 60_000)
   const accuracyKnown = Boolean(position && typeof position.accuracy === 'number' && Number.isFinite(position.accuracy) && position.accuracy >= 0)
 
@@ -395,7 +400,7 @@ export function LocationManagerPage() {
   }
 
   // A safe zone only applies during its configured hours, including overnight spans.
-  const nowTime = new Date().toTimeString().slice(0, 5)
+  const nowTime = new Date(clock).toTimeString().slice(0, 5)
   const isActiveNow = (place: Place) => {
     if (place.start === place.end) return true
     return place.start < place.end
@@ -501,19 +506,19 @@ export function LocationManagerPage() {
           <div className="gp-map-placeholder">
             <div className="gp-live-location">
               <MapPin size={48} />
-              <strong>{position ? locationIsRecent && tracking ? '사용자 GPS 수신 중' : '마지막 사용자 GPS 위치' : '사용자 위치 대기 중'}</strong>
+              <strong>{position ? locationIsRecent && tracking && !latestQuery.error ? '사용자 GPS 수신 중' : '마지막 사용자 GPS 위치' : '사용자 위치 대기 중'}</strong>
               {position ? <>
                 <span>위도 {position.latitude.toFixed(6)}</span>
                 <span>경도 {position.longitude.toFixed(6)}</span>
                 <span>{accuracyKnown ? `정확도 ±${Math.round(position.accuracy!)}m` : '위치 정확도 정보 없음'}</span>
-                <span>{!tracking ? '자동 갱신이 중지되어 현재 안심존 상태를 판단할 수 없습니다.' : !locationIsRecent ? '마지막 수신 위치입니다. 현재 안심존 상태를 판단할 수 없습니다.' : !places.length ? '등록된 안심존이 없습니다.' : !activePlaces.length ? '현재 시간에 활성화된 안심존이 없습니다.' : !zoneStates.length ? '활성 안심존의 좌표를 확인할 수 없습니다.' : !accuracyKnown ? 'GPS 정확도 정보가 없어 안심존 상태를 확정할 수 없습니다.' : inside ? `${inside.place.name} 안심존 안에 있습니다.` : outside ? `활성 안심존 밖입니다. 가장 가까운 장소: ${nearest.place.name} · 약 ${Math.round(nearest.distance)}m` : 'GPS 오차 범위가 안심존 경계와 겹쳐 위치를 확인 중입니다.'}</span>
+                <span>{!tracking ? '자동 갱신이 중지되어 현재 안심존 상태를 판단할 수 없습니다.' : latestQuery.error ? '위치 조회에 실패했습니다. 마지막 수신 위치로 안심존 상태를 판단하지 않습니다.' : !locationIsRecent ? '마지막 수신 위치입니다. 현재 안심존 상태를 판단할 수 없습니다.' : !places.length ? '등록된 안심존이 없습니다.' : !activePlaces.length ? '현재 시간에 활성화된 안심존이 없습니다.' : !zoneStates.length ? '활성 안심존의 좌표를 확인할 수 없습니다.' : !accuracyKnown ? 'GPS 정확도 정보가 없어 안심존 상태를 확정할 수 없습니다.' : inside ? `${inside.place.name} 안심존 안에 있습니다.` : outside ? `활성 안심존 밖입니다. 가장 가까운 장소: ${nearest.place.name} · 약 ${Math.round(nearest.distance)}m` : 'GPS 오차 범위가 안심존 경계와 겹쳐 위치를 확인 중입니다.'}</span>
                 <span>수신 {new Date(position.updatedAt).toLocaleString('ko-KR')}</span>
               </> : <span>{apiConfig.useMockApi ? '시연 모드 · 실제 위치 데이터 없음' : '사용자 PWA가 위치를 전송하면 자동으로 표시됩니다.'}</span>}
             </div>
           </div>
           {geoError ? <div className="gp-map-error">{geoError}</div> : null}
-          {latestQuery.error && tracking ? <div className="gp-map-error">위치 정보를 가져오지 못했습니다. 사용자 기기의 위치 공유 상태와 네트워크를 확인해 주세요.</div> : null}
-          <div className={tracking && locationIsRecent && inside ? 'gp-map-status is-safe' : 'gp-map-status'}><i />{!tracking ? '위치 자동 갱신 중지' : !position ? '사용자 GPS 수신 대기' : !locationIsRecent ? '최신 위치 수신 대기 · 마지막 위치 표시 중' : !places.length ? '위치 수신 중 · 등록된 안심존 없음' : !activePlaces.length ? '위치 수신 중 · 현재 활성 안심존 없음' : !zoneStates.length ? '활성 안심존 좌표 확인 필요' : !accuracyKnown ? 'GPS 정확도 정보 대기 · 안심존 판정 보류' : inside ? `${inside.place.name} 안심존 · 정상` : outside ? '사용자 GPS 수신 중 · 활성 안심존 밖' : '안심존 경계 부근 · GPS 오차 확인 필요'}</div>
+          {latestQuery.error && tracking ? <div className="gp-map-error" role="alert">위치 정보를 가져오지 못했습니다. 사용자 기기의 위치 공유 상태와 네트워크를 확인해 주세요.</div> : null}
+          <div className={tracking && !latestQuery.error && locationIsRecent && inside ? 'gp-map-status is-safe' : 'gp-map-status'}><i />{!tracking ? '위치 자동 갱신 중지' : latestQuery.error ? '위치 조회 실패 · 안심존 판정 보류' : !position ? '사용자 GPS 수신 대기' : !locationIsRecent ? '최신 위치 수신 대기 · 마지막 위치 표시 중' : !places.length ? '위치 수신 중 · 등록된 안심존 없음' : !activePlaces.length ? '위치 수신 중 · 현재 활성 안심존 없음' : !zoneStates.length ? '활성 안심존 좌표 확인 필요' : !accuracyKnown ? 'GPS 정확도 정보 대기 · 안심존 판정 보류' : inside ? `${inside.place.name} 안심존 · 정상` : outside ? '사용자 GPS 수신 중 · 활성 안심존 밖' : '안심존 경계 부근 · GPS 오차 확인 필요'}</div>
           <div className="gp-location-actions">
             <button type="button" className={tracking ? 'gp-primary is-on' : 'gp-primary'} onClick={() => setTracking((value) => !value)}>{tracking ? '자동 갱신 중지' : '자동 갱신 시작'}</button>
             <button type="button" className="gp-location-secondary" onClick={allowNotifications}>안심존 알림 허용</button>
