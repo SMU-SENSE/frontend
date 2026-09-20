@@ -53,6 +53,8 @@ export default function DashboardPage() {
   const [customizations, setCustomizations] = useState<Record<string, CardCustomization>>({})
   const [onboardingStep, setOnboardingStep] = useState(0)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pressTriggered = useRef(false)
+  const [dragId, setDragId] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -103,6 +105,26 @@ export default function DashboardPage() {
     onError: (error) => showToast(error.message, 'error'),
   })
 
+  const reorderMutation = useMutation({
+    mutationFn: async ({ fromId, toId }: { fromId: string; toId: string }) => {
+      if (!activeUser || !board.data || apiConfig.useMockApi) throw new Error('카드 순서 변경은 연결된 사용자 판에서 사용할 수 있어요.')
+      const cards = [...board.data.cards].sort((a, b) => a.displayOrder - b.displayOrder)
+      const fromIndex = cards.findIndex((item) => String(item.id) === fromId)
+      const toIndex = cards.findIndex((item) => String(item.id) === toId)
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return
+      const [moved] = cards.splice(fromIndex, 1)
+      cards.splice(toIndex, 0, moved)
+      const start = Math.min(fromIndex, toIndex)
+      const end = Math.max(fromIndex, toIndex)
+      for (let index = start; index <= end; index += 1) {
+        await guardianLiveApi.updateCard(activeUser.id, cards[index].id, { displayOrder: index })
+      }
+    },
+    onSuccess: () => showToast('카드 순서가 사용자 판에 저장되었습니다.'),
+    onError: (error) => showToast(error.message, 'error'),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] }),
+  })
+
   const isLoading = aacUsers.isLoading || (Boolean(activeUser) && board.isLoading)
   const error = aacUsers.error ?? board.error
   if (isLoading) return <PageLoader label="AAC 판을 불러오는 중입니다." />
@@ -140,7 +162,12 @@ export default function DashboardPage() {
   const hasEmergency = board.data.status === 'EMERGENCY'
 
   function beginPress(sentence: Sentence) {
-    pressTimer.current = setTimeout(() => setEditing(sentence), 1000)
+    if (pressTimer.current) clearTimeout(pressTimer.current)
+    pressTriggered.current = false
+    pressTimer.current = setTimeout(() => {
+      pressTriggered.current = true
+      setEditing(sentence)
+    }, 1000)
   }
   function endPress() {
     if (pressTimer.current) clearTimeout(pressTimer.current)
@@ -209,7 +236,7 @@ export default function DashboardPage() {
 
       <div className="gp-live">
         <aside className="gp-categories" aria-label="AAC 카테고리">
-          <button type="button" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
+          <button type="button" title="추천 기능 연결 전에는 전체 상징을 표시합니다" className={categoryId === 'recommend' || categoryId === 'all' ? 'is-active is-recommend' : 'is-recommend'} onClick={() => setCategoryId('recommend')}><span>✦</span><b>추천</b></button>
           <button type="button" title="이 화면에서 최근 선택한 상징" className={categoryId === 'recent' ? 'is-active' : ''} onClick={() => setCategoryId('recent')}><span>↺</span><b>최근</b></button>
           <button type="button" className={categoryId === 'favorite' ? 'is-active' : ''} onClick={() => setCategoryId('favorite')}><span>★</span><b>즐겨찾기</b></button>
           {categoryItems.map((category, index) => <button type="button" key={category.id} className={categoryId === category.id ? 'is-active' : ''} onClick={() => setCategoryId(category.id)}><span>{CARD_EMOJI[index % CARD_EMOJI.length]}</span><b>{category.name}</b></button>)}
@@ -223,28 +250,55 @@ export default function DashboardPage() {
               const displayText = customized?.text || sentence.content
               const displayImage = customized?.imageUrl || sentence.imageUrl || ''
               return (
-                <button
-                  type="button"
+                <div
                   key={sentence.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${displayText} 상징`}
+                  aria-pressed={editMode ? selected : phraseIds.includes(sentence.id)}
                   className="gp-symbol"
+                  draggable={editMode && !apiConfig.useMockApi && !reorderMutation.isPending}
                   style={{ '--card-color': CARD_COLORS[index % CARD_COLORS.length], outline: selected ? '3px solid #149E69' : undefined } as React.CSSProperties}
-                  onClick={() => editMode ? setSelectedId((current) => current === sentence.id ? null : sentence.id) : togglePhrase(sentence.id)}
-                  onPointerDown={() => beginPress(sentence)}
+                  onClick={() => {
+                    if (pressTriggered.current) {
+                      pressTriggered.current = false
+                      return
+                    }
+                    if (editMode) setSelectedId((current) => current === sentence.id ? null : sentence.id)
+                    else togglePhrase(sentence.id)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return
+                    event.preventDefault()
+                    if (editMode) setSelectedId((current) => current === sentence.id ? null : sentence.id)
+                    else togglePhrase(sentence.id)
+                  }}
+                  onPointerDown={(event) => { if (event.button === 0 && !reorderMutation.isPending) beginPress(sentence) }}
                   onPointerUp={endPress}
+                  onPointerCancel={endPress}
                   onPointerLeave={endPress}
-                  onContextMenu={(event) => { event.preventDefault(); setEditing(sentence) }}
+                  onContextMenu={(event) => { event.preventDefault(); endPress(); pressTriggered.current = true; setEditing(sentence) }}
+                  onDragStart={(event) => { endPress(); setDragId(sentence.id); event.dataTransfer.setData('text/plain', sentence.id); event.dataTransfer.effectAllowed = 'move' }}
+                  onDragOver={(event) => { if (editMode && !reorderMutation.isPending) event.preventDefault() }}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    const source = dragId || event.dataTransfer.getData('text/plain')
+                    if (editMode && source && source !== sentence.id && !reorderMutation.isPending) reorderMutation.mutate({ fromId: source, toId: sentence.id })
+                    setDragId(null)
+                  }}
+                  onDragEnd={() => setDragId(null)}
                 >
-                  <span
-                    role="button"
-                    tabIndex={0}
+                  <button
+                    type="button"
                     className={sentence.favorite ? 'gp-star is-on' : 'gp-star'}
-                    aria-label={sentence.favorite ? '즐겨찾기 해제' : '즐겨찾기 등록'}
+                    aria-label={sentence.favorite ? `${displayText} 즐겨찾기 해제` : `${displayText} 즐겨찾기 등록`}
+                    disabled={favoriteMutation.isPending}
+                    onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => { event.stopPropagation(); favoriteMutation.mutate({ id: sentence.id, favorite: !sentence.favorite }) }}
-                    onKeyDown={(event) => { if (event.key === 'Enter') favoriteMutation.mutate({ id: sentence.id, favorite: !sentence.favorite }) }}
-                  >{sentence.favorite ? '★' : '☆'}</span>
+                  >{sentence.favorite ? '★' : '☆'}</button>
                   {displayImage ? <img src={displayImage.startsWith('/api/') ? `${apiConfig.baseUrl}${displayImage}` : displayImage} alt="" className="gp-symbol__visual" style={{ objectFit: 'cover' }} /> : <span className="gp-symbol__visual">{CARD_EMOJI[index % CARD_EMOJI.length]}</span>}
                   <strong>{displayText}</strong>
-                </button>
+                </div>
               )
             })}
           </div>
