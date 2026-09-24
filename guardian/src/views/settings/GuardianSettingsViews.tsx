@@ -112,6 +112,7 @@ export function CategoryEditorPage() {
   })
   const [icon, setIcon] = useState('📁')
   const [name, setName] = useState('')
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [color, setColor] = useState('#149E69')
   const [dragId, setDragId] = useState<string | null>(null)
   const [iconMap, setIconMap] = useState<Record<string, string>>({})
@@ -131,6 +132,8 @@ export function CategoryEditorPage() {
     } catch {
       setIconMap({})
     }
+    setEditingCategoryId(null)
+    setName('')
   }, [user?.id])
 
   const items = useMemo(
@@ -159,6 +162,41 @@ export function CategoryEditorPage() {
     },
     onError: (error) => showToast(error.message, 'error'),
   })
+
+  const editMutation = useMutation({
+    mutationFn: () => {
+      if (!user || !editingCategoryId) throw new Error('편집할 카테고리가 없습니다.')
+      const item = items.find((entry) => entry.id === editingCategoryId)
+      if (!item) throw new Error('카테고리를 찾을 수 없습니다.')
+      return guardianLiveApi.updateCategory(user.id, item.liveId, { name: name.trim(), color })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['guardian-board', user?.id] })
+      const nextIcons = { ...iconMap, [editingCategoryId!]: icon }
+      setIconMap(nextIcons)
+      window.localStorage.setItem(`malmoa-category-icons-${user?.id}`, JSON.stringify(nextIcons))
+      setEditingCategoryId(null)
+      setName('')
+      setIcon('📁')
+      setColor('#149E69')
+      showToast('카테고리 변경 사항이 저장되었습니다.')
+    },
+    onError: (error) => showToast(error.message, 'error'),
+  })
+
+  function startEditingCategory(item: (typeof items)[number]) {
+    setEditingCategoryId(item.id)
+    setName(item.name)
+    setColor(item.color || '#149E69')
+    setIcon(iconMap[item.id] || DEFAULT_CATEGORY_ICONS[item.name] || '📁')
+  }
+
+  function cancelEditingCategory() {
+    setEditingCategoryId(null)
+    setName('')
+    setIcon('📁')
+    setColor('#149E69')
+  }
 
   const removeMutation = useMutation({
     mutationFn: (categoryId: string) => guardianLiveApi.deleteCategory(user!.id, /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId),
@@ -202,10 +240,11 @@ export function CategoryEditorPage() {
         <h3>아이콘</h3>
         <div className="gp-icon-palette">{CATEGORY_ICONS.map((value) => <button type="button" key={value} className={icon === value ? 'is-selected' : ''} onClick={() => setIcon(value)}>{value}</button>)}</div>
         <h3>카테고리 이름</h3>
-        <input placeholder="예: 취미활동" value={name} onChange={(event) => setName(event.target.value)} />
+        <input maxLength={50} placeholder="예: 취미활동" value={name} onChange={(event) => setName(event.target.value)} />
         <h3>대표 색상</h3>
         <div className="gp-color-palette">{CATEGORY_COLORS.map((value) => <button type="button" aria-label={`색상 ${value}`} key={value} className={color === value ? 'is-selected' : ''} style={{ background: value }} onClick={() => setColor(value)} />)}</div>
-        <button type="button" className="gp-category-add" disabled={!name.trim() || createMutation.isPending} onClick={() => createMutation.mutate()}>＋ 카테고리 추가</button>
+        <button type="button" className="gp-category-add" disabled={!name.trim() || createMutation.isPending || editMutation.isPending} onClick={() => editingCategoryId ? editMutation.mutate() : createMutation.mutate()}>{editingCategoryId ? '카테고리 변경 저장' : '＋ 카테고리 추가'}</button>
+        {editingCategoryId ? <button type="button" disabled={editMutation.isPending} onClick={cancelEditingCategory}>편집 취소</button> : null}
       </section>
       <section className="gp-category-list">
         <h1>내 카테고리 ({items.length}개)</h1>
@@ -226,9 +265,10 @@ export function CategoryEditorPage() {
               <GripVertical />
               <span style={{ background: `${item.color}20`, color: item.color }}>{categoryIcon}</span>
               <strong>{item.name}</strong>
+              <button type="button" aria-label={`${item.name} 편집`} disabled={editMutation.isPending || createMutation.isPending} onClick={() => startEditingCategory(item)}>편집</button>
               {isDefault
                 ? <em>기본</em>
-                : <button type="button" aria-label={`${item.name} 삭제`} onClick={() => removeMutation.mutate(item.id)}><Trash2 size={19} /></button>}
+                : <button type="button" aria-label={`${item.name} 삭제`} disabled={removeMutation.isPending} onClick={() => { if (window.confirm('카테고리를 삭제할까요? 카드가 남아 있으면 먼저 이동하거나 삭제해야 합니다.')) removeMutation.mutate(item.id) }}><Trash2 size={19} /></button>}
             </div>
           )
         })}
