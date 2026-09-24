@@ -289,7 +289,7 @@ export default function SettingsPage() {
         <Link href="/settings/voice"><span>🔊</span><div><strong>TTS 상세 설정</strong><small>음성 종류·속도·미리듣기</small></div><ChevronRight size={22} /></Link>
       </nav>
 
-      <button type="button" className="gp-help" aria-label="도움말" onClick={() => window.alert('말모아 보호자 M+\n설정 · 카드 편집 · 사용자 연결 및 리포트 기능을 제공합니다.')}>?</button>
+      <button type="button" className="gp-help" aria-label="도움말" onClick={() => window.alert('말모아 보호자\n설정 · 카드 편집 · 사용자 연결 및 리포트 기능을 제공합니다.')}>?</button>
       {routineModalOpen ? <RoutineModal saving={createRoutineMutation.isPending} onClose={() => { if (!createRoutineMutation.isPending) setRoutineModalOpen(false) }} onSave={(routine) => createRoutineMutation.mutate(routine)} /> : null}
     </main>
   )
