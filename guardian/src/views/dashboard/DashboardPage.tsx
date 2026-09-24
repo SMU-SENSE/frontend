@@ -23,6 +23,7 @@ import { guardianLiveApi, type LiveId } from '../../api/guardianLive'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { useToast } from '../../components/ui/ToastProvider'
+import { useAuthStore } from '../../stores/authStore'
 import type { Sentence } from '../../types/models'
 
 type CardCustomization = { text?: string; imageUrl?: string }
@@ -35,6 +36,7 @@ const DEFAULT_CATEGORY_ICONS: Record<string, string> = { 긴급어: '🆘', 사�
 export default function DashboardPage() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
+  const accountId = useAuthStore((state) => state.session?.user.id)
   const aacUsers = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
   const activeUser = aacUsers.data?.find((item) => item.active) ?? aacUsers.data?.[0] ?? null
   const board = useQuery({
@@ -58,8 +60,13 @@ export default function DashboardPage() {
   const [dragId, setDragId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (window.localStorage.getItem(ONBOARDING_KEY) !== '1') setOnboardingStep(1)
-  }, [])
+    if (accountId == null || !activeUser) {
+      setOnboardingStep(0)
+      return
+    }
+    const key = `${ONBOARDING_KEY}-${accountId}`
+    setOnboardingStep(window.localStorage.getItem(key) === '1' ? 0 : 1)
+  }, [accountId, activeUser?.id])
 
   useEffect(() => {
     if (!activeUser) return
@@ -166,7 +173,17 @@ export default function DashboardPage() {
   const error = aacUsers.error ?? board.error
   if (isLoading) return <PageLoader label="AAC 판을 불러오는 중입니다." />
   if (error) return <ErrorState message={error.message} onRetry={() => { aacUsers.refetch(); board.refetch() }} />
-  if (!activeUser || !board.data) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => aacUsers.refetch()} />
+  if (!activeUser) return (
+    <main className="gp-home">
+      <header className="gp-home__header"><Link href="/" className="gp-wordmark">Mal<span>Moa</span></Link></header>
+      <section className="gp-card" style={{ margin: '48px auto', maxWidth: 560, padding: 32 }}>
+        <h1>등록된 AAC 사용자가 없어요</h1>
+        <p>사용자 프로필을 등록한 뒤 보호자용 라이브 AAC 판을 확인할 수 있어요.</p>
+        <Link className="gp-head-btn" href="/onboarding/profile">사용자 등록 시작</Link>
+      </section>
+    </main>
+  )
+  if (!board.data) return <ErrorState message="사용자 AAC 판을 불러오지 못했습니다." onRetry={() => board.refetch()} />
 
   const categoryItems = [...board.data.categories]
     .sort((a, b) => a.displayOrder - b.displayOrder)
@@ -219,7 +236,7 @@ export default function DashboardPage() {
     if (pressStart.current && Math.hypot(x - pressStart.current.x, y - pressStart.current.y) > 12) endPress()
   }
   function closeOnboarding() {
-    window.localStorage.setItem(ONBOARDING_KEY, '1')
+    if (accountId != null) window.localStorage.setItem(`${ONBOARDING_KEY}-${accountId}`, '1')
     setOnboardingStep(0)
   }
 
