@@ -11,13 +11,14 @@ import {
   Volume2,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
 import { guardianLiveApi, type LivePlace } from '../../api/guardianLive'
 import { apiConfig } from '../../api/client'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { useToast } from '../../components/ui/ToastProvider'
 import type { BackendVoiceType } from '../../types/models'
+import { speakKorean } from '../../lib/koreanSpeech'
 
 type Place = {
   id: string
@@ -283,10 +284,15 @@ export function VoiceSettingsPage() {
   const users = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
   const user = users.data?.find((item) => item.active) ?? users.data?.[0] ?? null
   const [rate, setRate] = useState(1)
+  const [voiceType, setVoiceType] = useState<BackendVoiceType>('CHILD_MALE')
+  const lastSent = useRef('')
 
   useEffect(() => {
-    if (user?.speechRate) setRate(user.speechRate)
-  }, [user?.speechRate])
+    if (!user) return
+    setRate(user.speechRate ?? 1)
+    setVoiceType(user.voiceType ?? 'CHILD_MALE')
+  }, [user?.id, user?.speechRate, user?.voiceType])
+  useEffect(() => { lastSent.current = '' }, [user?.id])
 
   const mutation = useMutation({
     mutationFn: ({ voiceType, speechRate }: { voiceType: BackendVoiceType; speechRate: number }) => {
@@ -295,11 +301,14 @@ export function VoiceSettingsPage() {
     },
     onSuccess: (updated) => {
       queryClient.setQueryData(['aac-users'], (current: typeof users.data) =>
-        current?.map((item) => (item.id === updated.id ? updated : item)),
+        current?.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
       )
       showToast('음성 설정이 저장되었습니다.')
     },
-    onError: (error) => showToast(error.message, 'error'),
+    onError: (error) => {
+      lastSent.current = ''
+      showToast(error.message, 'error')
+    },
   })
 
   const voiceOptions: Array<{ value: BackendVoiceType; label: string }> = [
@@ -309,40 +318,31 @@ export function VoiceSettingsPage() {
     { value: 'ADULT_MALE', label: '성인 남성' },
   ]
 
+  function saveVoice(nextVoice: BackendVoiceType, nextRate: number) {
+    if (!user || mutation.isPending) return
+    const key = `${nextVoice}:${nextRate}`
+    if (key === lastSent.current) return
+    lastSent.current = key
+    mutation.mutate({ voiceType: nextVoice, speechRate: nextRate })
+  }
+
   function saveRate(next: number) {
-    const clamped = Math.max(.7, Math.min(1.3, Number(next.toFixed(1))))
+    const clamped = Math.max(0.7, Math.min(1.3, Number(next.toFixed(1))))
     setRate(clamped)
-    if (user && !mutation.isPending && clamped !== user.speechRate) {
-      mutation.mutate({ voiceType: user.voiceType ?? 'CHILD_MALE', speechRate: clamped })
-    }
+    saveVoice(voiceType, clamped)
   }
 
   function preview() {
-    if (!('speechSynthesis' in window)) {
+    if (!speakKorean('안녕하세요! 말모아입니다.', voiceType, rate)) {
       showToast('이 기기에서는 음성 미리듣기를 지원하지 않습니다.', 'error')
-      return
     }
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance('안녕하세요! 말모아입니다.')
-    utterance.lang = 'ko-KR'
-    utterance.rate = rate
-    const type = user?.voiceType ?? 'CHILD_MALE'
-    utterance.pitch = type === 'CHILD_FEMALE' ? 1.35 : type === 'CHILD_MALE' ? 1.15 : type === 'ADULT_FEMALE' ? 1.08 : .95
-    const voices = window.speechSynthesis.getVoices().filter((voice) => voice.lang.toLowerCase().startsWith('ko'))
-    const preferred = voices.find((voice) => {
-      const name = voice.name.toLowerCase()
-      return type.includes('FEMALE') ? /female|여성|yuna|sora|sunhi/.test(name) : /male|남성|injoon|heami/.test(name)
-    })
-    if (preferred) utterance.voice = preferred
-    window.speechSynthesis.speak(utterance)
   }
 
   if (users.isLoading) return <PageLoader label="음성 설정을 불러오는 중입니다." />
   if (users.error) return <ErrorState message={users.error.message} onRetry={() => users.refetch()} />
   if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
 
-  const currentVoice: BackendVoiceType = user.voiceType ?? 'CHILD_MALE'
-  const currentLabel = voiceOptions.find((option) => option.value === currentVoice)?.label ?? '남성 아동'
+  const currentLabel = voiceOptions.find((option) => option.value === voiceType)?.label ?? '또래 남아 아동'
 
   return (
     <main className="gp-voice-page">
@@ -353,17 +353,22 @@ export function VoiceSettingsPage() {
           <button
             key={option.value}
             type="button"
-            className={currentVoice === option.value ? 'gp-voice-option is-selected' : 'gp-voice-option'}
+            className={voiceType === option.value ? 'gp-voice-option is-selected' : 'gp-voice-option'}
             disabled={mutation.isPending}
-            onClick={() => mutation.mutate({ voiceType: option.value, speechRate: rate })}
+            onClick={() => { setVoiceType(option.value); saveVoice(option.value, rate) }}
           >{option.label}</button>
         ))}
       </div>
+      <p role="note">기기에 설치된 한국어 음성이 부족하면 일부 목소리가 비슷하게 들릴 수 있어요.</p>
       <div className="gp-speed-title"><strong>음성 속도</strong><b>{rate.toFixed(1)}×</b></div>
       <div className="gp-speed-control">
-        <span>🐢</span><button type="button" disabled={mutation.isPending} onClick={() => saveRate(rate - .1)}>−</button>
-        <input type="range" aria-label="음성 속도" min="0.7" max="1.3" step="0.1" value={rate} disabled={mutation.isPending} onChange={(event) => setRate(Number(event.currentTarget.value))} onPointerUp={(event) => saveRate(Number(event.currentTarget.value))} onKeyUp={(event) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) saveRate(Number(event.currentTarget.value)) }} onBlur={(event) => saveRate(Number(event.currentTarget.value))} />
-        <button type="button" disabled={mutation.isPending} onClick={() => saveRate(rate + .1)}>＋</button><span>🐰</span>
+        <span>🐢</span><button type="button" disabled={mutation.isPending} onClick={() => saveRate(rate - 0.1)}>−</button>
+        <input type="range" aria-label="음성 속도" min="0.7" max="1.3" step="0.1" value={rate} disabled={mutation.isPending}
+          onChange={(event) => setRate(Number(event.currentTarget.value))}
+          onPointerUp={(event) => saveRate(Number(event.currentTarget.value))}
+          onKeyUp={(event) => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) saveRate(Number(event.currentTarget.value)) }}
+          onBlur={(event) => saveRate(Number(event.currentTarget.value))} />
+        <button type="button" disabled={mutation.isPending} onClick={() => saveRate(rate + 0.1)}>＋</button><span>🐰</span>
       </div>
       <div className="gp-speed-scale"><span>0.7×</span><span>1.3×</span></div>
       <button type="button" className="gp-preview" onClick={preview}><span><Play size={20} fill="currentColor" /></span><div><strong>미리듣기</strong><small>{currentLabel} · {rate.toFixed(1)}×</small></div></button>
