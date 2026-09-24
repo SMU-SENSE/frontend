@@ -24,6 +24,7 @@ import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { useToast } from '../../components/ui/ToastProvider'
 import { useAuthStore } from '../../stores/authStore'
+import { speakKorean } from '../../lib/koreanSpeech'
 import type { Sentence } from '../../types/models'
 
 type CardCustomization = { text?: string; imageUrl?: string }
@@ -52,6 +53,8 @@ export default function DashboardPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [phraseIds, setPhraseIds] = useState<string[]>([])
   const [recentIds, setRecentIds] = useState<string[]>([])
+  const [recentReadyUserId, setRecentReadyUserId] = useState<number | null>(null)
+  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
   const [categoryIcons, setCategoryIcons] = useState<Record<string, string>>({})
   const [onboardingStep, setOnboardingStep] = useState(0)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -86,11 +89,37 @@ export default function DashboardPage() {
     setCategoryId('all')
     setSelectedId(null)
     setPhraseIds([])
-    setRecentIds([])
+    const key = `malmoa-recent-cards-${activeUser.id}`
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(key) ?? '[]') as unknown
+      setRecentIds(Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string').slice(0, 12) : [])
+    } catch {
+      setRecentIds([])
+    }
+    setRecentReadyUserId(activeUser.id)
+    if (apiConfig.useMockApi) {
+      try {
+        const stored = JSON.parse(window.localStorage.getItem(`malmoa-favorite-overrides-${activeUser.id}`) ?? '{}') as unknown
+        setFavoriteOverrides(stored && typeof stored === 'object' && !Array.isArray(stored) ? stored as Record<string, boolean> : {})
+      } catch {
+        setFavoriteOverrides({})
+      }
+    } else {
+      setFavoriteOverrides({})
+    }
     setEditing(null)
     setNewCardOpen(false)
     setEditMode(false)
   }, [activeUser?.id])
+
+  useEffect(() => {
+    if (!activeUser || recentReadyUserId !== activeUser.id) return
+    try {
+      window.localStorage.setItem(`malmoa-recent-cards-${activeUser.id}`, JSON.stringify(recentIds))
+    } catch {
+      // Browser storage can be disabled; keep the session's recent cards.
+    }
+  }, [activeUser?.id, recentReadyUserId, recentIds])
 
   useEffect(() => {
     if (apiConfig.useMockApi || !activeUser) return
@@ -120,6 +149,15 @@ export default function DashboardPage() {
     mutationFn: async ({ id, favorite }: { id: LiveId; favorite: boolean }) => { await guardianLiveApi.setFavorite(activeUser!.id, id, favorite) },
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] })
+      if (apiConfig.useMockApi && activeUser) {
+        const next = { ...favoriteOverrides, [String(variables.id)]: variables.favorite }
+        setFavoriteOverrides(next)
+        try {
+          window.localStorage.setItem(`malmoa-favorite-overrides-${activeUser.id}`, JSON.stringify(next))
+        } catch {
+          // Keep the current session working if local storage is unavailable.
+        }
+      }
       setEditing((current) => current && String(current.id) === String(variables.id)
         ? { ...current, favorite: variables.favorite }
         : current)
@@ -195,7 +233,7 @@ export default function DashboardPage() {
       content: item.text,
       categoryId: String(item.categoryId),
       categoryName: board.data?.categories.find((category) => String(category.id) === String(item.categoryId))?.name,
-      favorite: item.favorite,
+      favorite: apiConfig.useMockApi ? (favoriteOverrides[String(item.id)] ?? item.favorite) : item.favorite,
       source: 'manual',
       useCount: 0,
       lastUsedAt: null,
@@ -258,11 +296,7 @@ export default function DashboardPage() {
       showToast('이 기기에서는 음성 출력을 지원하지 않습니다.', 'error')
       return
     }
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'ko-KR'
-    utterance.rate = activeUser?.speechRate ?? 1
-    window.speechSynthesis.speak(utterance)
+    speakKorean(text, activeUser?.voiceType ?? 'CHILD_MALE', activeUser?.speechRate ?? 1)
   }
 
   function speakPhrase() {
