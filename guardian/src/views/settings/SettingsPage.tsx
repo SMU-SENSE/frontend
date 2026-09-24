@@ -137,7 +137,7 @@ export default function SettingsPage() {
     mutationFn: (routineId: string | number) => guardianLiveApi.deleteRoutine(user!.id, routineId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['guardian-routines', user?.id] })
-      showToast('루틴을 삭제했습니다.')
+      showToast('루틴을 비활성화했습니다. 서버에서 비활성 루틴은 목록에 유지됩니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
@@ -256,7 +256,7 @@ export default function SettingsPage() {
                 className={routine.enabled ? 'gp-switch is-on' : 'gp-switch'}
                 onClick={() => { const source = routinesQuery.data?.find((item) => String(item.id) === String(routine.id)); if (source) updateRoutineMutation.mutate({ routine: source, enabled: !source.enabled }) }}
               ><i /></button>
-              <button type="button" className="gp-trash" aria-label="루틴 삭제" onClick={() => deleteRoutineMutation.mutate(routine.id)}><Trash2 size={23} /></button>
+              <button type="button" className="gp-trash" aria-label="루틴 비활성화" title="서버에서 삭제하지 않고 비활성화합니다" disabled={!routine.enabled || deleteRoutineMutation.isPending || updateRoutineMutation.isPending} onClick={() => { if (window.confirm('루틴을 비활성화할까요? 서버에서 삭제되지 않고 목록에 남습니다.')) deleteRoutineMutation.mutate(routine.id) }}><X size={23} /></button>
             </div>
           ))}
         </div>
