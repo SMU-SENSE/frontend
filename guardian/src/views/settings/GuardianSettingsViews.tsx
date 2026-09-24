@@ -489,7 +489,7 @@ export function LocationManagerPage() {
           <div className="gp-place-list">
             {places.map((place) => {
               const state = zoneStates.find((item) => item.place.id === place.id)
-              return <article className="gp-place" key={place.id}><MapPin /><div><strong>{place.name}</strong><span>{place.type} · {place.start}~{place.end} · 안심존 {place.radius ?? 500}m</span><small>{place.address || `위도 ${place.latitude?.toFixed(5)}, 경도 ${place.longitude?.toFixed(5)}`}{state ? ` · 현재 ${Math.round(state.distance)}m` : ''}</small></div><button type="button" aria-label="장소 삭제" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(place.id)}><Trash2 size={18} /></button></article>
+              return <article className="gp-place" key={place.id}><MapPin /><div><strong>{place.name}</strong><span>{place.type} · {place.start}~{place.end} · 안심존 {place.radius ?? 500}m</span><small>{place.address || `위도 ${place.latitude?.toFixed(5)}, 경도 ${place.longitude?.toFixed(5)}`}{state ? ` · ${tracking && !latestQuery.error && locationIsRecent ? '현재' : '마지막 수신 위치 기준'} ${Math.round(state.distance)}m` : ''}</small></div><button type="button" aria-label="장소 삭제" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(place.id)}><Trash2 size={18} /></button></article>
             })}
           </div>
           <div className="gp-place-form">
@@ -538,10 +538,11 @@ export function GuardianReportPage() {
   const { showToast } = useToast()
   const users = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
   const user = users.data?.find((item) => item.active) ?? users.data?.[0] ?? null
-  const validCustomRange = period !== 'custom' || Boolean(startDate && endDate && startDate <= endDate)
+  const validCustomRange = period !== 'custom' || Boolean(startDate && endDate && startDate <= endDate && !Number.isNaN(new Date(`${startDate}T00:00:00`).getTime()) && !Number.isNaN(new Date(`${endDate}T23:59:59.999`).getTime()))
 
   const range = useMemo(() => {
     const now = new Date()
+    if (period === 'custom' && !validCustomRange) return { from: '', to: '' }
     if (period === 'custom' && startDate && endDate) {
       return {
         from: new Date(`${startDate}T00:00:00`).toISOString(),
@@ -551,7 +552,7 @@ export function GuardianReportPage() {
     const from = new Date(now)
     from.setDate(from.getDate() - (period === 'month' ? 30 : 7))
     return { from: from.toISOString(), to: now.toISOString() }
-  }, [endDate, period, startDate])
+  }, [endDate, period, startDate, validCustomRange])
 
   const report = useQuery({
     queryKey: ['guardian-report', user?.id, range.from, range.to],
@@ -598,7 +599,7 @@ export function GuardianReportPage() {
       </div>
       {period === 'custom' ? <div className="gp-report-dates"><label>시작일<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label><span>—</span><label>종료일<input type="date" min={startDate || undefined} value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label></div> : null}
       {!validCustomRange && period === 'custom' ? <p role="alert">{startDate && endDate && startDate > endDate ? '종료일은 시작일보다 빠를 수 없습니다.' : '시작일과 종료일을 모두 선택해 주세요.'}</p> : null}
-      {!data ? <section className="gp-report-card"><p>조회 기간을 선택해 주세요.</p></section> : <div className="gp-report-grid">
+      {!validCustomRange || !data ? <section className="gp-report-card"><p>조회 기간을 선택해 주세요.</p></section> : <div className="gp-report-grid">
         <section className="gp-report-card">
           <h2>단어 사용 패턴 분석</h2><p>서버에 기록된 실제 AAC 카드 사용 데이터를 분석합니다.</p>
           <div className="gp-summary-grid">
