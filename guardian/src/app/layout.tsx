@@ -23,7 +23,7 @@ import { Providers } from './providers'
 import { PwaRegistration } from '../components/PwaRegistration'
 
 export const metadata: Metadata = {
-  title: '말모아 보호자 M+',
+  title: '말모아 보호자',
   description: 'AAC 보완대체의사소통 보호자 서비스',
   applicationName: 'MalMoa 보호자',
   manifest: '/manifest.webmanifest',
