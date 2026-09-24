@@ -412,22 +412,6 @@
 
 
 /* ── 2026-09-18 full guardian handoff completion ───────────────────────── */
-body::after{
-  content:'M+';
-  position:fixed;
-  right:max(10px,env(safe-area-inset-right));
-  bottom:max(8px,env(safe-area-inset-bottom));
-  z-index:9999;
-  padding:2px 5px;
-  border-radius:6px;
-  background:rgba(255,255,255,.72);
-  color:var(--gp-green,#149E69);
-  font-size:11px;
-  font-weight:800;
-  line-height:1.2;
-  opacity:.55;
-  pointer-events:none;
-}
 
 .gp-card-image-preview{
   width:112px;
