@@ -401,6 +401,7 @@ export function LocationManagerPage() {
   })
   const [draft, setDraft] = useState({ name: '', type: '학교' as Place['type'], address: '', start: '08:00', end: '15:00', radius: 500, latitude: undefined as number | undefined, longitude: undefined as number | undefined })
   const [geoError, setGeoError] = useState('')
+  const [geoPending, setGeoPending] = useState(false)
 
   const placeTypeToBackend: Record<Place['type'], LivePlace['placeType']> = {
     '집': 'HOME',
@@ -482,7 +483,7 @@ export function LocationManagerPage() {
       })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['guardian-places', user?.id] })
+      void queryClient.invalidateQueries({ queryKey: ['guardian-places', user?.id] })
       setDraft({ name: '', type: '학교', address: '', start: '08:00', end: '15:00', radius: 500, latitude: undefined, longitude: undefined })
       showToast(apiConfig.useMockApi ? '시연용 장소가 이 브라우저에 저장되었습니다.' : '장소와 안심존 설정이 서버에 저장되었습니다.')
     },
@@ -499,19 +500,36 @@ export function LocationManagerPage() {
   })
 
   function useCurrentLocation() {
-    if (!navigator.geolocation) return showToast('이 기기에서는 위치 기능을 사용할 수 없습니다.', 'error')
-    navigator.geolocation.getCurrentPosition(
-      (value) => {
-        setGeoError('')
-        setDraft((current) => ({ ...current, latitude: value.coords.latitude, longitude: value.coords.longitude }))
-        showToast('보호자 기기의 현재 위치를 장소 좌표로 지정했습니다.')
-      },
-      (error) => {
-        setGeoError(error.message)
-        showToast('현재 위치를 가져오지 못했습니다.', 'error')
-      },
-      { enableHighAccuracy: true, timeout: 15000 },
-    )
+    if (!navigator.geolocation) {
+      showToast('이 기기에서는 위치 기능을 사용할 수 없습니다. 아래에 좌표를 직접 입력할 수 있어요.', 'error')
+      return
+    }
+    setGeoPending(true)
+    setGeoError('')
+    const success = (value: GeolocationPosition) => {
+      setGeoPending(false)
+      setGeoError('')
+      setDraft((current) => ({ ...current, latitude: value.coords.latitude, longitude: value.coords.longitude }))
+      showToast('보호자 기기의 현재 위치를 장소 좌표로 지정했습니다.')
+    }
+    const failure = (error: GeolocationPositionError) => {
+      setGeoPending(false)
+      const message = error.code === 1 ? '위치 권한이 거부되었습니다. 브라우저와 기기의 위치 설정을 확인해 주세요.'
+        : error.code === 3 ? '위치 확인 시간이 초과되었습니다. 좌표를 직접 입력하거나 위치 서비스를 확인해 주세요.'
+        : '위치를 가져올 수 없습니다. 좌표를 직접 입력하거나 위치 서비스를 확인해 주세요.'
+      setGeoError(message)
+      showToast(message, 'error')
+    }
+    navigator.geolocation.getCurrentPosition(success, (error) => {
+      if (error.code === 3) {
+        // Desktop PCs often lack a GPS receiver: retry with network location.
+        navigator.geolocation.getCurrentPosition(success, failure, {
+          enableHighAccuracy: false, timeout: 20000, maximumAge: 60000,
+        })
+      } else {
+        failure(error)
+      }
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 })
   }
 
   async function allowNotifications() {
@@ -541,11 +559,21 @@ export function LocationManagerPage() {
             <input placeholder="장소 이름" value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
             <select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as Place['type'] })}>{(['집', '학교', '병원', '치료실'] as const).map((value) => <option key={value}>{value}</option>)}</select>
             <input placeholder="주소" value={draft.address} onChange={(event) => setDraft({ ...draft, address: event.target.value })} />
-            <button type="button" className="gp-location-secondary" onClick={useCurrentLocation}><MapPin size={17} /> 이 장소의 현재 좌표 지정</button>
-            {typeof draft.latitude === 'number' ? <small className="gp-coordinate-preview">좌표 {draft.latitude.toFixed(6)}, {draft.longitude?.toFixed(6)}</small> : null}
+            <button type="button" className="gp-location-secondary" disabled={geoPending} onClick={useCurrentLocation}><MapPin size={17} /> {geoPending ? '위치 확인 중…' : '이 장소의 현재 좌표 지정'}</button>
+            <small>현재 위치는 보호자 기기의 위치입니다. 주소만 입력해도 좌표로 자동 변환되지 않으니 실제 장소 좌표를 지정해 주세요.</small>
+            <div className="gp-place-time">
+              <label>위도 (-90~90)<input type="number" min="-90" max="90" step="any" value={draft.latitude ?? ''} onChange={(event) => setDraft((current) => ({ ...current, latitude: event.target.value === '' ? undefined : Number(event.target.value) }))} /></label>
+              <label>경도 (-180~180)<input type="number" min="-180" max="180" step="any" value={draft.longitude ?? ''} onChange={(event) => setDraft((current) => ({ ...current, longitude: event.target.value === '' ? undefined : Number(event.target.value) }))} /></label>
+            </div>
+            {geoError ? <small role="alert">{geoError}</small> : null}
             <div className="gp-place-time"><input type="time" value={draft.start} onChange={(event) => setDraft({ ...draft, start: event.target.value })} /><input type="time" value={draft.end} onChange={(event) => setDraft({ ...draft, end: event.target.value })} /></div>
             <label className="gp-radius-field"><span>안심존 반경</span><select value={draft.radius} onChange={(event) => setDraft({ ...draft, radius: Number(event.target.value) })}><option value={100}>100m</option><option value={300}>300m</option><option value={500}>500m</option><option value={1000}>1km</option></select></label>
-            <button type="button" className="gp-primary" disabled={!draft.name.trim() || typeof draft.latitude !== 'number' || createMutation.isPending} onClick={() => createMutation.mutate()}><Save size={17} style={{ verticalAlign: 'middle', marginRight: 7 }} />장소 저장</button>
+            <button type="button" className="gp-primary" disabled={createMutation.isPending} onClick={() => {
+              if (!draft.name.trim()) return showToast('장소 이름을 입력해 주세요.', 'error')
+              if (typeof draft.latitude !== 'number' || typeof draft.longitude !== 'number' || !Number.isFinite(draft.latitude) || !Number.isFinite(draft.longitude)) return showToast('장소 좌표를 지정하거나 직접 입력해 주세요.', 'error')
+              if (Math.abs(draft.latitude) > 90 || Math.abs(draft.longitude) > 180) return showToast('위도는 -90~90, 경도는 -180~180 사이여야 합니다.', 'error')
+              createMutation.mutate()
+            }}><Save size={17} style={{ verticalAlign: 'middle', marginRight: 7 }} />{createMutation.isPending ? '저장 중…' : '장소 저장'}</button>
           </div>
         </section>
         <section className="gp-map-card">
