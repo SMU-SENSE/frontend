@@ -89,9 +89,9 @@ export default function DashboardPage() {
     setCategoryId('all')
     setSelectedId(null)
     setPhraseIds([])
-    const key = `malmoa-recent-cards-${activeUser.id}`
+    const recentKey = `malmoa-recent-cards-${activeUser.id}`
     try {
-      const stored = JSON.parse(window.localStorage.getItem(key) ?? '[]') as unknown
+      const stored = JSON.parse(window.localStorage.getItem(recentKey) ?? '[]') as unknown
       setRecentIds(Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string').slice(0, 12) : [])
     } catch {
       setRecentIds([])
