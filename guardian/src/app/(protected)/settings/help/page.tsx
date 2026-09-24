@@ -18,7 +18,7 @@ export default function HelpPage() {
       </header>
 
       <section className="gp-help-hero">
-        <div className="gp-help-logo">Mal<span>Moa</span><sup>M+</sup></div>
+        <div className="gp-help-logo">Mal<span>Moa</span></div>
         <strong>보호자용 웹앱</strong>
         <p>사용자 AAC 설정·편집·안전 확인을 한 곳에서 관리합니다.</p>
         <em>Frontend v0.2.0 · Guardian handoff 2026-09-16</em>
