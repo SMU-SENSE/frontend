@@ -58,7 +58,8 @@ export default function InviteCodeConnectionPage() {
 
   return (
     <ConnectionShell title="초대 코드" subtitle={apiConfig.useMockApi ? "시연용 코드 · 실제 사용자 기기와 연결되지 않아요" : "사용자 기기에 코드를 알려주세요"}>
-      <div className="connection-card connection-card--code">\n        {apiConfig.useMockApi ? <p className="connection-card__instruction">이 코드는 화면 확인용이며 실제 기기 페어링에 사용할 수 없어요.</p> : null}
+      <div className="connection-card connection-card--code">
+        {apiConfig.useMockApi ? <p className="connection-card__instruction">이 코드는 화면 확인용이며 실제 기기 페어링에 사용할 수 없어요.</p> : null}
         <div className={`invite-code ${expired ? 'invite-code--expired' : ''}`} aria-label={`초대 코드 ${code}`}>
           {code.split('').map((digit, index) => <span key={`${digit}-${index}`}>{digit}</span>)}
           {expired ? (
