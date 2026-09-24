@@ -13,6 +13,7 @@ function createLocalQrDataUrl(payload: string) {
   return code.createDataURL(8, 4)
 }
 import { aacUserApi } from '../../../api/aacUsers'
+import { apiConfig } from '../../../api/client'
 import { guardianLiveApi, type PairingResponse } from '../../../api/guardianLive'
 import { ConnectionShell } from '../../../components/connect/ConnectionShell'
 import { ErrorState, PageLoader } from '../../../components/ui/AsyncState'
@@ -55,7 +56,7 @@ export default function QrConnectionPage() {
     return `${mm}:${ss}`
   }, [seconds])
 
-  if (users.isLoading || pairing.isLoading) return <PageLoader label="실제 QR 연결 정보를 발급하는 중입니다." />
+  if (users.isLoading || pairing.isLoading) return <PageLoader label="QR 연결 정보를 발급하는 중입니다." />
   const error = users.error ?? pairing.error
   if (error) return <ErrorState message={error.message} onRetry={() => { users.refetch(); pairing.refetch() }} />
   if (!user || !pairing.data) return <ErrorState message="연결할 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
@@ -65,9 +66,9 @@ export default function QrConnectionPage() {
   const qrImage = createLocalQrDataUrl(payload)
 
   return (
-    <ConnectionShell title="QR로 연결" subtitle="사용자 기기에서 스캔하면 바로 연결돼요">
+    <ConnectionShell title="QR로 연결" subtitle={apiConfig.useMockApi ? "시연용 QR · 실제 사용자 기기와 연결되지 않아요" : "사용자 기기에서 스캔하면 연결할 수 있어요"}>
       <div className="connection-card connection-card--qr">
-        <p className="connection-card__instruction">사용자 기기에서 이 QR 코드를 스캔하세요</p>
+        <p className="connection-card__instruction">{apiConfig.useMockApi ? "이 QR은 화면 확인용이며 실제 기기 페어링에 사용할 수 없어요." : "사용자 기기에서 이 QR 코드를 스캔하세요"}</p>
         <div className={`qr-box ${expired ? 'qr-box--expired' : ''}`}>
           <img className="qr-real-image" src={qrImage} alt="사용자 기기 연결 QR 코드" />
           {expired ? (
