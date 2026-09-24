@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    id: '/guardian-mplus',
-    name: 'MalMoa 보호자 M+',
+    id: '/guardian',
+    name: '말모아 보호자',
     short_name: 'MalMoa 보호자',
     description: 'AAC 사용자 설정·편집·연결·안전 확인을 위한 보호자 앱',
     start_url: '/',
