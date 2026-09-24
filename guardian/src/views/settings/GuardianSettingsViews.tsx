@@ -618,10 +618,12 @@ export function GuardianReportPage() {
   let cursor = 0
   const stops = categoryEntries.slice(0, 5).map((item, index) => {
     const start = cursor
-    cursor += item.percent
+    cursor = Math.min(100, cursor + Math.max(0, item.percent))
     return `${colors[index]} ${start}% ${cursor}%`
-  }).join(',')
-  const donutStyle = { background: categoryEntries.length ? `conic-gradient(${stops})` : '#ECECF0' }
+  })
+  const otherPercent = Math.max(0, 100 - cursor)
+  if (otherPercent > 0) stops.push(`#ECECF0 ${cursor}% 100%`)
+  const donutStyle = { background: categoryEntries.length ? `conic-gradient(${stops.join(',')})` : '#ECECF0' }
   const sensors = data?.sensors ?? []
   const heartRates = sensors.filter((item) => item.type === 'HEART_RATE' && typeof item.value === 'number')
   const insight = data?.insights?.length ? data.insights.join(' ') : '실제 사용 기록이 누적되면 발화·긴급·센서 변화를 분석해 표시합니다.'
@@ -649,7 +651,7 @@ export function GuardianReportPage() {
           <h3>자주 사용한 상징 TOP 5</h3>
           <div className="gp-bars">{top.length ? top.map((item) => <div className="gp-bar-row" key={String(item.id)}><span>{item.name}</span><div className="gp-bar"><i style={{ width: `${Math.max(7, item.count / maxUse * 100)}%` }} /></div><b>{item.count}회</b></div>) : <p>아직 사용 기록이 없습니다.</p>}</div>
           <h3>카테고리별 발화 비중</h3>
-          <div className="gp-donut-wrap"><div className="gp-donut" style={donutStyle} /><div>{categoryEntries.slice(0, 5).map((item, index) => <div className="gp-donut-legend" key={String(item.id)}><i style={{ background: colors[index] }} /><strong>{item.name}</strong><span>{item.percent.toFixed(1)}%</span></div>)}</div></div>
+          <div className="gp-donut-wrap"><div className="gp-donut" style={donutStyle} /><div>{categoryEntries.slice(0, 5).map((item, index) => <div className="gp-donut-legend" key={String(item.id)}><i style={{ background: colors[index] }} /><strong>{item.name}</strong><span>{item.percent.toFixed(1)}%</span></div>)}{categoryEntries.length > 5 && otherPercent > 0 ? <div className="gp-donut-legend"><i style={{ background: '#ECECF0' }} /><strong>기타</strong><span>{otherPercent.toFixed(1)}%</span></div> : null}</div></div>
           <div className="gp-insight"><strong>사용 기록 요약</strong><br />{insight}</div>
         </section>
         <section className="gp-report-card">
