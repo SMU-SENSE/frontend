@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { aacUserApi } from '../../../api/aacUsers'
+import { apiConfig } from '../../../api/client'
 import { guardianLiveApi, type PairingResponse } from '../../../api/guardianLive'
 import { ConnectionShell } from '../../../components/connect/ConnectionShell'
 import { ErrorState, PageLoader } from '../../../components/ui/AsyncState'
@@ -47,7 +48,7 @@ export default function InviteCodeConnectionPage() {
     return `${mm}:${ss}`
   }, [seconds])
 
-  if (users.isLoading || pairing.isLoading) return <PageLoader label="실제 연결 코드를 발급하는 중입니다." />
+  if (users.isLoading || pairing.isLoading) return <PageLoader label="연결 코드를 발급하는 중입니다." />
   const error = users.error ?? pairing.error
   if (error) return <ErrorState message={error.message} onRetry={() => { users.refetch(); pairing.refetch() }} />
   if (!user || !pairing.data) return <ErrorState message="연결할 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
@@ -56,8 +57,8 @@ export default function InviteCodeConnectionPage() {
   const code = pairing.data.inviteCode
 
   return (
-    <ConnectionShell title="초대 코드" subtitle="사용자 기기에 코드를 알려주세요">
-      <div className="connection-card connection-card--code">
+    <ConnectionShell title="초대 코드" subtitle={apiConfig.useMockApi ? "시연용 코드 · 실제 사용자 기기와 연결되지 않아요" : "사용자 기기에 코드를 알려주세요"}>
+      <div className="connection-card connection-card--code">\n        {apiConfig.useMockApi ? <p className="connection-card__instruction">이 코드는 화면 확인용이며 실제 기기 페어링에 사용할 수 없어요.</p> : null}
         <div className={`invite-code ${expired ? 'invite-code--expired' : ''}`} aria-label={`초대 코드 ${code}`}>
           {code.split('').map((digit, index) => <span key={`${digit}-${index}`}>{digit}</span>)}
           {expired ? (
