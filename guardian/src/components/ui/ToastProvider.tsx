@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -26,6 +27,8 @@ const ToastContext = createContext<ToastContextValue | null>(null)
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const nextId = useRef(0)
+  const lastShown = useRef<{ message: string; type: ToastType; at: number } | null>(null)
 
   const dismiss = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id))
@@ -33,8 +36,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showToast = useCallback(
     (message: string, type: ToastType = 'success') => {
-      const id = Date.now()
-      setToasts((current) => [...current, { id, message, type }])
+      const now = Date.now()
+      if (lastShown.current?.message === message && lastShown.current.type === type && now - lastShown.current.at < 1200) return
+      lastShown.current = { message, type, at: now }
+      const id = ++nextId.current
+      setToasts((current) => [...current.slice(-2), { id, message, type }])
       window.setTimeout(() => dismiss(id), 3000)
     },
     [dismiss],
