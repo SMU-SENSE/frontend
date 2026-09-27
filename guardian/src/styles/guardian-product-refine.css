@@ -327,7 +327,8 @@
   color:var(--gp-navy);
 }
 .gp-voice-option:disabled{
-  display:none;
+  opacity:.58;
+  cursor:wait;
 }
 .gp-speed-title{
   margin-top:25px;
