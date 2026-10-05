@@ -103,6 +103,12 @@ export interface LiveReport {
   insights: string[]
 }
 
+export interface GuardianTutorial {
+  currentVersion: number
+  completed: boolean
+  completedAt: string | null
+}
+
 const pairingKey = (userId: number) => `malmoa-live-pairing-${userId}`
 const routineKey = (userId: number) => `malmoa-live-routines-${userId}`
 const placeKey = (userId: number) => `malmoa-live-places-${userId}`
@@ -191,6 +197,14 @@ function mockPairing(userId: number, refresh = false): PairingResponse {
 }
 
 export const guardianLiveApi = {
+  tutorial(): Promise<GuardianTutorial> {
+    return apiRequest<GuardianTutorial>('/api/v1/me/tutorial')
+  },
+
+  completeTutorial(): Promise<GuardianTutorial> {
+    return apiRequest<GuardianTutorial>('/api/v1/me/tutorial/complete', { method: 'POST' })
+  },
+
   board(userId: number): Promise<LiveBoard> {
     return apiConfig.useMockApi
       ? mockBoard(userId)
