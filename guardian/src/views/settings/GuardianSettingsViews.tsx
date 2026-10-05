@@ -51,7 +51,18 @@ export function LanguageLevelPage() {
   const { showToast } = useToast()
   const users = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
   const user = users.data?.find((item) => item.active) ?? users.data?.[0] ?? null
+  const profile = useQuery({
+    queryKey: ['communication-profile', user?.id],
+    queryFn: () => guardianLiveApi.communicationProfile(user!.id),
+    enabled: Boolean(user) && !apiConfig.useMockApi,
+  })
   const [level, setLevel] = useState<1 | 2 | 3 | 4>(2)
+  const [maxWords, setMaxWords] = useState(6)
+  const [easyWordsPreferred, setEasyWordsPreferred] = useState(true)
+  const [abstractRestricted, setAbstractRestricted] = useState(true)
+  const [complexGrammarRestricted, setComplexGrammarRestricted] = useState(true)
+  const [conciseDirectPreferred, setConciseDirectPreferred] = useState(true)
+
   const options = [
     { level: 1 as const, example: '물', description: '한 단어 중심(1어절)' },
     { level: 2 as const, example: '물 주세요. / 물 마시고 싶어요.', description: '짧은 문장 중심(2~4어절) · 기본값' },
@@ -60,24 +71,49 @@ export function LanguageLevelPage() {
   ]
 
   useEffect(() => {
-    if (user?.sentenceLevel) setLevel(user.sentenceLevel)
-  }, [user?.sentenceLevel])
+    if (apiConfig.useMockApi) {
+      if (user?.sentenceLevel) setLevel(user.sentenceLevel)
+      return
+    }
+    if (!profile.data) return
+    setLevel(profile.data.sentenceLevel)
+    setMaxWords(profile.data.maxRecommendedSentenceWords)
+    setEasyWordsPreferred(profile.data.easyWordsPreferred)
+    setAbstractRestricted(profile.data.abstractExpressionsRestricted)
+    setComplexGrammarRestricted(profile.data.complexGrammarRestricted)
+    setConciseDirectPreferred(profile.data.conciseDirectPreferred)
+  }, [profile.data, user?.sentenceLevel])
 
   const mutation = useMutation({
     mutationFn: () => {
       if (!user) throw new Error('연결된 AAC 사용자가 없습니다.')
-      return guardianLiveApi.sentenceLevel(user.id, level)
+      if (apiConfig.useMockApi) return guardianLiveApi.sentenceLevel(user.id, level)
+      return guardianLiveApi.updateCommunicationProfile(user.id, {
+        sentenceLevel: level,
+        maxRecommendedSentenceWords: maxWords,
+        easyWordsPreferred,
+        abstractExpressionsRestricted: abstractRestricted,
+        complexGrammarRestricted,
+        conciseDirectPreferred,
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aac-users'] })
       queryClient.invalidateQueries({ queryKey: ['guardian-board', user?.id] })
-      showToast('사용자 언어 수준 설정이 저장되었습니다.')
+      queryClient.invalidateQueries({ queryKey: ['communication-profile', user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['aac-ai-context', user?.id] })
+      showToast('AI 문장 개인화 설정이 저장되었습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
 
-  if (users.isLoading) return <PageLoader label="사용자 설정을 불러오는 중입니다." />
-  if (users.error) return <ErrorState message={users.error.message} onRetry={() => users.refetch()} />
+  if (users.isLoading || (!apiConfig.useMockApi && user && profile.isLoading)) {
+    return <PageLoader label="사용자 설정을 불러오는 중입니다." />
+  }
+  const error = users.error ?? (!apiConfig.useMockApi ? profile.error : null)
+  if (error) {
+    return <ErrorState message={error.message} onRetry={() => { users.refetch(); profile.refetch() }} />
+  }
   if (!user) return <ErrorState message="연결된 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
 
   return (
@@ -85,7 +121,7 @@ export function LanguageLevelPage() {
       <ProductTitle title="AI 문장 추천 수준 설정" />
       <section className="gp-sub-card">
         <h2>사용자가 어느 정도 수준의 문장을 이해할 수 있나요?</h2>
-        <p>보호자가 선택한 사용자 수준을 기반으로 AI가 이해하기 쉬운 문장을 생성하고 추천합니다.</p>
+        <p>보호자가 선택한 사용자 수준과 세부 기준을 서버에 저장해 AI 개인화 컨텍스트에 반영합니다.</p>
         <div className="gp-level-list">
           {options.map((item) => (
             <button type="button" key={item.level} className={level === item.level ? 'gp-level is-selected' : 'gp-level'} onClick={() => setLevel(item.level)}>
@@ -95,7 +131,31 @@ export function LanguageLevelPage() {
             </button>
           ))}
         </div>
-        <button type="button" className="gp-save-wide" disabled={mutation.isPending} onClick={() => mutation.mutate()}>저장하기</button>
+      </section>
+
+      <section className="gp-sub-card">
+        <h2>추천 문장 세부 기준</h2>
+        <p>백엔드의 communication-profile에 저장되어 AI 추천 시 함께 사용됩니다.</p>
+        <label style={{ display: 'grid', gap: 8, marginBottom: 18 }}>
+          <strong>최대 추천 단어 수</strong>
+          <input
+            type="number"
+            min={1}
+            max={30}
+            value={maxWords}
+            onChange={(event) => setMaxWords(Math.min(30, Math.max(1, Number(event.target.value) || 1)))}
+            style={{ maxWidth: 180, minHeight: 44, border: '1px solid #dedee5', borderRadius: 10, padding: '0 12px' }}
+          />
+        </label>
+        <div style={{ display: 'grid', gap: 12 }}>
+          <label><input type="checkbox" checked={easyWordsPreferred} onChange={(event) => setEasyWordsPreferred(event.target.checked)} /> 쉬운 단어를 우선 사용</label>
+          <label><input type="checkbox" checked={abstractRestricted} onChange={(event) => setAbstractRestricted(event.target.checked)} /> 추상적인 표현을 제한</label>
+          <label><input type="checkbox" checked={complexGrammarRestricted} onChange={(event) => setComplexGrammarRestricted(event.target.checked)} /> 복잡한 문법을 제한</label>
+          <label><input type="checkbox" checked={conciseDirectPreferred} onChange={(event) => setConciseDirectPreferred(event.target.checked)} /> 짧고 직접적인 표현을 우선</label>
+        </div>
+        <button type="button" className="gp-save-wide" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+          {mutation.isPending ? '저장 중…' : '저장하기'}
+        </button>
       </section>
     </main>
   )
