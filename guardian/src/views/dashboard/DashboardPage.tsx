@@ -23,7 +23,6 @@ import { guardianLiveApi, type LiveId } from '../../api/guardianLive'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { useToast } from '../../components/ui/ToastProvider'
-import { useAuthStore } from '../../stores/authStore'
 import { speakKorean } from '../../lib/koreanSpeech'
 import type { Sentence } from '../../types/models'
 
@@ -37,7 +36,6 @@ const DEFAULT_CATEGORY_ICONS: Record<string, string> = { 긴급어: '🆘', 사�
 export default function DashboardPage() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
-  const accountId = useAuthStore((state) => state.session?.user.id)
   const aacUsers = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
   const activeUser = aacUsers.data?.find((item) => item.active) ?? aacUsers.data?.[0] ?? null
   const board = useQuery({
@@ -45,6 +43,12 @@ export default function DashboardPage() {
     queryFn: () => guardianLiveApi.board(activeUser!.id),
     enabled: Boolean(activeUser),
     refetchInterval: apiConfig.useMockApi ? false : 15000,
+  })
+  const tutorialQuery = useQuery({
+    queryKey: ['guardian-tutorial'],
+    queryFn: guardianLiveApi.tutorial,
+    enabled: !apiConfig.useMockApi,
+    staleTime: 5 * 60 * 1000,
   })
   const [categoryId, setCategoryId] = useState<string>('all')
   const [editMode, setEditMode] = useState(false)
@@ -63,13 +67,20 @@ export default function DashboardPage() {
   const [dragId, setDragId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (accountId == null || !activeUser) {
+    if (!activeUser) {
       setOnboardingStep(0)
       return
     }
-    const key = `${ONBOARDING_KEY}-${accountId}`
-    setOnboardingStep(window.localStorage.getItem(key) === '1' ? 0 : 1)
-  }, [accountId, activeUser?.id])
+
+    if (apiConfig.useMockApi) {
+      setOnboardingStep(window.localStorage.getItem(ONBOARDING_KEY) === '1' ? 0 : 1)
+      return
+    }
+
+    if (tutorialQuery.data) {
+      setOnboardingStep(tutorialQuery.data.completed ? 0 : 1)
+    }
+  }, [activeUser?.id, tutorialQuery.data])
 
   useEffect(() => {
     if (!activeUser) return
@@ -144,6 +155,15 @@ export default function DashboardPage() {
     }
     return () => source.close()
   }, [activeUser?.id, queryClient])
+
+  const completeTutorialMutation = useMutation({
+    mutationFn: guardianLiveApi.completeTutorial,
+    onSuccess: (tutorial) => {
+      queryClient.setQueryData(['guardian-tutorial'], tutorial)
+      setOnboardingStep(0)
+    },
+    onError: (error) => showToast(error.message, 'error'),
+  })
 
   const favoriteMutation = useMutation({
     mutationFn: async ({ id, favorite }: { id: LiveId; favorite: boolean }) => { await guardianLiveApi.setFavorite(activeUser!.id, id, favorite) },
@@ -274,8 +294,14 @@ export default function DashboardPage() {
     if (pressStart.current && Math.hypot(x - pressStart.current.x, y - pressStart.current.y) > 12) endPress()
   }
   function closeOnboarding() {
-    if (accountId != null) window.localStorage.setItem(`${ONBOARDING_KEY}-${accountId}`, '1')
+    if (apiConfig.useMockApi) {
+      window.localStorage.setItem(ONBOARDING_KEY, '1')
+      setOnboardingStep(0)
+      return
+    }
+
     setOnboardingStep(0)
+    completeTutorialMutation.mutate()
   }
 
   function togglePhrase(id: string) {
