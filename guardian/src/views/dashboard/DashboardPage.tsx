@@ -20,6 +20,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
 import { apiConfig } from '../../api/client'
 import { guardianLiveApi, type LiveId } from '../../api/guardianLive'
+import { recommendationsApi } from '../../api/recommendations'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { useToast } from '../../components/ui/ToastProvider'
@@ -43,6 +44,12 @@ export default function DashboardPage() {
     queryFn: () => guardianLiveApi.board(activeUser!.id),
     enabled: Boolean(activeUser),
     refetchInterval: apiConfig.useMockApi ? false : 15000,
+  })
+  const aiContext = useQuery({
+    queryKey: ['aac-ai-context', activeUser?.id],
+    queryFn: () => recommendationsApi.context(activeUser!.id),
+    enabled: Boolean(activeUser) && !apiConfig.useMockApi,
+    staleTime: 30 * 1000,
   })
   const tutorialQuery = useQuery({
     queryKey: ['guardian-tutorial'],
@@ -133,10 +140,24 @@ export default function DashboardPage() {
   }, [activeUser?.id, recentReadyUserId, recentIds])
 
   useEffect(() => {
+    if (apiConfig.useMockApi || !activeUser || !aiContext.data) return
+    const serverRecentIds = aiContext.data.prioritizedVocabulary
+      .filter((item) => item.lastUsedAt)
+      .sort((a, b) => new Date(b.lastUsedAt!).getTime() - new Date(a.lastUsedAt!).getTime())
+      .slice(0, 12)
+      .map((item) => String(item.cardId))
+    setRecentIds(serverRecentIds)
+    setRecentReadyUserId(activeUser.id)
+  }, [activeUser?.id, aiContext.data])
+
+  useEffect(() => {
     if (apiConfig.useMockApi || !activeUser) return
     const userId = activeUser.id
     const source = new EventSource(`${apiConfig.baseUrl}/api/v1/me/aac-users/${userId}/events`, { withCredentials: true })
-    const refresh = () => queryClient.invalidateQueries({ queryKey: ['guardian-board', userId] })
+    const refresh = () => {
+      queryClient.invalidateQueries({ queryKey: ['guardian-board', userId] })
+      queryClient.invalidateQueries({ queryKey: ['aac-ai-context', userId] })
+    }
     const cardUsed = (event: Event) => {
       refresh()
       try {
