@@ -13,22 +13,28 @@ import {
 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import {
-  categoriesApi,
-  sentencesApi,
-  type SentenceListType,
-} from '../../api/sentences'
+import { aacUserApi } from '../../api/aacUsers'
+import { apiConfig } from '../../api/client'
+import { guardianLiveApi, type LiveId } from '../../api/guardianLive'
+import { recommendationsApi } from '../../api/recommendations'
 import { EmptyState, ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { useToast } from '../../components/ui/ToastProvider'
+import { speakKorean } from '../../lib/koreanSpeech'
+
+type SentenceListType = 'all' | 'favorite' | 'recent'
 
 const tabs: Array<{ value: SentenceListType; label: string }> = [
   { value: 'all', label: '전체 문장' },
   { value: 'favorite', label: '즐겨찾기' },
   { value: 'recent', label: '최근 사용' },
 ]
+
+function liveId(value: string): LiveId {
+  return /^\d+$/.test(value) ? Number(value) : value
+}
 
 export default function SentencesPage() {
   const searchParams = useSearchParams()
@@ -45,55 +51,94 @@ export default function SentencesPage() {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
 
-  const sentenceQuery = useQuery({
-    queryKey: ['sentences', tab],
-    queryFn: () => sentencesApi.list(tab),
+  const usersQuery = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
+  const activeUser = usersQuery.data?.find((item) => item.active) ?? usersQuery.data?.[0] ?? null
+  const boardQuery = useQuery({
+    queryKey: ['guardian-board', activeUser?.id],
+    queryFn: () => guardianLiveApi.board(activeUser!.id),
+    enabled: Boolean(activeUser),
   })
-  const categoryQuery = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list })
+  const contextQuery = useQuery({
+    queryKey: ['aac-ai-context', activeUser?.id],
+    queryFn: () => recommendationsApi.context(activeUser!.id),
+    enabled: Boolean(activeUser) && !apiConfig.useMockApi,
+    staleTime: 30 * 1000,
+  })
 
-  // 문장 변경은 즐겨찾기·최근 목록과 카테고리 개수에 동시에 영향을 준다.
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['sentences'] })
-    queryClient.invalidateQueries({ queryKey: ['categories'] })
+    queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] })
+    queryClient.invalidateQueries({ queryKey: ['aac-ai-context', activeUser?.id] })
   }
 
-  const createSentence = useMutation({
-    mutationFn: sentencesApi.create,
-    onSuccess: () => {
-      invalidate()
-      setSentenceInput('')
-      setShowAddSentence(false)
-      showToast('문장을 저장했어요.')
-    },
-    onError: (error) => showToast(error.message, 'error'),
-  })
   const createCategory = useMutation({
-    mutationFn: categoriesApi.create,
+    mutationFn: (input: { name: string; color: string }) => {
+      if (!activeUser) throw new Error('연결된 AAC 사용자가 없습니다.')
+      const nextOrder = Math.max(
+        -1,
+        ...(boardQuery.data?.categories ?? []).map((item) => item.displayOrder),
+      ) + 1
+      return guardianLiveApi.createCategory(activeUser.id, {
+        ...input,
+        displayOrder: nextOrder,
+      })
+    },
     onSuccess: (category) => {
       invalidate()
-      setCategoryId(category.id)
+      setCategoryId(String(category.id))
       setCategoryName('')
       setShowAddCategory(false)
       showToast('카테고리를 만들었어요.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
-  const favoriteMutation = useMutation({
-    mutationFn: ({ id, favorite }: { id: string; favorite: boolean }) =>
-      sentencesApi.setFavorite(id, favorite),
-    onSuccess: invalidate,
-    onError: (error) => showToast(error.message, 'error'),
-  })
-  const useMutationRecord = useMutation({
-    mutationFn: sentencesApi.markUsed,
+
+  const createSentence = useMutation({
+    mutationFn: async ({ content, selectedCategoryId }: { content: string; selectedCategoryId: string }) => {
+      if (!activeUser) throw new Error('연결된 AAC 사용자가 없습니다.')
+      const board = boardQuery.data ?? await guardianLiveApi.board(activeUser.id)
+      let selected = selectedCategoryId
+        ? board.categories.find((item) => String(item.id) === selectedCategoryId)
+        : board.categories[0]
+
+      if (!selected) {
+        selected = await guardianLiveApi.createCategory(activeUser.id, {
+          name: '내 문장',
+          color: '#56A276',
+          displayOrder: 0,
+        })
+      }
+
+      const displayOrder = Math.max(-1, ...board.cards.map((item) => item.displayOrder)) + 1
+      return guardianLiveApi.createCard(activeUser.id, {
+        categoryId: selected.id,
+        text: content,
+        ttsText: content,
+        displayOrder,
+      })
+    },
     onSuccess: () => {
       invalidate()
-      showToast('최근 사용 문장에 기록했어요.')
+      setSentenceInput('')
+      setShowAddSentence(false)
+      showToast('AAC 카드에 문장을 저장했어요.')
     },
     onError: (error) => showToast(error.message, 'error'),
   })
+
+  const favoriteMutation = useMutation({
+    mutationFn: ({ id, favorite }: { id: LiveId; favorite: boolean }) => {
+      if (!activeUser) throw new Error('연결된 AAC 사용자가 없습니다.')
+      return guardianLiveApi.setFavorite(activeUser.id, id, favorite)
+    },
+    onSuccess: invalidate,
+    onError: (error) => showToast(error.message, 'error'),
+  })
+
   const deleteSentence = useMutation({
-    mutationFn: sentencesApi.remove,
+    mutationFn: (id: LiveId) => {
+      if (!activeUser) throw new Error('연결된 AAC 사용자가 없습니다.')
+      return guardianLiveApi.deleteCard(activeUser.id, id)
+    },
     onSuccess: () => {
       invalidate()
       showToast('문장을 삭제했어요.')
@@ -101,21 +146,56 @@ export default function SentencesPage() {
     onError: (error) => showToast(error.message, 'error'),
   })
 
+  const categories = boardQuery.data?.categories ?? []
+  const cards = boardQuery.data?.cards ?? []
+  const usageByCard = useMemo(
+    () =>
+      new Map(
+        (contextQuery.data?.prioritizedVocabulary ?? []).map((item) => [
+          String(item.cardId),
+          item,
+        ]),
+      ),
+    [contextQuery.data],
+  )
+
+  const sentenceItems = useMemo(
+    () =>
+      cards.map((card) => {
+        const usage = usageByCard.get(String(card.id))
+        const category = categories.find((item) => String(item.id) === String(card.categoryId))
+        return {
+          id: String(card.id),
+          content: card.text,
+          categoryId: String(card.categoryId),
+          categoryName: category?.name ?? '미지정',
+          favorite: card.favorite,
+          useCount: usage?.usageCount ?? 0,
+          lastUsedAt: usage?.lastUsedAt ?? null,
+        }
+      }),
+    [cards, categories, usageByCard],
+  )
+
   const filtered = useMemo(() => {
-    // 검색은 이미 가져온 현재 탭 데이터에서 즉시 처리해 불필요한 API 호출을 피한다.
+    const byTab = tab === 'favorite'
+      ? sentenceItems.filter((item) => item.favorite)
+      : tab === 'recent'
+        ? sentenceItems
+            .filter((item) => item.lastUsedAt)
+            .sort((a, b) => new Date(b.lastUsedAt!).getTime() - new Date(a.lastUsedAt!).getTime())
+        : sentenceItems
+
     const normalized = keyword.trim().toLowerCase()
-    if (!normalized) return sentenceQuery.data ?? []
-    return (sentenceQuery.data ?? []).filter((sentence) =>
-      sentence.content.toLowerCase().includes(normalized),
-    )
-  }, [keyword, sentenceQuery.data])
+    if (!normalized) return byTab
+    return byTab.filter((sentence) => sentence.content.toLowerCase().includes(normalized))
+  }, [keyword, sentenceItems, tab])
 
   const handleSentenceSubmit = (event: FormEvent) => {
     event.preventDefault()
     const content = sentenceInput.trim()
-    // 공백만 있는 문장은 서버로 보내지 않는다.
     if (!content) return
-    createSentence.mutate({ content, categoryId: categoryId || null })
+    createSentence.mutate({ content, selectedCategoryId: categoryId })
   }
 
   const handleCategorySubmit = (event: FormEvent) => {
@@ -125,17 +205,34 @@ export default function SentencesPage() {
     createCategory.mutate({ name, color: categoryColor })
   }
 
-  if (sentenceQuery.isLoading || categoryQuery.isLoading) return <PageLoader />
-  const error = sentenceQuery.error ?? categoryQuery.error
+  const speak = (content: string) => {
+    if (!activeUser) return
+    if (!speakKorean(content, activeUser.voiceType ?? 'CHILD_MALE', activeUser.speechRate ?? 1)) {
+      showToast('이 기기에서는 음성 출력을 지원하지 않습니다.', 'error')
+    }
+  }
+
+  if (usersQuery.isLoading || (activeUser && boardQuery.isLoading)) return <PageLoader />
+  const error = usersQuery.error ?? boardQuery.error
   if (error) {
     return (
       <ErrorState
         message={error.message}
         onRetry={() => {
-          sentenceQuery.refetch()
-          categoryQuery.refetch()
+          usersQuery.refetch()
+          boardQuery.refetch()
+          contextQuery.refetch()
         }}
       />
+    )
+  }
+
+  if (!activeUser) {
+    return (
+      <div className="page">
+        <PageHeader title="내 문장" description="사용자별 AAC 카드와 실제 서버 데이터를 관리합니다." />
+        <EmptyState title="등록된 AAC 사용자가 없어요" description="AAC 사용자를 먼저 등록해 주세요." />
+      </div>
     )
   }
 
@@ -143,7 +240,7 @@ export default function SentencesPage() {
     <div className="page">
       <PageHeader
         title="내 문장"
-        description="자주 쓰는 문장을 카테고리별로 저장하고 빠르게 찾을 수 있어요."
+        description="현재 AAC 보드의 카드를 서버에서 불러와 카테고리별로 관리해요."
         actions={
           <>
             <Button
@@ -199,15 +296,15 @@ export default function SentencesPage() {
                 value={sentenceInput}
                 onChange={(event) => setSentenceInput(event.target.value)}
                 placeholder="저장할 문장을 입력해 주세요"
-                maxLength={120}
+                maxLength={80}
               />
             </label>
             <label>
               카테고리
               <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
-                <option value="">미지정</option>
-                {categoryQuery.data?.map((category) => (
-                  <option value={category.id} key={category.id}>
+                <option value="">첫 번째 카테고리 사용</option>
+                {categories.map((category) => (
+                  <option value={String(category.id)} key={category.id}>
                     {category.name}
                   </option>
                 ))}
@@ -221,13 +318,16 @@ export default function SentencesPage() {
       ) : null}
 
       <section className="category-strip" aria-label="내 카테고리">
-        {categoryQuery.data?.map((category) => (
-          <div className="category-pill" key={category.id}>
-            <span style={{ backgroundColor: category.color }} aria-hidden />
-            <strong>{category.name}</strong>
-            <small>{category.sentenceCount}</small>
-          </div>
-        ))}
+        {categories.map((category) => {
+          const count = cards.filter((card) => String(card.categoryId) === String(category.id)).length
+          return (
+            <div className="category-pill" key={category.id}>
+              <span style={{ backgroundColor: category.color }} aria-hidden />
+              <strong>{category.name}</strong>
+              <small>{count}</small>
+            </div>
+          )
+        })}
         <button type="button" onClick={() => setShowAddCategory(true)}>
           <Plus size={16} /> 추가
         </button>
@@ -263,12 +363,16 @@ export default function SentencesPage() {
           </label>
         </div>
 
+        {tab === 'recent' && contextQuery.error ? (
+          <p className="privacy-note">최근 사용 기록을 불러오지 못해 현재 보드 데이터만 표시하고 있어요.</p>
+        ) : null}
+
         {filtered.length === 0 ? (
           <EmptyState
-            title={keyword ? '검색 결과가 없어요' : '저장된 문장이 없어요'}
-            description={keyword ? '다른 검색어를 입력해 보세요.' : '자주 쓰는 문장을 추가해 보세요.'}
+            title={keyword ? '검색 결과가 없어요' : tab === 'recent' ? '최근 사용 기록이 없어요' : '저장된 문장이 없어요'}
+            description={keyword ? '다른 검색어를 입력해 보세요.' : tab === 'recent' ? '사용자 기기에서 카드를 사용하면 서버 기록이 여기에 반영됩니다.' : '자주 쓰는 문장을 추가해 보세요.'}
             action={
-              !keyword ? (
+              !keyword && tab !== 'recent' ? (
                 <Button leftIcon={<BookmarkPlus size={17} />} onClick={() => setShowAddSentence(true)}>
                   문장 추가
                 </Button>
@@ -285,7 +389,7 @@ export default function SentencesPage() {
                   aria-label={sentence.favorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
                   onClick={() =>
                     favoriteMutation.mutate({
-                      id: sentence.id,
+                      id: liveId(sentence.id),
                       favorite: !sentence.favorite,
                     })
                   }
@@ -295,16 +399,17 @@ export default function SentencesPage() {
                 <div className="sentence-list__content">
                   <strong>{sentence.content}</strong>
                   <span>
-                    {sentence.categoryName ?? '미지정'} · 사용 {sentence.useCount}회
+                    {sentence.categoryName} · 서버 사용 {sentence.useCount}회
+                    {sentence.lastUsedAt ? ` · 최근 ${new Date(sentence.lastUsedAt).toLocaleDateString('ko-KR')}` : ''}
                   </span>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   leftIcon={<Play size={15} />}
-                  onClick={() => useMutationRecord.mutate(sentence.id)}
+                  onClick={() => speak(sentence.content)}
                 >
-                  사용
+                  미리듣기
                 </Button>
                 <button
                   className="icon-button icon-button--danger"
@@ -312,7 +417,7 @@ export default function SentencesPage() {
                   aria-label={`${sentence.content} 삭제`}
                   onClick={() => {
                     if (window.confirm('이 문장을 삭제할까요?')) {
-                      deleteSentence.mutate(sentence.id)
+                      deleteSentence.mutate(liveId(sentence.id))
                     }
                   }}
                 >
@@ -323,6 +428,10 @@ export default function SentencesPage() {
           </ul>
         )}
       </Card>
+
+      <p className="privacy-note">
+        최근 사용 횟수와 시각은 사용자 기기에서 서버로 전송된 실제 카드 사용 기록을 기준으로 표시합니다.
+      </p>
     </div>
   )
 }
