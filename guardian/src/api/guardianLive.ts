@@ -109,6 +109,16 @@ export interface GuardianTutorial {
   completedAt: string | null
 }
 
+export interface CommunicationProfile {
+  aacUserId: number
+  sentenceLevel: 1 | 2 | 3 | 4
+  maxRecommendedSentenceWords: number
+  easyWordsPreferred: boolean
+  abstractExpressionsRestricted: boolean
+  complexGrammarRestricted: boolean
+  conciseDirectPreferred: boolean
+}
+
 const pairingKey = (userId: number) => `malmoa-live-pairing-${userId}`
 const routineKey = (userId: number) => `malmoa-live-routines-${userId}`
 const placeKey = (userId: number) => `malmoa-live-places-${userId}`
@@ -308,6 +318,17 @@ export const guardianLiveApi = {
     return apiConfig.useMockApi
       ? apiRequest<void>(`/api/v1/sentences/${cardId}`, { method: 'DELETE' })
       : apiRequest<void>(`/api/v1/me/aac-users/${userId}/board/cards/${cardId}`, { method: 'DELETE' })
+  },
+
+  communicationProfile(userId: number): Promise<CommunicationProfile> {
+    return apiRequest<CommunicationProfile>(`/api/v1/me/aac-users/${userId}/communication-profile`)
+  },
+
+  updateCommunicationProfile(userId: number, input: Partial<Omit<CommunicationProfile, 'aacUserId'>>) {
+    return apiRequest<CommunicationProfile>(`/api/v1/me/aac-users/${userId}/communication-profile`, {
+      method: 'PATCH',
+      body: input,
+    })
   },
 
   sentenceLevel(userId: number, level: 1 | 2 | 3 | 4) {
