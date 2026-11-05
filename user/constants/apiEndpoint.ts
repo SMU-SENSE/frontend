@@ -13,8 +13,13 @@ export const API_ENDPOINTS = {
     BY_ID: (aacUserId: number) =>
       `/api/v1/aac-users/${aacUserId}`,
 
+    // GET 목록 / POST 추가
     FAVORITES: (aacUserId: number) =>
       `/api/v1/aac-users/${aacUserId}/favorites`,
+
+    // DELETE 즐겨찾기 해제
+    FAVORITE_BY_ID: (aacUserId: number, symbolId: number) =>
+      `/api/v1/aac-users/${aacUserId}/favorites/${symbolId}`,
 
     RECENT_SYMBOLS: (aacUserId: number) =>
       `/api/v1/aac-users/${aacUserId}/recent-symbols`,
@@ -74,12 +79,15 @@ export const API_ENDPOINTS = {
 
   // 온보딩
   ONBOARDING: {
+    // PATCH 전용 (저장만 가능). 읽을 때는 SUMMARY 사용
     GRID: (aacUserId: number) =>
       `/api/v1/me/aac-users/${aacUserId}/onboarding/grid`,
 
+    // PATCH 전용
     VOICE_SETTINGS: (aacUserId: number) =>
       `/api/v1/me/aac-users/${aacUserId}/voice-settings`,
 
+    // GET — 격자, TTS 등 설정을 한 번에 읽을 수 있음
     SUMMARY: (aacUserId: number) =>
       `/api/v1/me/aac-users/${aacUserId}/onboarding-summary`,
 

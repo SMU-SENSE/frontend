@@ -39,9 +39,39 @@ const POLL_MS = 30_000;
 /** .env.local 에 NEXT_PUBLIC_USE_MOCK=true 면 API 대신 캐시값 사용 */
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
-/** 2, 3, 4 중 하나면 그 값을, 아니면 null */
+/* ───────────── 백엔드 응답 벗기기 ─────────────
+ * axios 는 { data: 서버응답 } 으로 주고,
+ * 서버는 { success, data, message } 로 감싸서 줌.
+ * → data 를 두 번 벗겨야 진짜 내용이 나옴.
+ * ------------------------------------------------ */
+
+/** { data: { success, data: 내용 } } → 내용 */
+const unwrap = (res: any): any => {
+  let cur = res;
+  for (let i = 0; i < 3; i += 1) {
+    if (cur && typeof cur === 'object' && !Array.isArray(cur) && 'data' in cur) {
+      cur = cur.data;
+    } else {
+      break;
+    }
+  }
+  return cur;
+};
+
+/** 목록이 배열이 아니라 { content: [...] } 처럼 와도 배열로 꺼냄 */
+const toList = (value: any): any[] => {
+  if (Array.isArray(value)) return value;
+  return value?.content ?? value?.items ?? value?.list ?? value?.result ?? [];
+};
+
+/** 2, 3, 4 중 하나면 그 값을, 아니면 null
+ *  3, "3", "3x3", "3×3" 처럼 와도 앞 숫자를 읽음 */
 const toGridSize = (value: unknown): GridSize | null => {
-  const num = Number(value);
+  if (value === null || value === undefined) return null;
+
+  const match = String(value).match(/\d/);
+  const num = match ? Number(match[0]) : NaN;
+
   return GRID_SIZES.includes(num as GridSize) ? (num as GridSize) : null;
 };
 
@@ -219,12 +249,7 @@ export function useCategories(): CategoryInfo[] {
       try {
         const res = await apiClient.get(API_ENDPOINTS.CATEGORIES.BASE);
 
-        // 응답 구조 방어 처리
-        const raw = Array.isArray(res)
-          ? res
-          : (res as any)?.data ?? (res as any)?.result ?? [];
-
-        const list = (raw as any[])
+        const list = toList(unwrap(res))
           .map(toCategoryInfo)
           .filter((item): item is CategoryInfo => item !== null);
 
@@ -257,13 +282,24 @@ const getWordText = (item: any): string =>
   '';
 
 /** 이 상징이 속한 카테고리 이름 */
-const getCategoryName = (item: any): string =>
-  item?.category ??
-  item?.categoryName ??
-  item?.category_name ??
-  item?.categoryTitle ??
-  item?.group ??
-  '';
+const getCategoryName = (item: any): string => {
+  const raw =
+    item?.category ??
+    item?.categoryKey ??
+    item?.categoryCode ??
+    item?.categoryName ??
+    item?.category_name ??
+    item?.categoryTitle ??
+    item?.group ??
+    '';
+
+  // category 가 { key, name } 같은 객체로 올 때
+  if (raw && typeof raw === 'object') {
+    return String(raw.key ?? raw.code ?? raw.slug ?? raw.name ?? '');
+  }
+
+  return String(raw);
+};
 
 /** 카드 그림 주소 */
 const getImageUrl = (item: any): string | undefined =>
@@ -404,9 +440,25 @@ function Card({
 }
 
 /* ───────────── 화면 아래 자주 쓰는 말 버튼 ─────────────
+ * 카드처럼 고르는 게 아니라, 누르면 바로 소리로 읽어줌.
+ * 오른쪽 문장 패널에는 들어가지 않음.
+ *
  * layout.tsx 에서 이렇게 가져다 쓰면 됨:
  * import { SoundButton } from '../components/GridBox';
  * ------------------------------------------------------ */
+
+/** 글자를 바로 소리로 읽어줌 (브라우저 내장 음성) */
+const speak = (text: string) => {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+  // 이전에 읽던 소리가 있으면 끊고 새로 읽음
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ko-KR';
+  utterance.rate = 1;
+  window.speechSynthesis.speak(utterance);
+};
 
 export function SoundButton({
   text,
@@ -416,8 +468,8 @@ export function SoundButton({
   variant?: string; // 기존 코드 호환용. 지금은 안 씀
   onClick?: () => void;
 }) {
-  const shared = useWords();
-  const handleClick = onClick ?? (() => shared.toggleWord(text));
+  // onClick 을 따로 넘기면 그걸, 아니면 바로 읽어줌
+  const handleClick = onClick ?? (() => speak(text));
 
   return (
     <button type="button" onClick={handleClick} className={styles.bottom}>
@@ -487,16 +539,21 @@ export default function GridBox({
     if (USE_MOCK) return;
 
     try {
+      // ONBOARDING.GRID 는 PATCH(저장) 전용이라 읽을 수 없음.
+      // 가입정보 확인(onboarding-summary)에 격자 값이 들어 있어서 여기서 읽음.
       const res = await apiClient.get(
-        API_ENDPOINTS.ONBOARDING.GRID(getAacUserId())
+        API_ENDPOINTS.ONBOARDING.SUMMARY(getAacUserId())
       );
 
       // 응답 모양이 뭐든 gridSize 만 꺼냄
-      const source = (res as any)?.data ?? (res as any)?.result ?? res;
+      const source = unwrap(res) ?? {};
       const next =
         toGridSize(source?.gridSize) ??
         toGridSize(source?.grid_size) ??
-        toGridSize(source?.size);
+        toGridSize(source?.gridType) ??
+        toGridSize(source?.grid?.size) ??
+        toGridSize(source?.screen?.gridSize) ??
+        toGridSize(source?.settings?.gridSize);
 
       if (next) {
         setGridSizeFromServer(next);
@@ -564,20 +621,13 @@ export default function GridBox({
 
         const res = await symbolService.getSymbols();
 
-        // 응답 구조 방어 처리
-        if (Array.isArray(res)) {
-          setSymbols(res);
-        } else if (res && Array.isArray((res as any).data)) {
-          setSymbols((res as any).data);
-        } else if (res && Array.isArray((res as any).result)) {
-          setSymbols((res as any).result);
-        } else {
-          setSymbols([]);
-        }
+        // { success, data: [...] } 를 벗겨서 배열만 씀
+        setSymbols(toList(unwrap(res)));
 
         setErrorMsg('');
       } catch (error: any) {
-        console.error('API 호출 중 에러 발생:', error);
+        // console.error 를 쓰면 Next 오류 창이 떠서 warn 으로 둠
+        console.warn('상징 불러오기 실패, 목데이터 사용:', error);
         setErrorMsg(error?.message || '데이터를 불러오지 못했습니다.');
         loadMock(); // API 가 아직 안 열렸어도 화면은 보이게
       } finally {
