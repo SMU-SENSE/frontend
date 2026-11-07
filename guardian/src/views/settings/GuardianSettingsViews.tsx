@@ -19,6 +19,8 @@ import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { useToast } from '../../components/ui/ToastProvider'
 import type { BackendVoiceType } from '../../types/models'
 import { speakKorean } from '../../lib/koreanSpeech'
+import { GuardianLiveMap } from '../../components/location/GuardianLiveMap'
+import { HeartRateTimeline } from '../../components/reports/HeartRateTimeline'
 
 type Place = {
   id: string
@@ -639,7 +641,15 @@ export function LocationManagerPage() {
         <section className="gp-map-card">
           <h2>사용자 실시간 위치</h2><p>{apiConfig.useMockApi ? '시연 모드에서는 실제 사용자 위치를 수신하지 않습니다.' : '페어링된 사용자 기기가 서버로 전송한 최신 GPS 위치입니다.'}</p>
           <div className="gp-map-placeholder">
-            <div className="gp-live-location">
+            <GuardianLiveMap
+              current={position ? { latitude: position.latitude, longitude: position.longitude } : null}
+              selected={typeof draft.latitude === 'number' && typeof draft.longitude === 'number' ? { latitude: draft.latitude, longitude: draft.longitude } : null}
+              places={places.filter((place) => typeof place.latitude === 'number' && typeof place.longitude === 'number').map((place) => ({ id: place.id, name: place.name, latitude: place.latitude!, longitude: place.longitude! }))}
+              tracking={tracking && locationIsRecent && !latestQuery.error}
+              onPick={(latitude, longitude) => setDraft((current) => ({ ...current, latitude, longitude }))}
+            />
+          </div>
+          <div className="gp-live-location">
               <MapPin size={48} />
               <strong>{position ? locationIsRecent && tracking && !latestQuery.error ? '사용자 GPS 수신 중' : '마지막 사용자 GPS 위치' : '사용자 위치 대기 중'}</strong>
               {position ? <>
@@ -649,7 +659,6 @@ export function LocationManagerPage() {
                 <span>{!tracking ? '자동 갱신이 중지되어 현재 안심존 상태를 판단할 수 없습니다.' : latestQuery.error ? '위치 조회에 실패했습니다. 마지막 수신 위치로 안심존 상태를 판단하지 않습니다.' : !locationIsRecent ? '마지막 수신 위치입니다. 현재 안심존 상태를 판단할 수 없습니다.' : !places.length ? '등록된 안심존이 없습니다.' : !activePlaces.length ? '현재 시간에 활성화된 안심존이 없습니다.' : !zoneStates.length ? '활성 안심존의 좌표를 확인할 수 없습니다.' : !accuracyKnown ? 'GPS 정확도 정보가 없어 안심존 상태를 확정할 수 없습니다.' : inside ? `${inside.place.name} 안심존 안에 있습니다.` : outside ? `활성 안심존 밖입니다. 가장 가까운 장소: ${nearest.place.name} · 약 ${Math.round(nearest.distance)}m` : 'GPS 오차 범위가 안심존 경계와 겹쳐 위치를 확인 중입니다.'}</span>
                 <span>수신 {new Date(position.updatedAt).toLocaleString('ko-KR')}</span>
               </> : <span>{apiConfig.useMockApi ? '시연 모드 · 실제 위치 데이터 없음' : '사용자 PWA가 위치를 전송하면 자동으로 표시됩니다.'}</span>}
-            </div>
           </div>
           {geoError ? <div className="gp-map-error">{geoError}</div> : null}
           {latestQuery.error && tracking ? <div className="gp-map-error" role="alert">위치 정보를 가져오지 못했습니다. 사용자 기기의 위치 공유 상태와 네트워크를 확인해 주세요.</div> : null}
@@ -750,7 +759,7 @@ export function GuardianReportPage() {
         <section className="gp-report-card">
           <h2>심박 변동 및 표정 변화</h2><p>사용자 기기에서 서버로 전송된 센서 이벤트입니다.</p>
           <div className="gp-heart-chart">
-            {heartRates.length ? <div className="gp-live-heart-list">{heartRates.slice(-8).map((item, index) => <span key={`${item.recordedAt}-${index}`}><b>{Math.round(item.value!)} BPM</b><small>{new Date(item.recordedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</small></span>)}</div> : <div className="gp-live-location"><strong>심박 데이터 없음</strong><span>센서 이벤트가 수신되면 이 영역에 표시됩니다.</span></div>}
+            <HeartRateTimeline samples={heartRates} />
           </div>
           <div className="gp-event"><strong>센서 이벤트 타임라인</strong><small>{sensors.length ? `선택 기간에 ${sensors.length}개의 센서 이벤트가 기록되었습니다.` : '아직 센서 이벤트가 없습니다.'}</small></div>
           <div className="gp-sensor-events">{sensors.slice(-8).reverse().map((item, index) => <article key={`${item.recordedAt}-${index}`}><strong>{item.type}</strong><span>{item.value ?? item.label ?? '-'}</span><time>{new Date(item.recordedAt).toLocaleString('ko-KR')}</time></article>)}</div>
