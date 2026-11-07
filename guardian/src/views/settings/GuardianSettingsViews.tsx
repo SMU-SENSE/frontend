@@ -642,6 +642,7 @@ export function LocationManagerPage() {
           <h2>사용자 실시간 위치</h2><p>{apiConfig.useMockApi ? '시연 모드에서는 실제 사용자 위치를 수신하지 않습니다.' : '페어링된 사용자 기기가 서버로 전송한 최신 GPS 위치입니다.'}</p>
           <div className="gp-map-placeholder">
             <GuardianLiveMap
+              key={user.id}
               current={position ? { latitude: position.latitude, longitude: position.longitude } : null}
               selected={typeof draft.latitude === 'number' && typeof draft.longitude === 'number' ? { latitude: draft.latitude, longitude: draft.longitude } : null}
               places={places.filter((place) => typeof place.latitude === 'number' && typeof place.longitude === 'number').map((place) => ({ id: place.id, name: place.name, latitude: place.latitude!, longitude: place.longitude! }))}
