@@ -226,6 +226,19 @@ export default function DashboardPage() {
     onError: (error) => showToast(error.message, 'error'),
   })
 
+  const inlineTextMutation = useMutation({
+    mutationFn: ({ id, text }: { id: LiveId; text: string }) =>
+      guardianLiveApi.updateCard(activeUser!.id, id, { text, ttsText: text }),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['guardian-board', activeUser?.id] })
+      setEditing((current) => current && String(current.id) === String(variables.id)
+        ? { ...current, content: variables.text }
+        : current)
+      showToast('카드 텍스트가 저장되었습니다.')
+    },
+    onError: (error) => showToast(error.message, 'error'),
+  })
+
   const reorderMutation = useMutation({
     mutationFn: async ({ fromId, toId }: { fromId: string; toId: string }) => {
       if (!activeUser || !board.data) throw new Error('연결된 사용자 판이 없습니다.')
@@ -478,7 +491,7 @@ export default function DashboardPage() {
         {['네', '아니요', '잠깐만요', '몰라요', '뭐예요'].map((text) => <button type="button" key={text} onClick={() => speakText(text)}>{text}</button>)}
       </div>
 
-      {editing ? <CardEditor sentence={editing} saving={updateMutation.isPending} onClose={() => setEditing(null)} onUploadImage={(file) => guardianLiveApi.uploadImage(activeUser.id, file).then((result) => result.url)} onSave={(next) => {
+      {editing ? <CardEditor sentence={editing} saving={updateMutation.isPending || inlineTextMutation.isPending} onClose={() => setEditing(null)} onUploadImage={(file) => guardianLiveApi.uploadImage(activeUser.id, file).then((result) => result.url)} onSave={(next) => {
         updateMutation.mutate({
           id: editing.id,
           input: {
@@ -487,14 +500,14 @@ export default function DashboardPage() {
             imageUrl: next.imageUrl === '' ? '' : next.imageUrl ?? editing.imageUrl ?? '',
           },
         })
-      }} onFavorite={() => favoriteMutation.mutate({ id: editing.id, favorite: !editing.favorite })} onDelete={() => { if (window.confirm('상징 카드를 삭제하시겠습니까?')) removeMutation.mutate(editing.id) }} /> : null}
+      }} onCommitText={(text) => inlineTextMutation.mutate({ id: editing.id, text })} onFavorite={() => favoriteMutation.mutate({ id: editing.id, favorite: !editing.favorite })} onDelete={() => { if (window.confirm('상징 카드를 삭제하시겠습니까?')) removeMutation.mutate(editing.id) }} /> : null}
       {newCardOpen ? <NewCardModal userId={activeUser.id} categories={categoryItems} nextOrder={Math.max(-1, ...board.data.cards.map((item) => item.displayOrder)) + 1} onClose={() => setNewCardOpen(false)} /> : null}
       {onboardingStep ? <Onboarding step={onboardingStep} onNext={() => onboardingStep === 1 ? setOnboardingStep(2) : closeOnboarding()} onSkip={closeOnboarding} /> : null}
     </main>
   )
 }
 
-function CardEditor({ sentence, saving, onClose, onUploadImage, onSave, onFavorite, onDelete }: { sentence: Sentence; saving: boolean; onClose: () => void; onUploadImage: (file: File) => Promise<string>; onSave: (next: CardCustomization) => void; onFavorite: () => void; onDelete: () => void }) {
+function CardEditor({ sentence, saving, onClose, onUploadImage, onSave, onCommitText, onFavorite, onDelete }: { sentence: Sentence; saving: boolean; onClose: () => void; onUploadImage: (file: File) => Promise<string>; onSave: (next: CardCustomization) => void; onCommitText: (text: string) => void; onFavorite: () => void; onDelete: () => void }) {
   const { showToast } = useToast()
   const [text, setText] = useState(sentence.content)
   const [imageUrl, setImageUrl] = useState(sentence.imageUrl ?? '')
@@ -519,14 +532,18 @@ function CardEditor({ sentence, saving, onClose, onUploadImage, onSave, onFavori
       <section className="gp-edit-modal" role="dialog" aria-modal="true">
         <button type="button" className="gp-modal-x" onClick={onClose}><X /></button>
         <h2>상징 카드 편집</h2>
-        <label>카드 텍스트<input maxLength={80} value={text} onChange={(event) => setText(event.target.value)} /></label>
+        <label>카드 텍스트<input maxLength={80} value={text} onChange={(event) => setText(event.target.value)} onBlur={(event) => {
+          const nextText = event.currentTarget.value.trim()
+          if (event.relatedTarget instanceof HTMLElement && event.relatedTarget.dataset.cardSave === 'true') return
+          if (nextText && nextText !== sentence.content && !saving) onCommitText(nextText)
+        }} /></label>
         <label>이미지 변경
           {imageUrl ? <img src={imageUrl.startsWith('/api/') ? `${apiConfig.baseUrl}${imageUrl}` : imageUrl} alt="선택한 상징 미리보기" className="gp-card-image-preview" /> : null}
           <span className="gp-head-btn" style={{ justifyContent: 'center' }}><ImagePlus size={18} /> {uploading ? '업로드 중…' : '이미지 선택'}<input hidden disabled={uploading} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => loadImage(event.target.files?.[0])} /></span>
           {imageUrl ? <button type="button" className="gp-image-remove" onClick={() => setImageUrl('')}>이미지 제거</button> : null}
         </label>
         <button type="button" className="gp-head-btn" style={{ width: '100%', justifyContent: 'center' }} onClick={onFavorite}><Star size={18} />{sentence.favorite ? '즐겨찾기 해제' : '즐겨찾기 등록'}</button>
-        <div className="gp-edit-modal__actions"><button type="button" className="danger" onClick={onDelete}><Trash2 size={17} /> 삭제</button><button type="button" className="primary" disabled={uploading || saving} onClick={() => onSave({ text: text.trim() || sentence.content, imageUrl })}>{saving ? '저장 중…' : '저장'}</button></div>
+        <div className="gp-edit-modal__actions"><button type="button" className="danger" onClick={onDelete}><Trash2 size={17} /> 삭제</button><button type="button" className="primary" data-card-save="true" disabled={uploading || saving} onClick={() => onSave({ text: text.trim() || sentence.content, imageUrl })}>{saving ? '저장 중…' : '저장'}</button></div>
       </section>
     </div>
   )
