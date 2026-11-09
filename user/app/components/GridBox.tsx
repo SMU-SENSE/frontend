@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { ElementType } from 'react';
 import {
   Sparkles,
@@ -19,8 +19,10 @@ import {
   Languages,
   Shapes,
 } from 'lucide-react';
+import { tts } from '@/lib/tts';
 import { symbolService, SymbolCard } from '@/services/symbolService';
-import { MockWord } from '../mock/mockdata';
+import { isMock } from '@/lib/mockSwitch'; // API 별 목/실제 스위치
+import { toApiError, type ApiErrorInfo } from '@/lib/apiError';
 import { apiClient } from '@/lib/apiClient';
 import { storage } from '@/lib/storage';
 import { API_ENDPOINTS } from '@/constants/apiEndpoint';
@@ -36,42 +38,12 @@ const DEFAULT_GRID_SIZE: GridSize = 4;
 const CACHE_KEY = 'aac.gridSize';
 const POLL_MS = 30_000;
 
-/** .env.local 에 NEXT_PUBLIC_USE_MOCK=true 면 API 대신 캐시값 사용 */
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
-
-/* ───────────── 백엔드 응답 벗기기 ─────────────
- * axios 는 { data: 서버응답 } 으로 주고,
- * 서버는 { success, data, message } 로 감싸서 줌.
- * → data 를 두 번 벗겨야 진짜 내용이 나옴.
- * ------------------------------------------------ */
-
-/** { data: { success, data: 내용 } } → 내용 */
-const unwrap = (res: any): any => {
-  let cur = res;
-  for (let i = 0; i < 3; i += 1) {
-    if (cur && typeof cur === 'object' && !Array.isArray(cur) && 'data' in cur) {
-      cur = cur.data;
-    } else {
-      break;
-    }
-  }
-  return cur;
-};
-
-/** 목록이 배열이 아니라 { content: [...] } 처럼 와도 배열로 꺼냄 */
-const toList = (value: any): any[] => {
-  if (Array.isArray(value)) return value;
-  return value?.content ?? value?.items ?? value?.list ?? value?.result ?? [];
-};
-
 /** 2, 3, 4 중 하나면 그 값을, 아니면 null
- *  3, "3", "3x3", "3×3" 처럼 와도 앞 숫자를 읽음 */
+ *  3, "3", "GRID_3X3"(백엔드) 처럼 와도 첫 숫자를 읽음 */
 const toGridSize = (value: unknown): GridSize | null => {
   if (value === null || value === undefined) return null;
-
   const match = String(value).match(/\d/);
   const num = match ? Number(match[0]) : NaN;
-
   return GRID_SIZES.includes(num as GridSize) ? (num as GridSize) : null;
 };
 
@@ -203,10 +175,38 @@ const normalize = (value: string): string =>
  * 색은 그대로 받아 쓰고 아이콘은 이름(문자열)을 받아서 표에서 찾음.
  * ------------------------------------------------------ */
 
+/* 백엔드 카테고리 code → 프론트 key
+ * 백엔드: FOOD, EMOTION, PEOPLE, PLACE, EMERGENCY, SOCIAL, TIME, ENDING, BODY
+ * 프론트 key 가 다른 것만 적어두면 됨 (나머지는 소문자로 바꿔서 씀).
+ * TIME(시간)은 프론트 /time(장소)과 겹쳐서 clock 으로 뺌. */
+const BACKEND_CODE_TO_KEY: Record<string, string> = {
+  FOOD: 'food',
+  EMOTION: 'emotion',
+  PEOPLE: 'person',
+  PLACE: 'time',
+  EMERGENCY: 'red',
+  SOCIAL: 'conversation',
+  ENDING: 'grammar',
+  BODY: 'body',
+  TIME: 'clock',
+};
+
+/** 서버에 없는 화면 전용 카테고리 (항상 메뉴 맨 앞에 둠) */
+const VIRTUAL_CATEGORY_KEYS = ['recommend', 'recent', 'favorite'];
+
+/** 'FOOD' → 'food', 'PEOPLE' → 'person'. 모르는 값이면 null */
+const fromBackendCode = (value: unknown): string | null => {
+  if (typeof value !== 'string' || !value) return null;
+  return BACKEND_CODE_TO_KEY[value.trim().toUpperCase()] ?? null;
+};
+
 /** 서버가 준 카테고리 한 개를 화면에서 쓰는 모양으로 바꿈 */
 const toCategoryInfo = (item: any): CategoryInfo | null => {
-  // 서버가 key 를 뭐라고 부를지 몰라서 흔한 이름을 모두 확인
-  const key = item?.key ?? item?.code ?? item?.categoryKey ?? item?.slug ?? '';
+  if (item?.active === false) return null;
+
+  // 백엔드 code(FOOD)를 프론트 key(food)로 바꿈
+  const rawKey = item?.code ?? item?.key ?? item?.categoryKey ?? item?.slug ?? '';
+  const key = fromBackendCode(rawKey) ?? normalize(String(rawKey));
   const name = item?.name ?? item?.title ?? item?.categoryName ?? key;
 
   if (!key) return null;
@@ -242,19 +242,26 @@ export function useCategories(): CategoryInfo[] {
   const [categories, setCategories] = useState<CategoryInfo[]>(CATEGORIES);
 
   useEffect(() => {
-    // 목 모드면 서버를 안 부르고 기본 목록 사용
-    if (USE_MOCK) return;
-
+    // 목/실제는 symbolService 안에서 골라짐 (lib/mockSwitch.ts)
     const fetchCategories = async () => {
       try {
-        const res = await apiClient.get(API_ENDPOINTS.CATEGORIES.BASE);
+        // symbolService 가 { success, data } 를 벗겨서 배열로 줌
+        const raw = await symbolService.getCategories();
 
-        const list = toList(unwrap(res))
+        const serverList = (Array.isArray(raw) ? [...raw] : [])
+          .sort((a: any, b: any) => (a?.displayOrder ?? 0) - (b?.displayOrder ?? 0))
           .map(toCategoryInfo)
-          .filter((item): item is CategoryInfo => item !== null);
+          .filter((item): item is CategoryInfo => item !== null)
+          .filter((item) => !VIRTUAL_CATEGORY_KEYS.includes(item.key));
 
         // 빈 배열이 오면 기본 목록을 그대로 둠 (메뉴가 사라지지 않게)
-        if (list.length > 0) setCategories(list);
+        if (serverList.length === 0) return;
+
+        // 추천/최근/즐겨찾기는 서버에 없으니 앞에 붙임
+        const virtual = CATEGORIES.filter((item) =>
+          VIRTUAL_CATEGORY_KEYS.includes(item.key)
+        );
+        setCategories([...virtual, ...serverList]);
       } catch (error) {
         console.warn('카테고리 불러오기 실패, 기본 목록 사용:', error);
       }
@@ -282,24 +289,14 @@ const getWordText = (item: any): string =>
   '';
 
 /** 이 상징이 속한 카테고리 이름 */
-const getCategoryName = (item: any): string => {
-  const raw =
-    item?.category ??
-    item?.categoryKey ??
-    item?.categoryCode ??
-    item?.categoryName ??
-    item?.category_name ??
-    item?.categoryTitle ??
-    item?.group ??
-    '';
-
-  // category 가 { key, name } 같은 객체로 올 때
-  if (raw && typeof raw === 'object') {
-    return String(raw.key ?? raw.code ?? raw.slug ?? raw.name ?? '');
-  }
-
-  return String(raw);
-};
+const getCategoryName = (item: any): string =>
+  item?.categoryCode ?? // 백엔드: 'FOOD'
+  item?.category ?? // 목데이터: 'food'
+  item?.categoryName ??
+  item?.category_name ??
+  item?.categoryTitle ??
+  item?.group ??
+  '';
 
 /** 카드 그림 주소 */
 const getImageUrl = (item: any): string | undefined =>
@@ -307,6 +304,9 @@ const getImageUrl = (item: any): string | undefined =>
 
 /** 주소나 이름으로 들어와도 데이터의 category 값(key)으로 바꿔줌 */
 const toCategoryKey = (value: string): string => {
+  const fromCode = fromBackendCode(value);
+  if (fromCode) return fromCode;
+
   const found =
     CATEGORY_BY_KEY[value] ??
     CATEGORY_BY_NAME[value] ??
@@ -440,25 +440,9 @@ function Card({
 }
 
 /* ───────────── 화면 아래 자주 쓰는 말 버튼 ─────────────
- * 카드처럼 고르는 게 아니라, 누르면 바로 소리로 읽어줌.
- * 오른쪽 문장 패널에는 들어가지 않음.
- *
  * layout.tsx 에서 이렇게 가져다 쓰면 됨:
  * import { SoundButton } from '../components/GridBox';
  * ------------------------------------------------------ */
-
-/** 글자를 바로 소리로 읽어줌 (브라우저 내장 음성) */
-const speak = (text: string) => {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return;
-
-  // 이전에 읽던 소리가 있으면 끊고 새로 읽음
-  window.speechSynthesis.cancel();
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'ko-KR';
-  utterance.rate = 1;
-  window.speechSynthesis.speak(utterance);
-};
 
 export function SoundButton({
   text,
@@ -468,8 +452,8 @@ export function SoundButton({
   variant?: string; // 기존 코드 호환용. 지금은 안 씀
   onClick?: () => void;
 }) {
-  // onClick 을 따로 넘기면 그걸, 아니면 바로 읽어줌
-  const handleClick = onClick ?? (() => speak(text));
+  // 오른쪽 문장 패널에 넣지 않고, 누르면 바로 소리로 읽어줌
+  const handleClick = onClick ?? (() => tts.speak(text));
 
   return (
     <button type="button" onClick={handleClick} className={styles.bottom}>
@@ -517,7 +501,9 @@ export default function GridBox({
 
   const [symbols, setSymbols] = useState<SymbolCard[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [errorMsg, setErrorMsg] = useState<string>('');
+  const [loadError, setLoadError] = useState<ApiErrorInfo | null>(null);
+  const [reloadKey, setReloadKey] = useState(0); // "다시 시도" 누르면 +1
+  const router = useRouter();
   const [gridSizeFromServer, setGridSizeFromServer] =
     useState<GridSize>(DEFAULT_GRID_SIZE);
 
@@ -536,24 +522,22 @@ export default function GridBox({
     const cached = toGridSize(window.localStorage.getItem(CACHE_KEY));
     if (cached) setGridSizeFromServer(cached);
 
-    if (USE_MOCK) return;
+    // 목 모드면 서버를 안 부르고 캐시값/기본값 사용
+    if (isMock('gridSetting')) return;
 
     try {
-      // ONBOARDING.GRID 는 PATCH(저장) 전용이라 읽을 수 없음.
-      // 가입정보 확인(onboarding-summary)에 격자 값이 들어 있어서 여기서 읽음.
+      // ONBOARDING.GRID 는 PATCH(저장) 전용이라 GET 하면 안 됨.
+      // 읽기는 onboarding-summary 에서 함. gridSize 는 'GRID_3X3' 처럼 옴.
       const res = await apiClient.get(
         API_ENDPOINTS.ONBOARDING.SUMMARY(getAacUserId())
       );
 
-      // 응답 모양이 뭐든 gridSize 만 꺼냄
-      const source = unwrap(res) ?? {};
+      // axios { data } → 서버 { success, data } → 내용
+      const source = (res as any)?.data?.data ?? (res as any)?.data ?? {};
       const next =
         toGridSize(source?.gridSize) ??
         toGridSize(source?.grid_size) ??
-        toGridSize(source?.gridType) ??
-        toGridSize(source?.grid?.size) ??
-        toGridSize(source?.screen?.gridSize) ??
-        toGridSize(source?.settings?.gridSize);
+        toGridSize(source?.size);
 
       if (next) {
         setGridSizeFromServer(next);
@@ -596,63 +580,73 @@ export default function GridBox({
 
   /* 상징 목록 불러오기 ------------------------------------ */
   useEffect(() => {
-    const loadMock = () => {
-      if (Array.isArray(MockWord)) {
-        setSymbols(MockWord as any);
-      } else if (
-        (MockWord as any)?.data &&
-        Array.isArray((MockWord as any).data)
-      ) {
-        setSymbols((MockWord as any).data);
-      } else {
-        setSymbols([]);
-      }
-    };
+    let cancelled = false;
 
     const fetchSymbols = async () => {
-      if (USE_MOCK) {
-        loadMock();
-        setIsLoading(false);
-        return;
-      }
-
       try {
         setIsLoading(true);
+        setLoadError(null);
 
-        const res = await symbolService.getSymbols();
+        // 목/실제는 symbolService 안에서 골라짐 (lib/mockSwitch.ts)
+        const list = await symbolService.getSymbols();
 
-        // { success, data: [...] } 를 벗겨서 배열만 씀
-        setSymbols(toList(unwrap(res)));
-
-        setErrorMsg('');
-      } catch (error: any) {
-        // console.error 를 쓰면 Next 오류 창이 떠서 warn 으로 둠
-        console.warn('상징 불러오기 실패, 목데이터 사용:', error);
-        setErrorMsg(error?.message || '데이터를 불러오지 못했습니다.');
-        loadMock(); // API 가 아직 안 열렸어도 화면은 보이게
+        if (!cancelled) setSymbols(Array.isArray(list) ? list : []);
+      } catch (error) {
+        // 예전처럼 목데이터로 몰래 바꾸지 않음 → 연결이 안 된 걸 바로 알 수 있게
+        // (console.error 는 Next 오류 창을 띄워서 warn 으로 둠)
+        console.warn('상징 불러오기 실패:', error);
+        if (!cancelled) {
+          setSymbols([]);
+          setLoadError(toApiError(error));
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     void fetchSymbols();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   /* 화면에 그릴 목록 계산 --------------------------------- */
   const symbolList = useMemo(() => {
-    const filtered = symbols.filter(
+    const active = symbols.filter((item: any) => item?.active !== false);
+    const filtered = active.filter(
       (item: any) => toCategoryKey(getCategoryName(item)) === categoryName
     );
 
-    // 카테고리 이름이 안 맞아서 하나도 안 걸리면 전체를 보여줌.
-    // (백엔드 필드가 확정되기 전까지 화면이 비지 않게 하는 안전장치)
-    return filtered.length > 0 ? filtered : symbols;
+    // 백엔드(목데이터 포함)에는 추천 카테고리가 없어서, 추천 화면에서만 전체를 보여줌.
+    // (다른 카테고리에서 전체를 보여주면 엉뚱한 카드가 섞여 나옴)
+    if (filtered.length > 0) return filtered;
+    return categoryName === 'recommend' ? active : [];
   }, [symbols, categoryName]);
 
   /* 화면 그리기 ------------------------------------------- */
 
   if (isLoading) {
     return <p className={styles.empty}>불러오는 중...</p>;
+  }
+
+  if (loadError) {
+    return (
+      <div className={styles.empty} role="alert">
+        <p>{loadError.message}</p>
+
+        {loadError.kind === 'auth' ? (
+          // 401/403: 다시 시도해도 똑같으니 연결 화면으로 보냄
+          <button type="button" onClick={() => router.push('/')}>
+            보호자와 연결하러 가기
+          </button>
+        ) : (
+          <button type="button" onClick={() => setReloadKey((key) => key + 1)}>
+            다시 시도
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -668,9 +662,7 @@ export default function GridBox({
       )}
 
       {symbolList.length === 0 ? (
-        <p className={styles.empty}>
-          표시할 카드가 없습니다 (카테고리: {categoryName})
-        </p>
+        <p className={styles.empty}>이 카테고리에는 아직 카드가 없어요</p>
       ) : (
         // 카드가 많으면 페이지를 넘기지 않고 이 안에서 아래로 스크롤됨
         <div className={styles.grid}>

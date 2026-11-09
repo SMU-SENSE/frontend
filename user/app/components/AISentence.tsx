@@ -12,6 +12,7 @@ import { tts } from '@/lib/tts';
 import { storage } from '@/lib/storage';
 import { apiClient } from '@/lib/apiClient';
 import { API_ENDPOINTS } from '@/constants/apiEndpoint';
+import { isMock } from '@/lib/mockSwitch'; // API 별 목/실제 스위치
 import styles from './AISentence.module.css';
 
 /* 상징은 최대 8개까지 고를 수 있음 */
@@ -20,8 +21,6 @@ export const MAX_SELECT_WORDS = 8;
 /** 팝업에 보여줄 추천 문장 개수 */
 const SUGGESTION_COUNT = 3;
 
-/** .env.local 에 NEXT_PUBLIC_USE_MOCK=true 면 진짜 AI 대신 mock 을 씀 */
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
 export interface SelectedSymbol {
   id?: string | number;
@@ -273,7 +272,7 @@ export default function AISentence({
     try {
       // ── 임시 코드 ────────────────────────────────
       // 서버를 안 부르므로 기다림 없이 바로 만들어서 보여줌
-      if (USE_MOCK) {
+      if (isMock('aiSentence')) {
         setSuggestions(makeMockSentences(labels));
         return;
       }
@@ -313,14 +312,24 @@ export default function AISentence({
 
   // 발화 로그는 실패해도 음성 출력에 영향 없음
   const sendUsageLog = async (text: string): Promise<void> => {
-    if (USE_MOCK) return;
+    if (isMock('usageLog')) return;
+
+    // 백엔드는 상징 하나당 로그 하나: { symbolId, action, occurredAt? }
+    // occurredAt 을 안 보내면 서버 시간으로 저장됨.
+    // 문장(text)은 받는 필드가 없어서 안 보냄.
+    const symbolIds = symbols
+      .map((item) => Number(item.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    if (!text || symbolIds.length === 0) return;
 
     try {
-      await apiClient.post(API_ENDPOINTS.AAC_USERS.USAGE_LOGS(getAacUserId()), {
-        sentence: text,
-        words: labels,
-        spokenAt: new Date().toISOString(),
-      });
+      const url = API_ENDPOINTS.AAC_USERS.USAGE_LOGS(getAacUserId());
+      await Promise.all(
+        symbolIds.map((symbolId) =>
+          apiClient.post(url, { symbolId, action: 'SPEAK' })
+        )
+      );
     } catch (error) {
       console.warn('발화 로그 전송 실패 (음성은 정상 출력):', error);
     }
