@@ -228,9 +228,27 @@ export const guardianLiveApi = {
         const raw = window.sessionStorage.getItem(cacheKey)
         if (raw) {
           const cached = JSON.parse(raw) as PairingResponse
-          if (new Date(cached.expiresAt).getTime() > Date.now()) return cached
+          if (new Date(cached.expiresAt).getTime() > Date.now()) {
+            if (apiConfig.useMockApi) return cached
+            // A claim consumes the pairing immediately. Never show an already-used
+            // code/QR merely because its original 10-minute TTL has not elapsed.
+            try {
+              const current = await this.currentPairing(userId)
+              if (current.status === 'ACTIVE' && current.pairingId === cached.pairingId) {
+                return cached
+              }
+            } catch (error) {
+              if (!(error instanceof ApiError) || ![404, 410].includes(error.status)) {
+                throw error
+              }
+            }
+          }
+          window.sessionStorage.removeItem(cacheKey)
         }
-      } catch {}
+      } catch (error) {
+        if (error instanceof ApiError) throw error
+        // Ignore malformed or blocked session storage; the server remains authoritative.
+      }
     }
     const issued = apiConfig.useMockApi
       ? mockPairing(userId, false)
