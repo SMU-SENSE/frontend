@@ -59,7 +59,10 @@ export default function AuthLandingPage() {
       </div>
 
       <div className="auth-actions auth-actions--figma">
-        <Button fullWidth size="lg" leftIcon={<EmailIcon />} onClick={() => router.push('/login')}>
+        <Button fullWidth size="lg" leftIcon={<EmailIcon />} onClick={() => {
+          if (apiConfig.useMockApi) router.push('/login')
+          else showToast('이메일 로그인은 아직 지원하지 않습니다. 구글로 계속을 선택해 주세요.', 'error')
+        }}>
           이메일로 계속
         </Button>
         <Button
