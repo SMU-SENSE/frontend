@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { aacUserApi } from '../../../api/aacUsers'
 import { accountToSession, authApi } from '../../../api/auth'
@@ -26,6 +27,7 @@ const voiceFromBackend = (voiceType: BackendVoiceType | null): VoiceType =>
 
 export default function OAuthCallbackPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { showToast } = useToast()
   const setSession = useAuthStore((state) => state.setSession)
 
@@ -43,6 +45,10 @@ export default function OAuthCallbackPage() {
       try {
         const account = await authApi.me()
         if (cancelled) return
+        // A browser can be reused by a different guardian. Never reuse another
+        // account's cached AAC board, profile, location or alerts after OAuth.
+        await queryClient.cancelQueries()
+        queryClient.clear()
         setSession(accountToSession(account))
 
         // 다른 사용자 온보딩 값이 남아 있으면 기존 userId가 재사용될 수 있으므로
@@ -93,7 +99,7 @@ export default function OAuthCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [router, setSession, showToast])
+  }, [queryClient, router, setSession, showToast])
 
   return <PageLoader label="Google 로그인 정보를 확인하는 중입니다." />
 }
