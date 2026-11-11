@@ -206,6 +206,21 @@ function mockPairing(userId: number, refresh = false): PairingResponse {
   return next
 }
 
+/** Pairing secrets must never survive logout or a different guardian account. */
+export function clearPairingSecrets() {
+  if (typeof window === 'undefined') return
+  try {
+    for (let index = window.sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = window.sessionStorage.key(index)
+      if (key?.startsWith('malmoa-pairing-secret-')) {
+        window.sessionStorage.removeItem(key)
+      }
+    }
+  } catch {
+    // Private browsing can deny storage; do not block account cleanup.
+  }
+}
+
 /** Backend image upload returns an absolute-path URL, not a Vercel asset URL. */
 function resolveMediaUrl(url: string | null): string | null {
   if (!url || apiConfig.useMockApi) return url
