@@ -374,7 +374,7 @@ export const guardianLiveApi = {
     return apiRequest<unknown>(`/api/v1/me/aac-users/${userId}/status`, { method: 'PATCH', body: { status } })
   },
 
-  uploadImage(userId: number, file: File): Promise<{ url: string }> {
+  async uploadImage(userId: number, file: File): Promise<{ url: string }> {
     if (apiConfig.useMockApi) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader()
