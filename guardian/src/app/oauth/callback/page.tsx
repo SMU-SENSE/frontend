@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { aacUserApi } from '../../../api/aacUsers'
+import { clearPairingSecrets } from '../../../api/guardianLive'
 import { accountToSession, authApi } from '../../../api/auth'
 import { PageLoader } from '../../../components/ui/AsyncState'
 import { useToast } from '../../../components/ui/ToastProvider'
@@ -49,6 +50,7 @@ export default function OAuthCallbackPage() {
         // account's cached AAC board, profile, location or alerts after OAuth.
         await queryClient.cancelQueries()
         queryClient.clear()
+        clearPairingSecrets()
         setSession(accountToSession(account))
 
         // 다른 사용자 온보딩 값이 남아 있으면 기존 userId가 재사용될 수 있으므로
