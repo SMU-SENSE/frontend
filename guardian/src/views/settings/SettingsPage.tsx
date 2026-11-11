@@ -22,7 +22,7 @@ import { useMemo, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
 import { authApi } from '../../api/auth'
 import { ApiError } from '../../api/client'
-import { guardianLiveApi, type LiveRoutine } from '../../api/guardianLive'
+import { clearPairingSecrets, guardianLiveApi, type LiveRoutine } from '../../api/guardianLive'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { useToast } from '../../components/ui/ToastProvider'
 import { useAuthStore } from '../../stores/authStore'
@@ -154,6 +154,7 @@ export default function SettingsPage() {
     }
     await queryClient.cancelQueries()
     queryClient.clear()
+    clearPairingSecrets()
     logoutStore()
     router.replace('/welcome')
   }
@@ -167,6 +168,7 @@ export default function SettingsPage() {
       await authApi.deleteAccount()
       await queryClient.cancelQueries()
       queryClient.clear()
+      clearPairingSecrets()
       Object.keys(window.localStorage).filter((key) => key.startsWith('malmoa-')).forEach((key) => window.localStorage.removeItem(key))
       logoutStore()
       router.replace('/welcome')
