@@ -337,6 +337,14 @@ export const guardianLiveApi = {
   },
 
   async createCard(userId: number, input: { categoryId: LiveId; text: string; imageUrl?: string | null; ttsText?: string | null; emergency?: boolean; displayOrder: number }): Promise<LiveBoardCard> {
+    if (!apiConfig.useMockApi) {
+      if (!input.text.trim() || input.text.length > 80) {
+        throw new Error('AAC 카드의 표시 문장은 1~80자여야 해요. 문장을 줄인 다음 저장해 주세요.')
+      }
+      if (input.ttsText != null && input.ttsText.length > 200) {
+        throw new Error('AAC 카드의 음성 출력 문장은 200자 이하여야 해요.')
+      }
+    }
     if (apiConfig.useMockApi) {
       return sentenceToLive(await apiRequest<Sentence>('/api/v1/sentences', {
         method: 'POST',
@@ -347,6 +355,14 @@ export const guardianLiveApi = {
   },
 
   async updateCard(userId: number, cardId: LiveId, input: Partial<{ categoryId: LiveId; text: string; imageUrl: string | null; ttsText: string | null; emergency: boolean; displayOrder: number }>): Promise<LiveBoardCard> {
+    if (!apiConfig.useMockApi) {
+      if (input.text !== undefined && (!input.text.trim() || input.text.length > 80)) {
+        throw new Error('AAC 카드의 표시 문장은 1~80자여야 해요.')
+      }
+      if (input.ttsText != null && input.ttsText.length > 200) {
+        throw new Error('AAC 카드의 음성 출력 문장은 200자 이하여야 해요.')
+      }
+    }
     if (apiConfig.useMockApi) {
       return sentenceToLive(await apiRequest<Sentence>(`/api/v1/sentences/${cardId}`, {
         method: 'PATCH',
