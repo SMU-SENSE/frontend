@@ -28,7 +28,9 @@ export default function QrConnectionPage() {
     queryKey: ['device-pairing', user?.id],
     queryFn: () => guardianLiveApi.issuePairing(user!.id),
     enabled: Boolean(user),
-    staleTime: Infinity,
+    // A claimed QR/code is invalid even before expiresAt. Recheck on each visit.
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
   const [seconds, setSeconds] = useState(0)
 
