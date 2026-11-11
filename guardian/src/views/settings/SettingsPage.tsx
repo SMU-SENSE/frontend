@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
 import { authApi } from '../../api/auth'
+import { ApiError } from '../../api/client'
 import { guardianLiveApi, type LiveRoutine } from '../../api/guardianLive'
 import { ErrorState, PageLoader } from '../../components/ui/AsyncState'
 import { useToast } from '../../components/ui/ToastProvider'
@@ -145,12 +146,16 @@ export default function SettingsPage() {
   async function handleLogout() {
     try {
       await authApi.logout()
-    } catch {
-      // 세션 만료 상태여도 클라이언트 세션은 정리한다.
-    } finally {
-      logoutStore()
-      router.replace('/welcome')
+    } catch (error) {
+      if (!(error instanceof ApiError && error.status === 401)) {
+        showToast('서버 로그아웃을 확인하지 못했어요. 다시 시도해 주세요.', 'error')
+        return
+      }
     }
+    await queryClient.cancelQueries()
+    queryClient.clear()
+    logoutStore()
+    router.replace('/welcome')
   }
 
   async function handleWithdraw() {
@@ -160,6 +165,8 @@ export default function SettingsPage() {
     if (typed !== '탈퇴') return
     try {
       await authApi.deleteAccount()
+      await queryClient.cancelQueries()
+      queryClient.clear()
       Object.keys(window.localStorage).filter((key) => key.startsWith('malmoa-')).forEach((key) => window.localStorage.removeItem(key))
       logoutStore()
       router.replace('/welcome')
