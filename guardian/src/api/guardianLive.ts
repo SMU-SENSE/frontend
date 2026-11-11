@@ -206,6 +206,16 @@ function mockPairing(userId: number, refresh = false): PairingResponse {
   return next
 }
 
+/** Backend image upload returns an absolute-path URL, not a Vercel asset URL. */
+function resolveMediaUrl(url: string | null): string | null {
+  if (!url || apiConfig.useMockApi) return url
+  // Only rewrite paths that the authenticated backend itself serves.
+  if (/^\/api\/v1\/me\/aac-users\/\d+\/media\/images\/[0-9a-fA-F-]+\.(jpg|png|webp)$/.test(url)) {
+    return `${apiConfig.baseUrl}${url}`
+  }
+  return url
+}
+
 export const guardianLiveApi = {
   tutorial(): Promise<GuardianTutorial> {
     return apiRequest<GuardianTutorial>('/api/v1/me/tutorial')
@@ -215,10 +225,16 @@ export const guardianLiveApi = {
     return apiRequest<GuardianTutorial>('/api/v1/me/tutorial/complete', { method: 'POST' })
   },
 
-  board(userId: number): Promise<LiveBoard> {
-    return apiConfig.useMockApi
-      ? mockBoard(userId)
-      : apiRequest<LiveBoard>(`/api/v1/me/aac-users/${userId}/board`)
+  async board(userId: number): Promise<LiveBoard> {
+    if (apiConfig.useMockApi) return mockBoard(userId)
+    const board = await apiRequest<LiveBoard>(`/api/v1/me/aac-users/${userId}/board`)
+    return {
+      ...board,
+      cards: board.cards.map((card) => ({
+        ...card,
+        imageUrl: resolveMediaUrl(card.imageUrl),
+      })),
+    }
   },
 
   async issuePairing(userId: number): Promise<PairingResponse> {
@@ -369,7 +385,8 @@ export const guardianLiveApi = {
     }
     const form = new FormData()
     form.append('file', file)
-    return apiRawRequest<{ url: string }>(`/api/v1/me/aac-users/${userId}/media/images`, { method: 'POST', body: form })
+    const uploaded = await apiRawRequest<{ url: string }>(`/api/v1/me/aac-users/${userId}/media/images`, { method: 'POST', body: form })
+    return { url: resolveMediaUrl(uploaded.url) ?? uploaded.url }
   },
 
   routines(userId: number): Promise<LiveRoutine[]> {
