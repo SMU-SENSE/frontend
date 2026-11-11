@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
 import { accountToSession, authApi } from '../api/auth'
 import { apiConfig } from '../api/client'
@@ -9,6 +10,7 @@ import { PageLoader } from './ui/AsyncState'
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const setSession = useAuthStore((state) => state.setSession)
   const logout = useAuthStore((state) => state.logout)
   const [checking, setChecking] = useState(true)
@@ -53,6 +55,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         setAuthorized(true)
       } catch {
         if (cancelled) return
+        await queryClient.cancelQueries()
+        queryClient.clear()
         logout()
         saveReturnPathAndGoToWelcome()
       } finally {
@@ -64,7 +68,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [logout, router, setSession])
+  }, [logout, queryClient, router, setSession])
 
   if (checking || !authorized) {
     return <PageLoader label="로그인 상태를 확인하는 중입니다." />
