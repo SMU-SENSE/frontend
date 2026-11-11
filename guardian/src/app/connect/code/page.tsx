@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { aacUserApi } from '../../../api/aacUsers'
-import { apiConfig } from '../../../api/client'
+import { ApiError, apiConfig } from '../../../api/client'
 import { guardianLiveApi, type PairingResponse } from '../../../api/guardianLive'
 import { ConnectionShell } from '../../../components/connect/ConnectionShell'
 import { ErrorState, PageLoader } from '../../../components/ui/AsyncState'
@@ -25,6 +25,23 @@ export default function InviteCodeConnectionPage() {
     refetchOnMount: 'always',
   })
   const [seconds, setSeconds] = useState(0)
+  const pairingStatus = useQuery({
+    queryKey: ['device-pairing-status', user?.id, pairing.data?.pairingId],
+    queryFn: async () => {
+      try {
+        const current = await guardianLiveApi.currentPairing(user!.id)
+        return current.status === 'ACTIVE' && current.pairingId === pairing.data!.pairingId
+          ? 'ACTIVE'
+          : 'INACTIVE'
+      } catch (error) {
+        // A claimed QR/code no longer has an ACTIVE server session (404).
+        if (error instanceof ApiError && [404, 410].includes(error.status)) return 'INACTIVE'
+        throw error
+      }
+    },
+    enabled: Boolean(user && pairing.data) && !apiConfig.useMockApi,
+    refetchInterval: 5000,
+  })
 
   useEffect(() => {
     const value = pairing.data
@@ -39,6 +56,7 @@ export default function InviteCodeConnectionPage() {
     mutationFn: () => guardianLiveApi.refreshPairing(user!.id),
     onSuccess: (value) => {
       queryClient.setQueryData<PairingResponse>(['device-pairing', user?.id], value)
+      queryClient.removeQueries({ queryKey: ['device-pairing-status', user?.id] })
       showToast('새 초대 코드를 발급했습니다.')
     },
     onError: (error) => showToast(error.message, 'error'),
@@ -55,7 +73,7 @@ export default function InviteCodeConnectionPage() {
   if (error) return <ErrorState message={error.message} onRetry={() => { users.refetch(); pairing.refetch() }} />
   if (!user || !pairing.data) return <ErrorState message="연결할 AAC 사용자가 없습니다." onRetry={() => users.refetch()} />
 
-  const expired = seconds <= 0
+  const expired = seconds <= 0 || pairingStatus.data === 'INACTIVE'
   const code = pairing.data.inviteCode
 
   return (
@@ -66,7 +84,7 @@ export default function InviteCodeConnectionPage() {
           {code.split('').map((digit, index) => <span key={`${digit}-${index}`}>{digit}</span>)}
           {expired ? (
             <div className="connection-expired connection-expired--code">
-              <strong>만료되었습니다</strong>
+              <strong>만료되었거나 이미 사용된 코드입니다</strong>
               <button type="button" disabled={refresh.isPending} onClick={() => refresh.mutate()}>새 코드 발급</button>
             </div>
           ) : null}
