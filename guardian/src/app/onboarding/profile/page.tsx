@@ -151,6 +151,9 @@ export default function UserProfileOnboardingPage() {
         profileImageUrl: null,
       })
       saveOnboardingDraft({ userId: user.id })
+      if (profileImageDataUrl) {
+        showToast('프로필 사진은 현재 서버 저장을 지원하지 않아 미리보기로만 사용돼요.')
+      }
       router.push('/users/setup/grid')
     } catch (error) {
       showToast(error instanceof Error ? error.message : '사용자 프로필을 저장하지 못했어요.', 'error')
@@ -218,6 +221,9 @@ export default function UserProfileOnboardingPage() {
                 <Camera size={28} strokeWidth={2} />
               )}
             </button>
+            {!apiConfig.useMockApi ? (
+              <small>프로필 사진은 현재 미리보기 전용이며, 서버에 저장되지 않아요.</small>
+            ) : null}
           </div>
 
           <div className="profile-primary-fields">
