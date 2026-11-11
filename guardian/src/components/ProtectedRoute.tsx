@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
 import { accountToSession, authApi } from '../api/auth'
+import { clearPairingSecrets } from '../api/guardianLive'
 import { apiConfig } from '../api/client'
 import { useAuthStore } from '../stores/authStore'
 import { PageLoader } from './ui/AsyncState'
@@ -57,6 +58,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         if (cancelled) return
         await queryClient.cancelQueries()
         queryClient.clear()
+        clearPairingSecrets()
         logout()
         saveReturnPathAndGoToWelcome()
       } finally {
