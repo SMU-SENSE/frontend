@@ -147,7 +147,8 @@ export default function SettingsPage() {
     try {
       await authApi.logout()
     } catch (error) {
-      if (!(error instanceof ApiError && error.status === 401)) {
+      // The deployed backend can use HTTP 403 with code UNAUTHORIZED for an expired session.
+      if (!(error instanceof ApiError && (error.status === 401 || error.code === 'UNAUTHORIZED'))) {
         showToast('서버 로그아웃을 확인하지 못했어요. 다시 시도해 주세요.', 'error')
         return
       }
