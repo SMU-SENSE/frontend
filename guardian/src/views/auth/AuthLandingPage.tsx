@@ -39,16 +39,20 @@ export default function AuthLandingPage() {
   const router = useRouter()
   const { showToast } = useToast()
 
-  const openPrototypeOnly = (feature: string) => {
-    showToast(`${feature}은 아직 백엔드 API가 연결되지 않았어요.`)
-  }
-
   const handleGoogle = () => {
     if (apiConfig.useMockApi) {
       showToast('Mock 모드에서는 이메일 로그인으로 화면 흐름을 확인해 주세요.')
       return
     }
     window.location.assign(authApi.googleLoginUrl())
+  }
+
+  const handleKakao = () => {
+    if (apiConfig.useMockApi) {
+      showToast('Mock 모드에서는 이메일 로그인으로 화면 흐름을 확인해 주세요.')
+      return
+    }
+    window.location.assign(authApi.kakaoLoginUrl())
   }
 
   return (
@@ -70,7 +74,7 @@ export default function AuthLandingPage() {
           size="lg"
           variant="kakao"
           leftIcon={<KakaoIcon />}
-          onClick={() => openPrototypeOnly('카카오 로그인')}
+          onClick={handleKakao}
         >
           카카오로 계속
         </Button>
