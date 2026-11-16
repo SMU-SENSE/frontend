@@ -47,6 +47,7 @@ export const authApi = {
     ),
 
   googleLoginUrl: () => `${apiConfig.baseUrl}/oauth2/authorization/google`,
+  kakaoLoginUrl: () => `${apiConfig.baseUrl}/oauth2/authorization/kakao`,
 
   me: () => apiRequest<AccountResponse>('/api/v1/auth/me'),
 
