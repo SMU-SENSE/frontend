@@ -556,6 +556,17 @@ function NewCardModal({ userId, categories, nextOrder, onClose }: { userId: numb
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '')
   const [imageUrl, setImageUrl] = useState('')
   const [uploading, setUploading] = useState(false)
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      setCategoryId('')
+      return
+    }
+    if (!categories.some((category) => category.id === categoryId)) {
+      setCategoryId(categories[0].id)
+    }
+  }, [categories, categoryId])
+
   const mutation = useMutation({
     mutationFn: () => guardianLiveApi.createCard(userId, {
       categoryId: /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId,
@@ -595,9 +606,11 @@ function NewCardModal({ userId, categories, nextOrder, onClose }: { userId: numb
         <h2>신규 카드 추가</h2>
         <label>카드 텍스트<input autoFocus maxLength={80} placeholder="예: 물 주세요" value={content} onChange={(event) => setContent(event.target.value)} /></label>
         <label>카테고리
-          <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)} style={{ height: 50, border: '1px solid #dedee5', borderRadius: 12, padding: '0 14px' }}>
+          <select value={categoryId} disabled={categories.length === 0} onChange={(event) => setCategoryId(event.target.value)} style={{ height: 50, border: '1px solid #dedee5', borderRadius: 12, padding: '0 14px' }}>
+            <option value="" disabled>{categories.length === 0 ? '등록된 카테고리가 없습니다' : '카테고리를 선택하세요'}</option>
             {categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
+          {categories.length === 0 ? <small>카테고리를 불러오지 못했어요. <Link href="/settings/categories">카테고리 편집에서 추가하기</Link></small> : null}
         </label>
         <label>상징 이미지 (선택)
           {imageUrl ? <img src={imageUrl.startsWith('/api/') ? apiConfig.baseUrl + imageUrl : imageUrl} alt="새 카드 이미지 미리보기" className="gp-card-image-preview" /> : null}
