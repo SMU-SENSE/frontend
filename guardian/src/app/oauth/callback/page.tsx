@@ -38,7 +38,7 @@ export default function OAuthCallbackPage() {
     const finishLogin = async () => {
       const params = new URLSearchParams(window.location.search)
       if (params.get('login') !== 'success') {
-        showToast('Google 로그인에 실패했어요. 다시 시도해 주세요.', 'error')
+        showToast('소셜 로그인에 실패했어요. 다시 시도해 주세요.', 'error')
         router.replace('/welcome')
         return
       }
@@ -103,5 +103,5 @@ export default function OAuthCallbackPage() {
     }
   }, [queryClient, router, setSession, showToast])
 
-  return <PageLoader label="Google 로그인 정보를 확인하는 중입니다." />
+  return <PageLoader label="로그인 정보를 확인하는 중입니다." />
 }
