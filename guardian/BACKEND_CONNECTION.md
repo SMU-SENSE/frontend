@@ -13,7 +13,7 @@ NEXT_PUBLIC_USE_MOCK_API=false
 
 ## Connected flow
 
-1. `GET /oauth2/authorization/google`
+1. `GET /oauth2/authorization/google` or `GET /oauth2/authorization/kakao`
 2. backend redirects to `/oauth/callback`
 3. `GET /api/v1/auth/me`
 4. `POST /api/v1/auth/onboarding`
@@ -25,7 +25,7 @@ NEXT_PUBLIC_USE_MOCK_API=false
 
 The real backend uses the `JSESSIONID` session cookie and CSRF token. The shared API client sends `credentials: include` and automatically obtains/attaches the CSRF header for mutating requests.
 
-Email/Kakao authentication screens are still prototype-only because the current backend branch implements Google OAuth.
+Email authentication remains prototype-only. The Kakao button now redirects to the configured Spring backend's `/oauth2/authorization/kakao` endpoint, using `NEXT_PUBLIC_API_BASE_URL`. Successful sign-in requires Kakao OAuth/OIDC configuration and deployment on the backend; the frontend change alone does not enable the provider.
 
 
 ## Deployed-environment API smoke checks (2026-11-11)
@@ -57,6 +57,7 @@ The following calls are implemented in `guardian/src/api`; **success in the depl
 | UI operation | Backend route | Expected outcome |
 | --- | --- | --- |
 | Google login and account | `/oauth2/authorization/google`, `GET /api/v1/auth/me` | After redirect, authenticated /me returns 200 |
+| Kakao login and account | `/oauth2/authorization/kakao`, `GET /api/v1/auth/me` | After redirect, authenticated /me returns 200; requires Kakao config deployed on backend |
 | Guardian setup | `POST /api/v1/auth/onboarding` | Legal consent and guardian role persisted |
 | AAC user setup | `POST /api/v1/me/aac-users`, grid/voice/confirm endpoints | Reload retains settings |
 | Board management | `GET /api/v1/me/aac-users/{id}/board`; category/card CRUD, favorite | Data persists and boardVersion advances |
