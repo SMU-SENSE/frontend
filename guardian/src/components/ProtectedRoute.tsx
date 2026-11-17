@@ -40,6 +40,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         return
       }
 
+      // 첫 방문자는 로그인 세션이 없으므로 인증 API를 호출할 필요가 없다.
+      // 공개된 환영 화면으로 바로 보내 불필요한 네트워크 오류 화면을 피한다.
+      if (!useAuthStore.getState().isAuthenticated) {
+        saveReturnPathAndGoToWelcome()
+        if (!cancelled) setChecking(false)
+        return
+      }
+
       try {
         const account = await authApi.me()
         if (cancelled) return
