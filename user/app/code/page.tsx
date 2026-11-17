@@ -76,21 +76,28 @@ export default function CodeInput() {
       // 백엔드 기기 페어링 API 호출
       const response = await deviceService.claimByCode(fullCode);
 
-      // 백엔드에서 받은 사용자 ID 저장
-      if (response?.aacUserId) {
-        storage.setAacUserId(response.aacUserId);
+      // 기기 토큰과 사용자 ID 는 deviceService 가 저장함.
+      // 토큰이 안 왔으면 연결이 안 된 걸로 봄
+      if (!response?.accessToken || !storage.getDeviceToken()) {
+        throw new Error('기기 연결 정보를 받지 못했습니다. 다시 시도해 주세요.');
       }
 
       // 로그인 상태 저장
       localStorage.setItem('isLoggedIn', 'true');
 
-      // 메인 화면으로 이동
-      router.push('/main');
+      // 홈 화면으로 이동 (/main 페이지는 없음)
+      router.push('/home');
     } catch (error: unknown) {
       console.error('기기 연결 실패:', error);
 
-      // Error 객체인 경우 메시지 사용
-      if (error instanceof Error) {
+      // 백엔드가 보낸 메시지가 있으면 그걸 보여줌 (예: 만료된 코드)
+      const serverMessage = (
+        error as { response?: { data?: { message?: string } } }
+      )?.response?.data?.message;
+
+      if (serverMessage) {
+        setErrorMsg(serverMessage);
+      } else if (error instanceof Error) {
         setErrorMsg(
           error.message || '인증번호가 일치하지 않거나 만료되었습니다.'
         );

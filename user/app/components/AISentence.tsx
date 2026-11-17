@@ -13,6 +13,7 @@ import { storage } from '@/lib/storage';
 import { apiClient } from '@/lib/apiClient';
 import { API_ENDPOINTS } from '@/constants/apiEndpoint';
 import { isMock } from '@/lib/mockSwitch'; // API 별 목/실제 스위치
+import { boardService, hasDeviceToken } from '@/services/boardService';
 import styles from './AISentence.module.css';
 
 /* 상징은 최대 8개까지 고를 수 있음 */
@@ -324,6 +325,14 @@ export default function AISentence({
     if (!text || symbolIds.length === 0) return;
 
     try {
+      // 기기 연결(코드 입력)했으면 태블릿용 API: 카드 하나당 { cardId, action, spokenText }
+      if (hasDeviceToken()) {
+        await Promise.all(
+          symbolIds.map((cardId) => boardService.logCardUsage(cardId, text))
+        );
+        return;
+      }
+
       const url = API_ENDPOINTS.AAC_USERS.USAGE_LOGS(getAacUserId());
       await Promise.all(
         symbolIds.map((symbolId) =>

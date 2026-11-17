@@ -21,6 +21,16 @@ import {
 } from 'lucide-react';
 import { tts } from '@/lib/tts';
 import { symbolService, SymbolCard } from '@/services/symbolService';
+import {
+  boardService,
+  hasDeviceToken,
+  toMenuCategories,
+  toSymbolItems,
+} from '@/services/boardService';
+
+/** 기기 연결(코드 입력)을 했으면 태블릿용 /device/board 를 씀.
+ *  목 모드이거나 연결 전이면 예전 방식(/symbols, /categories) 그대로. */
+const shouldUseDeviceBoard = (): boolean => !isMock('symbols') && hasDeviceToken();
 import { isMock } from '@/lib/mockSwitch'; // API 별 목/실제 스위치
 import { toApiError, type ApiErrorInfo } from '@/lib/apiError';
 import { apiClient } from '@/lib/apiClient';
@@ -245,8 +255,11 @@ export function useCategories(): CategoryInfo[] {
     // 목/실제는 symbolService 안에서 골라짐 (lib/mockSwitch.ts)
     const fetchCategories = async () => {
       try {
-        // symbolService 가 { success, data } 를 벗겨서 배열로 줌
-        const raw = await symbolService.getCategories();
+        // 기기 연결했으면 보드의 카테고리, 아니면 /categories
+        // (둘 다 { success, data } 를 벗긴 배열로 옴)
+        const raw = shouldUseDeviceBoard()
+          ? toMenuCategories(await boardService.getBoard())
+          : await symbolService.getCategories();
 
         const serverList = (Array.isArray(raw) ? [...raw] : [])
           .sort((a: any, b: any) => (a?.displayOrder ?? 0) - (b?.displayOrder ?? 0))
@@ -526,14 +539,21 @@ export default function GridBox({
     if (isMock('gridSetting')) return;
 
     try {
-      // ONBOARDING.GRID 는 PATCH(저장) 전용이라 GET 하면 안 됨.
-      // 읽기는 onboarding-summary 에서 함. gridSize 는 'GRID_3X3' 처럼 옴.
-      const res = await apiClient.get(
-        API_ENDPOINTS.ONBOARDING.SUMMARY(getAacUserId())
-      );
+      let source: any;
 
-      // axios { data } → 서버 { success, data } → 내용
-      const source = (res as any)?.data?.data ?? (res as any)?.data ?? {};
+      if (shouldUseDeviceBoard()) {
+        // 기기 연결했으면 보드에 격자 크기가 같이 옴 ('GRID_3X3')
+        source = await boardService.getBoard();
+      } else {
+        // ONBOARDING.GRID 는 PATCH(저장) 전용이라 GET 하면 안 됨.
+        // 읽기는 onboarding-summary 에서 함. gridSize 는 'GRID_3X3' 처럼 옴.
+        const res = await apiClient.get(
+          API_ENDPOINTS.ONBOARDING.SUMMARY(getAacUserId())
+        );
+        // axios { data } → 서버 { success, data } → 내용
+        source = (res as any)?.data?.data ?? (res as any)?.data ?? {};
+      }
+
       const next =
         toGridSize(source?.gridSize) ??
         toGridSize(source?.grid_size) ??
@@ -587,8 +607,13 @@ export default function GridBox({
         setIsLoading(true);
         setLoadError(null);
 
-        // 목/실제는 symbolService 안에서 골라짐 (lib/mockSwitch.ts)
-        const list = await symbolService.getSymbols();
+        // 기기 연결했으면 보드의 카드, 아니면 /symbols
+        // (목/실제는 symbolService 안에서 골라짐 — lib/mockSwitch.ts)
+        const list = shouldUseDeviceBoard()
+          ? (toSymbolItems(
+              await boardService.getBoard({ force: reloadKey > 0 })
+            ) as unknown as SymbolCard[])
+          : await symbolService.getSymbols();
 
         if (!cancelled) setSymbols(Array.isArray(list) ? list : []);
       } catch (error) {
@@ -614,6 +639,12 @@ export default function GridBox({
   /* 화면에 그릴 목록 계산 --------------------------------- */
   const symbolList = useMemo(() => {
     const active = symbols.filter((item: any) => item?.active !== false);
+
+    // 즐겨찾기 화면: 보호자가 즐겨찾기한 카드 (보드 카드에 favorite 값이 있음)
+    if (categoryName === 'favorite') {
+      return active.filter((item: any) => item?.favorite === true);
+    }
+
     const filtered = active.filter(
       (item: any) => toCategoryKey(getCategoryName(item)) === categoryName
     );
