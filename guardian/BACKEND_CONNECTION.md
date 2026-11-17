@@ -1,5 +1,13 @@
 # Guardian frontend ↔ Spring backend
 
+## Canonical production URLs (2026-11-17)
+
+- Guardian frontend: `https://frontend-aac-0051.vercel.app`
+- Spring backend: `https://malmoa-backend-production.up.railway.app`
+- Deployment-specific Vercel URLs are for testing; OAuth should redirect to the canonical frontend origin.
+- Set Railway `FRONTEND_BASE_URL` and `FRONTEND_ALLOWED_ORIGINS` to the canonical frontend origin. Set Vercel `NEXT_PUBLIC_API_BASE_URL` to the Spring backend origin.
+- Updating this GitHub file does **not** update deployed Railway/Vercel environment variables; update the dashboards and redeploy/verify separately.
+
 ## Local run
 
 Backend: `SMU-SENSE/backend` branch `feature/sangbeom-google-login`
@@ -30,7 +38,7 @@ Email authentication remains prototype-only. The Kakao button now redirects to t
 
 ## Deployed-environment API smoke checks (2026-11-11)
 
-- Guardian frontend: `https://frontend-pied-five-90.vercel.app`
+- Guardian frontend at the time of this historical smoke check: `https://frontend-pied-five-90.vercel.app` (legacy redirect target)
 - Spring API origin reported by the team: `https://malmoa-backend-production.up.railway.app`
 - Health response was observed as `success: true, data.status: "UP"`. This confirms server responsiveness only; it does **not** verify Google OAuth, DB writes, cookies, or end-to-end API operations.
 
@@ -44,7 +52,9 @@ NEXT_PUBLIC_USE_MOCK_API=false
 Spring deployment environment:
 
 ```env
-FRONTEND_BASE_URL=https://frontend-pied-five-90.vercel.app
+FRONTEND_BASE_URL=https://frontend-aac-0051.vercel.app
+FRONTEND_ALLOWED_ORIGINS=https://frontend-aac-0051.vercel.app
+SESSION_COOKIE_SAME_SITE=none
 SESSION_COOKIE_SECURE=true
 ```
 
@@ -72,7 +82,7 @@ The following calls are implemented in `guardian/src/api`; **success in the depl
 
 ### Backend dependencies / gaps (not solved in the guardian frontend)
 
-1. **Session cookies across Vercel/Railway**: Spring currently has `server.servlet.session.cookie.same-site: lax`. Cross-site XHR credential delivery must be validated. Consider serving API and frontend from same-site custom subdomains, or a carefully audited `SameSite=None; Secure` deployment with CSRF/CORS protections and browser third-party cookie limitations.
+1. **Session cookies across Vercel/Railway**: The deployed PostgreSQL profile defaults to `SameSite=None; Secure`, but the actual Railway environment and cross-site credential delivery must be checked. Browser third-party-cookie blocking can still affect authentication; retain CSRF and CORS protections.
 2. **Google OAuth**: Configure valid `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and the Railway `/login/oauth2/code/google` redirect URI. A previously observed Google `401 invalid_client` needs independent confirmation of resolution.
 3. **AI provider**: `AacSentenceRecommendationService` returns 503 if no implementation of `AacSentenceRecommendationProvider` is configured; frontend cannot fix server-side inference.
 4. **AAC device client**: Jian's `user/` app still needs device token claim, `/api/v1/device/board`, `/card-usage`, and SSE wired to its screens. Guardian cards are not automatically validated against that app.
