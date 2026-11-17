@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '../../api/auth'
 import { apiConfig } from '../../api/client'
@@ -38,6 +39,14 @@ function GoogleIcon() {
 export default function AuthLandingPage() {
   const router = useRouter()
   const { showToast } = useToast()
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('error') !== 'oauth_failed') return
+
+    showToast('소셜 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.', 'error')
+    window.history.replaceState({}, '', window.location.pathname)
+  }, [showToast])
 
   const handleGoogle = () => {
     if (apiConfig.useMockApi) {
