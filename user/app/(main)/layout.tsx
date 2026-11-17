@@ -48,16 +48,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <div className="content-cover">
         <div className="main">
           <aside className="leftbar">
-            {/* 추천 = 홈 */}
-            <Link
+            {/* 추천 = 홈.
+                다른 카테고리와 같은 MoveButton 으로 그려야
+                /home 에 있을 때 진한 색(선택됨)으로 바뀜 */}
+            <MoveButton
+              text={home?.name ?? '추천'}
+              icon={HomeIcon}
               href={homeHref}
-              className="leftbar-design"
-              data-active={pathname === homeHref ? 'true' : 'false'}
-              style={{ '--cat-color': home?.color ?? '#E6F7F1' } as React.CSSProperties}
-            >
-              {HomeIcon && <HomeIcon size={28} />}
-              <span>{home?.name ?? '추천'}</span>
-            </Link>
+              color={home?.color ?? '#E6F7F1'}
+            />
 
             {/* 나머지 카테고리 — 아이콘까지 목록에서 그대로 가져옴 */}
             {rest.map((item) => (
