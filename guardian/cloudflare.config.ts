@@ -19,6 +19,12 @@ export default defineConfig({
         name: 'malmoa-mobile-independent',
       }),
       ASSETS: bindings.assets(),
+      // Existing Google/Kakao OAuth secrets remain stored in Cloudflare.
+      // Declare requirements without hardcoding or replacing secret values.
+      GOOGLE_CLIENT_ID: bindings.secret(),
+      GOOGLE_CLIENT_SECRET: bindings.secret(),
+      KAKAO_REST_API_KEY: bindings.secret(),
+      KAKAO_CLIENT_SECRET: bindings.secret(),
     },
   },
 })
