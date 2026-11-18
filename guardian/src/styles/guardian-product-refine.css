@@ -1815,3 +1815,19 @@
   .gp-board-grid--3 .gp-symbol__visual{width:min(52px,100%);height:52px}
   .gp-board-grid--2 .gp-symbol__visual{width:min(72px,100%)}
 }
+
+/* Mobile fidelity: later desktop Figma locks must not override the original
+   onboarding's narrow-screen column sizes. Keep all desktop styling intact. */
+@media(max-width:640px){
+  .profile-primary-row{grid-template-columns:104px minmax(0,1fr)}
+  .avatar-upload{width:104px;height:104px}
+}
+
+/* A profile photo's helper copy belongs beneath the form on phone-sized
+   screens; it cannot fit in a 104px-wide avatar column. */
+@media(max-width:480px){
+  .profile-primary-row{grid-template-columns:minmax(0,1fr);align-items:start}
+  .avatar-field{justify-items:start}
+  .avatar-field small{max-width:100%;overflow-wrap:break-word}
+  .profile-primary-fields{width:100%;min-width:0}
+}
