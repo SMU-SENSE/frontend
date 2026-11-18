@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:edge": "NEXT_PUBLIC_API_BASE_URL='' NEXT_PUBLIC_USE_MOCK_API='false' next build && vite build",
+    "build:edge": "cross-env NEXT_PUBLIC_API_BASE_URL= NEXT_PUBLIC_USE_MOCK_API=false next build && vite build",
     "preview:edge": "vite preview",
-    "deploy:edge": "npm run build:edge && cf deploy --prebuilt",
+    "deploy:edge": "npm run build:edge && cf deploy --prebuilt --mode production",
     "start": "next start",
     "lint": "next lint"
   },
@@ -31,6 +31,7 @@
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "cf": "^1.0.0-rc.1",
+    "cross-env": "^10.1.0",
     "eslint": "^9.34.0",
     "eslint-config-next": "^15.5.2",
     "typescript": "^5.9.2",
