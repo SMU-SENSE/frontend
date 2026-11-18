@@ -30,7 +30,7 @@ export default function BackendDashboardPage() {
     <div className="page">
       <PageHeader
         title={`${account?.nickname ?? '보호자'}님, 안녕하세요`}
-        description="Spring Boot 백엔드와 연결된 AAC 사용자 정보를 확인할 수 있어요."
+        description="AAC 사용자 정보를 확인할 수 있어요."
       />
 
       {items.length === 0 ? (
