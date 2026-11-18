@@ -1,0 +1,48 @@
+name: MalMoa Cloudflare D1 Deploy
+
+on:
+  push:
+    branches:
+      - feature/dongseok-cloudflare-d1
+    paths:
+      - 'guardian/**'
+      - '.github/workflows/malmoa-cloudflare-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: malmoa-cloudflare-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: guardian
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: guardian/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build the original Guardian UI for Cloudflare
+        run: npm run build:edge
+      - name: Verify deployment credential exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo 'Cloudflare deployment is not connected. Set repository Actions secret CLOUDFLARE_API_TOKEN.' >&2
+            exit 1
+          fi
+      - name: Deploy Worker and static assets (keep D1 and OAuth bindings)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_QUIET: '1'
+        run: npx cf deploy --prebuilt --mode production
