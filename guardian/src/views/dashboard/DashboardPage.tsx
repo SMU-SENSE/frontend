@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { aacUserApi } from '../../api/aacUsers'
 import { apiConfig } from '../../api/client'
@@ -35,6 +36,7 @@ const CARD_EMOJI = ['💬', '👤', '🍚', '🏠', '🙌', '😊', '🔗']
 const DEFAULT_CATEGORY_ICONS: Record<string, string> = { 긴급어: '🆘', 사람: '👩', '음식·장소·신체': '🍱', 행동: '🙌', '감정·설명': '😊', 대화: '💬', 문법: '🔗' }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const aacUsers = useQuery({ queryKey: ['aac-users'], queryFn: aacUserApi.list })
@@ -263,18 +265,18 @@ export default function DashboardPage() {
 
   const isLoading = aacUsers.isLoading || (Boolean(activeUser) && board.isLoading)
   const error = aacUsers.error ?? board.error
+  // On a fresh D1 account there is no AAC user yet. Enter the original
+  // onboarding flow instead of rendering the legacy placeholder dashboard.
+  // Wait for a fresh list so a cached empty result cannot redirect a user
+  // who has just completed onboarding.
+  useEffect(() => {
+    if (!isLoading && !aacUsers.isFetching && !error && !activeUser) {
+      router.replace('/onboarding/profile')
+    }
+  }, [activeUser, aacUsers.isFetching, error, isLoading, router])
   if (isLoading) return <PageLoader label="AAC 판을 불러오는 중입니다." />
   if (error) return <ErrorState message={error.message} onRetry={() => { aacUsers.refetch(); board.refetch() }} />
-  if (!activeUser) return (
-    <main className="gp-home">
-      <header className="gp-home__header"><Link href="/" className="gp-wordmark">Mal<span>Moa</span></Link></header>
-      <section className="gp-card" style={{ margin: '48px auto', maxWidth: 560, padding: 32 }}>
-        <h1>등록된 AAC 사용자가 없어요</h1>
-        <p>사용자 프로필을 등록한 뒤 보호자용 라이브 AAC 판을 확인할 수 있어요.</p>
-        <Link className="gp-head-btn" href="/onboarding/profile">사용자 등록 시작</Link>
-      </section>
-    </main>
-  )
+  if (!activeUser) return <PageLoader label="사용자 등록 화면으로 이동하는 중입니다." />
   if (!board.data) return <ErrorState message="사용자 AAC 판을 불러오지 못했습니다." onRetry={() => board.refetch()} />
 
   const categoryItems = [...board.data.categories]
